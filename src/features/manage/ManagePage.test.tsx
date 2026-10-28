@@ -165,3 +165,19 @@ describe('プログラム', () => {
     await waitFor(async () => expect(await getProgram()).toEqual({ startDate: '2026-10-28', tests: { start: null, end: null } }));
   });
 });
+
+test('ルーティンの範囲外のセット数は保存せずに知らせる', async () => {
+  const bench = (await listExercises()).find((e) => e.name === 'ベンチプレス')!;
+  await saveRoutine({ name: 'PUSH', weekday: null, items: [defaultItem(bench.id)] });
+  render(<ManagePage />);
+  await tab('ルーティン');
+  await userEvent.click(await screen.findByText('PUSH'));
+  const dlg = screen.getByRole('dialog', { name: 'ルーティンを編集' });
+  expect(within(dlg).getAllByText('セット（1〜20）')[0]).toBeInTheDocument();
+  const sets = within(dlg).getByLabelText('ベンチプレス セット数');
+  await userEvent.clear(sets);
+  await userEvent.type(sets, '25');
+  await userEvent.click(within(dlg).getByRole('button', { name: '保存' }));
+  expect(within(dlg).getByText('ベンチプレスのセット数は1〜20、上げ幅は0.5〜20kgで入力してください')).toBeInTheDocument();
+  expect((await listRoutines())[0].items[0].sets).toBe(3);
+});

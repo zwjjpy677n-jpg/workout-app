@@ -55,3 +55,14 @@ test('負の最小値なら負数を受け付ける', async () => {
   await userEvent.type(input, '-15');
   expect(spy).toHaveBeenLastCalledWith(-15);
 });
+
+test('keepInvalid なら blur しても範囲外の入力を残す', async () => {
+  const spy = vi.fn();
+  render(<NumberInput value={3} onChange={spy} min={1} max={20} inputMode="numeric" aria-label="n" keepInvalid />);
+  const input = screen.getByLabelText('n');
+  await userEvent.clear(input);
+  await userEvent.type(input, '25');
+  await userEvent.tab();
+  expect(input).toHaveValue('25');
+  expect(input).toHaveAttribute('aria-invalid', 'true');
+});
