@@ -193,3 +193,51 @@ test('読み込み中にDBエラーが起きたら日本語で知らせ、デー
   expect(await screen.findByRole('alert')).toHaveTextContent('バックアップを読み込めませんでした。データは変更していません。');
   expect(await listExercises()).toHaveLength(14);
 });
+
+describe('ルーティン編集の範囲チェック', () => {
+  async function openPush() {
+    const bench = (await listExercises()).find((e) => e.name === 'ベンチプレス')!;
+    await saveRoutine({ name: 'PUSH', weekday: null, items: [defaultItem(bench.id)] });
+    render(<ManagePage />);
+    await tab('ルーティン');
+    await userEvent.click(await screen.findByText('PUSH'));
+    return screen.getByRole('dialog', { name: 'ルーティンを編集' });
+  }
+
+  test('セット数が範囲外のまま上げ幅を直しても保存しない', async () => {
+    const dlg = await openPush();
+    const sets = within(dlg).getByLabelText('ベンチプレス セット数');
+    await userEvent.clear(sets);
+    await userEvent.type(sets, '25');
+    const inc = within(dlg).getByLabelText('ベンチプレス 上げ幅');
+    await userEvent.clear(inc);
+    await userEvent.type(inc, '5');
+    await userEvent.click(within(dlg).getByRole('button', { name: '保存' }));
+    expect(within(dlg).getByText(/セット数は1〜20/)).toBeInTheDocument();
+    expect((await listRoutines())[0].items[0]).toMatchObject({ sets: 3, inc: 2.5 });
+  });
+
+  test('空にした欄は空のまま赤く残り、保存できない理由と表示が一致する', async () => {
+    const dlg = await openPush();
+    const sets = within(dlg).getByLabelText('ベンチプレス セット数');
+    await userEvent.clear(sets);
+    await userEvent.tab();
+    expect(sets).toHaveValue('');
+    expect(sets).toHaveAttribute('aria-invalid', 'true');
+    await userEvent.type(sets, '4');
+    await userEvent.click(within(dlg).getByRole('button', { name: '保存' }));
+    await waitFor(async () => expect((await listRoutines())[0].items[0].sets).toBe(4));
+  });
+
+  test('範囲外のまま種目を外して付け直すと、初期値で保存できる', async () => {
+    const dlg = await openPush();
+    const sets = within(dlg).getByLabelText('ベンチプレス セット数');
+    await userEvent.clear(sets);
+    await userEvent.type(sets, '25');
+    await userEvent.click(within(dlg).getByRole('checkbox', { name: 'ベンチプレス' }));
+    await userEvent.click(within(dlg).getByRole('checkbox', { name: 'ベンチプレス' }));
+    await userEvent.click(within(dlg).getByRole('button', { name: '保存' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'ルーティンを編集' })).toBeNull());
+    expect((await listRoutines())[0].items[0].sets).toBe(3);
+  });
+});

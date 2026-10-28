@@ -11,7 +11,7 @@ type Props = {
   inputMode: 'decimal' | 'numeric';
   'aria-label': string;
   className?: string;
-  /** blur しても範囲外の入力を元に戻さず、invalid 表示のまま残す */
+  /** blur しても範囲外・空の入力を元に戻さず、invalid 表示のまま残す */
   keepInvalid?: boolean;
 } & Pick<InputHTMLAttributes<HTMLInputElement>, 'autoFocus' | 'onFocus'>;
 
@@ -28,10 +28,12 @@ export function NumberInput({ value, onChange, min, max, placeholder, inputMode,
   function handle(next: string) {
     setText(next);
     const n = Number(next);
-    const ok = next.trim() === '' || (Number.isFinite(n) && n >= min && n <= max);
+    const empty = next.trim() === '';
+    // keepInvalid の欄では空も「未入力」として赤く残す（勝手に元の値へ戻さない）
+    const ok = empty ? !keepInvalid : Number.isFinite(n) && n >= min && n <= max;
     setInvalid(!ok);
     // 範囲外・非数は途中の値を残さず null にする（表示と保存値を食い違わせない）
-    onChange(ok && next.trim() !== '' ? n : null);
+    onChange(ok && !empty ? n : null);
   }
 
   return (

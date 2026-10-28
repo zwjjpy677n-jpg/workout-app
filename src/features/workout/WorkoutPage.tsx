@@ -40,8 +40,8 @@ export function WorkoutPage() {
   const program = useProgram();
   const settings = useSettings();
   /** 開いている種目の index。undefined = まだ決めていない（最初の未完了を開く） */
-  const [saveFailed, setSaveFailed] = useState(false);
   const [openIdx, setOpenIdx] = useState<number | null | undefined>(undefined);
+  const [saveFailed, setSaveFailed] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -108,9 +108,12 @@ export function WorkoutPage() {
     if (!w) return;
     if (!editMode && !window.confirm('ワークアウトを終了しますか？')) return;
     const r = editMode ? await saveEditedWorkout(w.id) : await finishWorkout(w.id);
+    // 終了したらレストも止める（次のワークアウトに持ち越さない）
+    if (!editMode && r === 'saved') timer.skip();
     if (r === 'saved') return navigate(calendarUrl);
     if (window.confirm('完了したセットがありません。このワークアウトを破棄しますか？')) {
       await deleteWorkout(w.id);
+      timer.skip();
       navigate(editMode ? calendarUrl : '/');
     }
   }

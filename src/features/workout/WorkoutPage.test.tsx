@@ -330,3 +330,15 @@ test('保存に失敗したら知らせ、次の保存が成功したら消す',
   await userEvent.type(within(r1).getByLabelText('RPE'), '8');
   await waitFor(() => expect(screen.queryByText(/保存できませんでした/)).toBeNull());
 });
+
+test('終了するとレストタイマーも止まり、次のワークアウトに持ち越さない', async () => {
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
+  renderRoute('/workout', '/workout', <WorkoutPage />);
+  const [r1] = await rows();
+  await userEvent.click(within(r1).getByRole('button', { name: '完了' }));
+  expect(await screen.findByText('REST')).toBeInTheDocument();
+  expect(localStorage.getItem('ironlog:rest')).not.toBeNull();
+  await userEvent.click(screen.getByRole('button', { name: '終了' }));
+  await screen.findByTestId('location');
+  expect(localStorage.getItem('ironlog:rest')).toBeNull();
+});
