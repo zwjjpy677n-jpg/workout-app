@@ -406,3 +406,30 @@ describe('自分でセットするレストタイマー', () => {
     expect(screen.queryByRole('button', { name: 'レストタイマー' })).toBeNull();
   });
 });
+
+describe('重量の「自重」', () => {
+  test('自重を押すと重量欄が自重になり、0kgで保存。もう一度押すと戻る', async () => {
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    const [r1] = await rows();
+    const bw = within(r1).getByRole('button', { name: '自重' });
+    expect(bw).toHaveAttribute('aria-pressed', 'false');
+    await userEvent.click(bw);
+    expect(within(r1).getByRole('button', { name: '自重' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(r1).queryByLabelText('重量')).not.toBeInTheDocument();
+    await userEvent.type(within(r1).getByLabelText('回数'), '12');
+    await userEvent.click(within(r1).getByRole('button', { name: '完了' }));
+    await waitFor(async () => {
+      const w = (await listWorkouts()).find((x) => x.id === activeId)!;
+      expect(w.entries[0].sets[0]).toMatchObject({ weight: 0, reps: 12, done: true });
+    });
+    await userEvent.click(within(r1).getByRole('button', { name: '自重' }));
+    expect(within(r1).getByLabelText('重量')).toHaveValue('');
+  });
+
+  test('前回が自重なら前回列に「自重×回数」', async () => {
+    await saveWorkout(wk(new Date(2026, 9, 25, 18), [entry(benchId, [set({ weight: 0, reps: 15 })])]));
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    const [r1] = await rows();
+    expect(within(r1).getByText('前回 自重×15')).toBeInTheDocument();
+  });
+});

@@ -28,6 +28,9 @@ export function suggest(args: {
       reason: deload ? '回復週：セット数を減らして軽めに' : '前回より質を上げることを意識',
     };
   }
+  // 重量種目を自重（0kg）でやった場合は、そのまま自重を引き継ぐ
+  if (weights.length && lw === 0)
+    return { ...base, weight: 0, reason: deload ? '回復週：自重のまま、セット数を半分に' : '前回は自重。同じく自重で、回数と動きの質を上げる' };
   if (lw === 0) return { ...base, weight: null, reason: '初回：フォームが崩れず、目標回数をきれいにこなせる重さで' };
   if (deload) return { ...base, weight: lw, reason: '回復週：重さはそのまま、セット数を半分に' };
 

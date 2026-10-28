@@ -21,6 +21,8 @@ type Props = {
 
 export function SetCard({ type, set, number, prevSet, placeholder, weightStep, canRemove, onChange, onToggleWarmup, onToggleDone, onRemove, onNote }: Props) {
   const label = set.warmup ? 'ウォームアップ' : `${number}セット目`;
+  // 重量種目の「自重」は 0kg として記録する
+  const bw = type === 'weight' && set.weight === 0;
   return (
     <div role="group" aria-label={label} className={`${s.setCard} ${set.done ? s.isDone : ''}`}>
       <div className={s.setTop}>
@@ -29,6 +31,9 @@ export function SetCard({ type, set, number, prevSet, placeholder, weightStep, c
           <small>{set.warmup ? 'ウォームアップ' : 'セット目'}</small>
         </button>
         <span className={s.setPrev}>{prevSet ? `前回 ${shortSet(type, prevSet)}` : ''}</span>
+        {type === 'weight' && (
+          <button type="button" aria-pressed={bw} className={s.bwBtn} onClick={() => onChange({ weight: bw ? null : 0 })}>自重</button>
+        )}
         <button type="button" aria-label="メモ" className={`${s.iconBtn} ${set.note ? s.has : ''}`} onClick={onNote}>✎</button>
         {canRemove && <button type="button" aria-label={`${label}を削除`} className={s.iconBtn} onClick={onRemove}>×</button>}
         <button type="button" aria-label="完了" aria-pressed={set.done} className={s.doneBtn} onClick={onToggleDone}>
@@ -40,17 +45,21 @@ export function SetCard({ type, set, number, prevSet, placeholder, weightStep, c
           <Stepper label="秒" unit="秒" value={set.durationSec} placeholder={placeholder?.durationSec} onChange={(v) => onChange({ durationSec: v })} step={5} min={0} max={36000} inputMode="numeric" />
         ) : (
           <>
-            <Stepper
-              label="重量"
-              unit={type === 'bodyweight' ? '+kg' : 'kg'}
-              value={set.weight}
-              placeholder={placeholder?.weight}
-              onChange={(v) => onChange({ weight: v })}
-              step={weightStep}
-              min={type === 'bodyweight' ? -200 : 0}
-              max={1000}
-              inputMode="decimal"
-            />
+            {bw ? (
+              <div className={s.bwField}>自重</div>
+            ) : (
+              <Stepper
+                label="重量"
+                unit={type === 'bodyweight' ? '+kg' : 'kg'}
+                value={set.weight}
+                placeholder={placeholder?.weight}
+                onChange={(v) => onChange({ weight: v })}
+                step={weightStep}
+                min={type === 'bodyweight' ? -200 : 0}
+                max={1000}
+                inputMode="decimal"
+              />
+            )}
             <Stepper label="回数" unit="回" value={set.reps} placeholder={placeholder?.reps} onChange={(v) => onChange({ reps: v })} step={1} min={0} max={999} inputMode="numeric" />
           </>
         )}

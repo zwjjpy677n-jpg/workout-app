@@ -16,7 +16,7 @@ type Props = {
 
 export function SuggestionBlock({ exercise, target, prev, deload, plates }: Props) {
   const sg = suggest({ target, type: exercise.type, prev: prev && { sets: prev.entry.sets, slowed: !!prev.entry.slowed }, deload });
-  const showWeight = exercise.type === 'weight' && sg.weight != null;
+  const showWeight = exercise.type === 'weight' && sg.weight != null && sg.weight > 0;
   const prevTop = prev && topSet(exercise.type, prev.entry.sets);
   const e1 = exercise.type === 'weight' && prevTop ? estimate1RM(prevTop.weight, prevTop.reps) : 0;
   return (

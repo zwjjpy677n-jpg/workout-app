@@ -53,7 +53,7 @@ function rpeSuffix(set: WorkoutSet): string {
 export function formatSet(type: ExerciseType, set: WorkoutSet): string {
   switch (type) {
     case 'weight':
-      return `${formatKg(set.weight ?? 0)}kg × ${set.reps ?? 0}${rpeSuffix(set)}`;
+      return `${set.weight === 0 ? '自重' : `${formatKg(set.weight ?? 0)}kg`} × ${set.reps ?? 0}${rpeSuffix(set)}`;
     case 'bodyweight': {
       const w = set.weight ?? 0;
       const load = w > 0 ? `+${formatKg(w)}kg` : w < 0 ? `-${formatKg(-w)}kg` : '';
