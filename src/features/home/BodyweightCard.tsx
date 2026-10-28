@@ -21,7 +21,7 @@ export function BodyweightCard() {
   const diff = cur && prev ? Math.round((cur.kg - prev.kg) * 10) / 10 : null;
 
   const edit = () => {
-    setKg(cur?.kg ?? prev?.kg ?? null);
+    setKg(cur?.kg ?? null);
     setOpen(true);
   };
 
@@ -39,7 +39,7 @@ export function BodyweightCard() {
         )}
       </div>
       <Sheet open={open} title="今日の体重" onClose={() => setOpen(false)}>
-        <NumberInput aria-label="体重(kg)" value={kg} onChange={setKg} min={20} max={300} inputMode="decimal" placeholder="kg" autoFocus />
+        <NumberInput aria-label="体重(kg)" value={kg} onChange={setKg} min={20} max={300} inputMode="decimal" placeholder={prev ? formatKg(prev.kg) : 'kg'} autoFocus />
         <div style={{ marginTop: 14 }}>
           <Button
             block
