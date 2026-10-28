@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Card } from '../../components/Card';
 import { useBodyweights, useExercises, useWorkouts } from '../../hooks/useData';
-import { estimate1RM, formatDuration, formatKg, formatSet, formatVolume, isWorking } from '../../lib/calc';
+import { estimate1RM, formatSet, isWorking } from '../../lib/calc';
+import { FORMATS, kg1 } from './formats';
 import { bodyfatSeries, bodyweightSeries, METRICS, personalBest, progressSeries, RANGES, type Metric, type Range } from '../../lib/progress';
 import { completed } from '../../lib/summary';
 import { PercentTable } from '../tools/PercentSheet';
@@ -12,21 +13,6 @@ import s from './progress.module.css';
 
 const BW = '__bodyweight';
 const FAT = '__bodyfat';
-type Fmt = { value(v: number): string; unit: string; delta(v: number): string };
-
-const kg1 = (v: number) => formatKg(Math.round(v * 10) / 10);
-const FORMATS: Record<Metric | 'bw' | 'fat', Fmt> = {
-  fat: { value: kg1, unit: '%', delta: (v) => `${kg1(v)}%` },
-  e1rm: { value: kg1, unit: 'kg', delta: (v) => `${kg1(v)}kg` },
-  maxWeight: { value: kg1, unit: 'kg', delta: (v) => `${kg1(v)}kg` },
-  maxAdded: { value: kg1, unit: 'kg', delta: (v) => `${kg1(v)}kg` },
-  bw: { value: kg1, unit: 'kg', delta: (v) => `${kg1(v)}kg` },
-  volume: { value: formatVolume, unit: '', delta: formatVolume },
-  totalReps: { value: String, unit: '回', delta: (v) => `${v}回` },
-  maxTime: { value: formatDuration, unit: '', delta: formatDuration },
-  totalTime: { value: formatDuration, unit: '', delta: formatDuration },
-};
-
 export function ProgressPage() {
   const workouts = useWorkouts();
   const exercises = useExercises(true);
@@ -84,7 +70,7 @@ export function ProgressPage() {
       {data.length >= 2 ? <ProgressChart data={data} format={(v) => fmt.value(v) + fmt.unit} /> : <div className={s.empty}>記録が増えるとグラフが表示されます</div>}
 
       {metrics.length > 1 && (
-        <div className={s.metrics}>
+        <div className={s.metrics} role="group" aria-label="指標">
           {metrics.map((m) => <button key={m.key} type="button" aria-pressed={activeMetric === m.key} onClick={() => setMetric(m.key)}>{m.label}</button>)}
         </div>
       )}

@@ -1,5 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo } from 'react';
+import { getFriend, getProfile, listFriends, listFriendWorkouts } from '../db/friends';
 import { getActiveWorkout, getProgram, getSettings, listBodyweights, listExercises, listRoutines, listWorkouts } from '../db/repository';
 import type { Exercise } from '../lib/types';
 
@@ -17,3 +18,8 @@ export function useExerciseMap(): Map<string, Exercise> | undefined {
 }
 
 export const useProgram = () => useLiveQuery(async () => (await getProgram()) ?? null);
+
+export const useProfile = () => useLiveQuery(getProfile);
+export const useFriends = () => useLiveQuery(listFriends);
+export const useFriend = (id: string) => useLiveQuery(async () => (await getFriend(id)) ?? null, [id]);
+export const useFriendWorkouts = (id: string) => useLiveQuery(() => listFriendWorkouts(id), [id]);

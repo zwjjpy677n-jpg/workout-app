@@ -101,3 +101,11 @@ test('体脂肪率は無くても null でも範囲内でも受け付ける', ()
     expect(() => parseBackup(text)).not.toThrow();
   }
 });
+
+test('プロフィールは有っても無くても読め、形がおかしければ拒否', () => {
+  const withProfile = { ...valid, profile: { id: 'abcdefghijkl', name: 'たろう' } };
+  expect(parseBackup(JSON.stringify(withProfile))).toEqual(withProfile);
+  expect(parseBackup(JSON.stringify(valid)).profile).toBeUndefined();
+  expect(() => parseBackup(mutate((d) => (d.profile = { id: '', name: 'x' })))).toThrow();
+  expect(() => parseBackup(mutate((d) => (d.profile = { id: 'abcdefghijkl', name: '' })))).toThrow();
+});

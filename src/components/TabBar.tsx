@@ -5,6 +5,7 @@ const TABS = [
   { to: '/', label: 'ホーム', icon: <path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" /> },
   { to: '/calendar', label: 'カレンダー', icon: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" /></> },
   { to: '/progress', label: 'グラフ', icon: <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /> },
+  { to: '/friends', label: '友達', icon: <><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0" /><circle cx="17" cy="9" r="2.5" /><path d="M16 14.2a5 5 0 0 1 5.5 5.8" /></> },
   { to: '/manage', label: '管理', icon: <><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" /></> },
 ];
 

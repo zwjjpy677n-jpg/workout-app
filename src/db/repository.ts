@@ -3,7 +3,7 @@ import { toDateKey } from '../lib/dates';
 import { programStatus } from '../lib/program';
 import { buildRoutineEntries } from '../lib/routineEntries';
 import { emptyCondition, emptySet, type BodyweightLog, type Exercise, type Program, type Routine, type RoutineItem, type Settings, type Workout } from '../lib/types';
-import { db } from './db';
+import { db, OWN_TABLES } from './db';
 import { DEFAULT_SETTINGS } from './seed';
 import { stamp } from './stamp';
 
@@ -207,12 +207,22 @@ export async function exportAll(now: number = Date.now()): Promise<BackupData> {
     bodyweights: await db.bodyweights.toArray(),
     settings: await getSettings(),
     program: await getProgram(),
+    ...(await profileField()),
   };
 }
 
+async function profileField(): Promise<{ profile?: { id: string; name: string } }> {
+  const row = await db.settings.get('profile');
+  return row?.key === 'profile' ? { profile: { id: row.id, name: row.name } } : {};
+}
+
 export async function importAll(data: BackupData): Promise<void> {
-  await db.transaction('rw', db.tables, async () => {
-    await Promise.all(db.tables.map((t) => t.clear()));
+  // 友達から受け取ったデータはバックアップに無いので消さない。ID はバックアップに無ければ今のものを保つ
+  await db.transaction('rw', [...OWN_TABLES], async () => {
+    const keep = (await profileField()).profile;
+    await Promise.all(OWN_TABLES.map((t) => db.table(t).clear()));
+    const profile = data.profile ?? keep;
+    if (profile) await db.settings.put({ key: 'profile', ...profile });
     await db.exercises.bulkAdd(data.exercises);
     await db.routines.bulkAdd(data.routines);
     await db.workouts.bulkAdd(data.workouts);
