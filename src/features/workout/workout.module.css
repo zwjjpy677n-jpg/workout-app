@@ -85,3 +85,4 @@
 .btnRow button { min-height: 40px; padding: 0 14px; border-radius: 10px; background: var(--surface2); font-size: 13px; }
 .btnRow button[aria-pressed='true'] { background: #5a1d1d; color: #ffb3ae; }
 .btnRow .next { background: var(--text); color: var(--bg); font-weight: 700; flex: 1; }
+.saveError { margin: 0 4px 10px; padding: 10px 12px; border-radius: 10px; background: #5a1d1d; color: #ffd2cf; font-size: 13px; }

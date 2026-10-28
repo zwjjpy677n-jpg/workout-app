@@ -318,3 +318,15 @@ test('「この種目を完了して次へ」も空欄を前回値で埋める�
     expect(w.entries[0].sets[0]).toMatchObject({ weight: 80, reps: 8, done: true });
   });
 });
+
+test('保存に失敗したら知らせ、次の保存が成功したら消す', async () => {
+  const { db } = await import('../../db/db');
+  renderRoute('/workout', '/workout', <WorkoutPage />);
+  const [r1] = await rows();
+  const put = vi.spyOn(db.workouts, 'put').mockRejectedValueOnce(new Error('QuotaExceededError'));
+  await userEvent.click(within(r1).getByRole('button', { name: '完了' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('保存できませんでした');
+  put.mockRestore();
+  await userEvent.type(within(r1).getByLabelText('RPE'), '8');
+  await waitFor(() => expect(screen.queryByText(/保存できませんでした/)).toBeNull());
+});

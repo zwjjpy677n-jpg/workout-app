@@ -40,6 +40,7 @@ export function WorkoutPage() {
   const program = useProgram();
   const settings = useSettings();
   /** 開いている種目の index。undefined = まだ決めていない（最初の未完了を開く） */
+  const [saveFailed, setSaveFailed] = useState(false);
   const [openIdx, setOpenIdx] = useState<number | null | undefined>(undefined);
 
   useEffect(() => {
@@ -62,7 +63,10 @@ export function WorkoutPage() {
 
   const update = (next: Workout) => {
     setW(next);
-    saveWorkout(next);
+    saveWorkout(next).then(
+      () => setSaveFailed(false),
+      () => setSaveFailed(true),
+    );
   };
   const setEntry = (i: number, entry: WorkoutEntry) => update({ ...w, entries: w.entries.map((e, j) => (j === i ? entry : e)) });
   const firstOpen = Math.max(0, w.entries.findIndex((e) => !entryComplete(e)));
@@ -128,6 +132,9 @@ export function WorkoutPage() {
           <button type="button" className={s.finish} onClick={finish}>{editMode ? '保存' : '終了'}</button>
         </div>
       </header>
+      {saveFailed && (
+        <p role="alert" className={s.saveError}>保存できませんでした。端末の空き容量を確認してください。入力を続けると再度保存します。</p>
+      )}
 
       {w.entries.map((e, i) => {
         const ex = exMap.get(e.exerciseId);
