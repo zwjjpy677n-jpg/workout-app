@@ -24,3 +24,8 @@ export function platesFor(targetKg: number, barKg: number, plates: number[]): { 
   const achieved = g(barKg) + 2 * perSide.reduce((a, b) => a + b, 0);
   return { perSide: perSide.map((p) => p / 1000), achievedKg: achieved / 1000, diffKg: (g(targetKg) - achieved) / 1000 };
 }
+
+/** プレートの色（IWF配色）。キーは formatKg 済みの重量 */
+export const PLATE_COLORS: Record<string, string> = {
+  '25': '#D7263D', '20': '#1F5BC6', '15': '#E3B22A', '10': '#2E8F56', '5': '#F7F8FA', '2.5': '#5A6470', '1.25': '#AEB6C0',
+};
