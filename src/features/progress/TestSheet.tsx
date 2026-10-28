@@ -18,7 +18,10 @@ export function TestSheet({ which, program, exercises, todayBodyweight, onClose 
     const result: TestResult = {
       date: toDateKey(Date.now()),
       bodyweight: bw,
-      lifts: Object.fromEntries(Object.entries(lifts).filter((e): e is [string, number] => e[1] != null)),
+      // 今はメイン種目でない種目の過去の値も残す。空欄にした種目は消す
+      lifts: Object.fromEntries(
+        Object.entries({ ...cur?.lifts, ...lifts }).filter((e): e is [string, number] => e[1] != null),
+      ),
     };
     await saveProgram({ ...program, tests: { ...program.tests, [which]: result } });
     onClose();

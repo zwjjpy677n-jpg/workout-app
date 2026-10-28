@@ -51,3 +51,12 @@ test('体重の初期値は今日の体重記録', async () => {
   await userEvent.click(await screen.findByRole('button', { name: '開始時を入力' }));
   expect(within(screen.getByRole('dialog')).getByLabelText('体重')).toHaveValue('72.4');
 });
+
+test('保存しても、今はメインでない種目の過去のテスト値は残る', async () => {
+  await saveProgram({ startDate: '2026-09-01', tests: { start: { date: '2026-09-01', bodyweight: 70, lifts: { formerMain: 90 } }, end: null } });
+  render(<TestCard />);
+  await screen.findByRole('region', { name: '8週間テスト' });
+  await enter('開始時を入力', '100', '70');
+  await waitFor(async () => expect((await getProgram())?.tests.start?.lifts).toMatchObject({ formerMain: 90 }));
+  expect(Object.values((await getProgram())!.tests.start!.lifts)).toContain(100);
+});
