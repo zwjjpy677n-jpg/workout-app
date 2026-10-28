@@ -1,5 +1,5 @@
 import { formatKg, isWorking } from './calc';
-import { targetNumber } from './program';
+import { deloadSets, targetNumber } from './program';
 import type { EntryTarget, ExerciseType, WorkoutSet } from './types';
 
 export type Suggestion = { sets: number; weight: number | null; reps: number | null; durationSec: number | null; reason: string };
@@ -13,7 +13,7 @@ export function suggest(args: {
   deload: boolean;
 }): Suggestion {
   const { target, type, prev, deload } = args;
-  const sets = deload ? Math.max(1, Math.ceil(target.sets / 2)) : target.sets;
+  const sets = deloadSets(target.sets, deload);
   const r = targetNumber(target.reps);
   const base = { sets, reps: type === 'time' ? null : r, durationSec: type === 'time' ? r : null };
   const working = prev?.sets.filter(isWorking) ?? [];

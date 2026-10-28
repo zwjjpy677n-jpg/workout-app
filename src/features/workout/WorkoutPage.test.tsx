@@ -1,7 +1,8 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { resetDb } from '../../db/db';
-import { getActiveWorkout, getWorkout, listExercises, listWorkouts, saveRoutine, saveWorkout, startRoutineWorkout, startWorkout } from '../../db/repository';
+import { getActiveWorkout, getWorkout, listExercises, listWorkouts, saveProgram, saveRoutine, saveWorkout, startRoutineWorkout, startWorkout } from '../../db/repository';
+import { toDateKey } from '../../lib/dates';
 import { ensureSeeded } from '../../db/seed';
 import { entry, item, set, wk } from '../../test/factories';
 import { cleanup } from '@testing-library/react';
@@ -289,6 +290,13 @@ describe('ルーティンから始めた記録画面', () => {
     await userEvent.click(screen.getByRole('button', { name: '種目を削除' }));
     expect(screen.queryByRole('region', { name: 'ベンチプレス' })).toBeNull();
     expect(screen.queryByRole('button', { expanded: true })).toBeNull();
+  });
+
+  test('回復週はヘッダーのセット数も半分', async () => {
+    await saveProgram({ startDate: toDateKey(Date.now() - 21 * 86_400_000), tests: { start: null, end: null } });
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    const card = await screen.findByRole('region', { name: 'ベンチプレス' });
+    expect(await within(card).findByText('2セット×5 ・ レスト 3:00')).toBeInTheDocument();
   });
 
   test('前回なしの重量種目は「今回の目標」と回数表記', async () => {

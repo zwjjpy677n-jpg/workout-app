@@ -103,6 +103,23 @@ describe('今日のトレーニング', () => {
     expect(within(card).getByRole('button', { name: '続きを記録する' })).toBeInTheDocument();
   });
 
+  test('種目を足して記録しても進捗は総数を超えない', async () => {
+    const r = (await listRoutines()).find((x) => x.name === '脚・瞬発')!;
+    const w = await startRoutineWorkout(r.id);
+    const done = { weight: 40, reps: 3, durationSec: 20, done: true };
+    w.entries[0].sets = w.entries[0].sets.map((x) => ({ ...x, ...done }));
+    w.entries.push({ exerciseId: bench, sets: [set({ weight: 60, reps: 5 })] }, { exerciseId: bench, sets: [set({ weight: 60, reps: 5 })] });
+    await saveWorkout(w);
+    home();
+    expect(await within(await today()).findByText('進捗 3 / 10')).toBeInTheDocument();
+  });
+
+  test('回復週はセット数を半分で表示', async () => {
+    await saveProgram({ startDate: '2026-10-07', tests: { start: null, end: null } });
+    home();
+    expect(await within(await today()).findByText('8種目 ・ 16セット')).toBeInTheDocument();
+  });
+
   test('今日完了済みなら「記録を見直す」でカレンダーへ', async () => {
     const r = (await listRoutines()).find((x) => x.name === '脚・瞬発')!;
     await saveWorkout(wk(new Date(2026, 9, 28, 7), [entry(bench, [set({ weight: 50, reps: 5 })])], { routineId: r.id, name: r.name }));

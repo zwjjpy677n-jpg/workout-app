@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/Button';
 import { startRoutineWorkout } from '../../db/repository';
 import { toDateKey } from '../../lib/dates';
-import type { programStatus } from '../../lib/program';
+import { deloadSets, type programStatus } from '../../lib/program';
 import { entryComplete } from '../../lib/routineEntries';
 import { WEEKDAY_LABEL, type Routine, type Workout } from '../../lib/types';
 import s from './home.module.css';
@@ -41,8 +41,9 @@ export function TodayCard({ routines, workouts, active, status, now }: Props) {
   const doneToday = workouts.find((w) => w.endedAt !== null && w.routineId === today.id && toDateKey(w.startedAt) === todayKey);
   const ref = mine ?? doneToday;
   const doneCount = ref ? ref.entries.filter(entryComplete).length : 0;
-  const total = today.items.length;
-  const sets = today.items.reduce((a, i) => a + i.sets, 0);
+  // 記録中・記録済みなら実際の種目数（追加した種目も含む）で数える
+  const total = ref ? ref.entries.length : today.items.length;
+  const sets = today.items.reduce((a, i) => a + deloadSets(i.sets, status.deload), 0);
   const otherActive = !!active && !mine;
 
   return (
@@ -52,7 +53,7 @@ export function TodayCard({ routines, workouts, active, status, now }: Props) {
         <span className={s.todaySub}>進捗 {doneCount} / {total}</span>
       </div>
       <div className={s.todayName}>{today.name}</div>
-      <div className={s.todaySub}>{total}種目 ・ {sets}セット</div>
+      <div className={s.todaySub}>{today.items.length}種目 ・ {sets}セット</div>
       <div className={s.pbar}><i style={{ width: `${(100 * doneCount) / Math.max(1, total)}%` }} /></div>
       {!otherActive &&
         (mine ? (
