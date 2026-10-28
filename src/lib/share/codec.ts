@@ -51,10 +51,14 @@ export async function encodeShare(kind: ShareKind, data: unknown): Promise<strin
   return `${kind}${VERSION}${toBase64Url(packed)}`;
 }
 
-/** 貼り付けた文全体を受け取る。d= があればその後ろを、無ければ空白を除いた全体を中身とみなす */
-export async function decodeShare(text: string): Promise<{ kind: ShareKind; data: unknown }> {
+/** 貼り付けた文から中身を取り出す。d= があればその後ろを、無ければ空白を除いた全体を中身とみなす */
+export function shareData(text: string): string {
   const m = /[?&]d=([A-Za-z0-9_-]+)/.exec(text);
-  const body = m ? m[1] : text.trim();
+  return m ? m[1] : text.trim();
+}
+
+export async function decodeShare(text: string): Promise<{ kind: ShareKind; data: unknown }> {
+  const body = shareData(text);
   if (!/^[a-z]\d[A-Za-z0-9_-]+$/.test(body)) throw new ShareError('invalid');
   const kind = body[0] as ShareKind;
   if (!KINDS.includes(kind)) throw new ShareError('invalid');
