@@ -10,6 +10,8 @@ export interface BackupData {
   bodyweights: BodyweightLog[];
   settings: Settings;
   program: Program | null;
+  /** 友達に見せる自分の ID と名前。無いバックアップもある */
+  profile?: { id: string; name: string };
 }
 
 // --- v1 → v2 変換（Dexie の upgrade でも使う） ---
@@ -94,6 +96,9 @@ function checked(d: BackupData): BackupData {
   return d;
 }
 
+const isProfile = (v: unknown) =>
+  v === undefined || (isObj(v) && isStr(v.id) && /^[A-Za-z0-9]{12}$/.test(v.id) && isStr(v.name) && v.name.length >= 1 && v.name.length <= 20);
+
 export function parseBackup(text: string): BackupData {
   let d: unknown;
   try {
@@ -101,7 +106,7 @@ export function parseBackup(text: string): BackupData {
   } catch {
     d = null;
   }
-  if (!isObj(d) || d.app !== 'ironlog' || !isNum(d.exportedAt) || !arrOf(d.bodyweights, isBodyweight) || !isSettings(d.settings)) {
+  if (!isObj(d) || d.app !== 'ironlog' || !isNum(d.exportedAt) || !arrOf(d.bodyweights, isBodyweight) || !isSettings(d.settings) || !isProfile(d.profile)) {
     throw new Error(FAIL);
   }
   if (d.version === 1) {

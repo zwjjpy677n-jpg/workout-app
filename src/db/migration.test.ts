@@ -30,3 +30,25 @@ test('version 1 のデータを version 2 に移行する', async () => {
   expect(w).toMatchObject({ note: 'メモ', condition: { sleep: 4, fatigue: null, motivation: 5 } });
   expect(w.entries).toEqual([{ exerciseId: 'sq', sets }]);
 });
+
+test('version 2 のデータを version 3 に開いても記録・種目はそのまま', async () => {
+  db.close();
+  await Dexie.delete('ironlog');
+  const old = new Dexie('ironlog');
+  const stores = { exercises: 'id, bodyPart, archived', routines: 'id', workouts: 'id, startedAt, endedAt', bodyweights: 'date', settings: 'key' };
+  old.version(1).stores(stores);
+  old.version(2).stores(stores);
+  await old.open();
+  const e = { id: 'sq', name: 'スクワット', bodyPart: 'legs', type: 'weight', restSec: 180, archived: false, createdAt: 0, barKg: 20 };
+  const w = { id: 'w1', name: 'W', startedAt: 1, endedAt: 2, note: 'メモ', condition: { sleep: 4, fatigue: null, motivation: 5 }, routineId: null,
+    entries: [{ exerciseId: 'sq', sets: [{ weight: 100, reps: 5, durationSec: null, rpe: 8, warmup: false, note: '', done: true }] }] };
+  await old.table('exercises').add(e);
+  await old.table('workouts').add(w);
+  old.close();
+
+  await db.open();
+  expect(db.verno).toBe(3);
+  expect(await listExercises()).toEqual([e]);
+  expect(await listWorkouts()).toEqual([w]);
+  expect(await db.table('friends').count()).toBe(0);
+});
