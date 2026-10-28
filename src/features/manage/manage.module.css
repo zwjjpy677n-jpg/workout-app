@@ -26,3 +26,11 @@
 .error { color: #ff6b66; font-size: 13px; margin-top: 12px; }
 .ok { color: var(--green); font-size: 13px; margin-top: 12px; }
 .empty { color: var(--muted); font-size: 13px; text-align: center; padding: 32px 0; }
+.itemBox { background: var(--bg); border-radius: 10px; padding: 6px 10px 10px; display: flex; flex-direction: column; gap: 6px; }
+.itemBox .order { border-bottom: 0; }
+.itemGrid { display: grid; grid-template-columns: 1fr 1.3fr 1fr auto; gap: 6px; align-items: end; }
+.itemGrid label { display: flex; flex-direction: column; gap: 2px; font-size: 10px; color: var(--muted); min-width: 0; }
+.itemGrid input { min-height: 40px; font-size: 14px; }
+.checkInline { flex-direction: row !important; align-items: center; gap: 4px !important; font-size: 12px !important; color: var(--text) !important; min-height: 40px; }
+.checkInline input { width: 18px; height: 18px; min-height: 0 !important; accent-color: var(--red); }
+.big { font-family: var(--font-num); font-weight: 700; font-size: 40px; line-height: 1; }

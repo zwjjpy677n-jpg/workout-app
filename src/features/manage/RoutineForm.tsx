@@ -1,21 +1,25 @@
 import { useState } from 'react';
 import { Button } from '../../components/Button';
+import { NumberInput } from '../../components/NumberInput';
 import { Sheet } from '../../components/Sheet';
 import { deleteRoutine, saveRoutine } from '../../db/repository';
 import { useExerciseMap, useExercises } from '../../hooks/useData';
-import { BODY_PART_LABEL, BODY_PARTS, defaultItem, type Routine } from '../../lib/types';
+import { BODY_PART_LABEL, BODY_PARTS, defaultItem, WEEKDAY_LABEL, type Routine, type RoutineItem } from '../../lib/types';
 import s from './manage.module.css';
 
 export function RoutineForm({ routine, onClose }: { routine: Routine | null; onClose(): void }) {
   const exercises = useExercises();
   const map = useExerciseMap();
   const [name, setName] = useState(routine?.name ?? '');
-  const [ids, setIds] = useState<string[]>(routine?.items.map((i) => i.exerciseId) ?? []);
+  const [weekday, setWeekday] = useState<number | null>(routine?.weekday ?? null);
+  const [items, setItems] = useState<RoutineItem[]>(routine?.items ?? []);
   const [error, setError] = useState('');
 
-  const toggle = (id: string) => setIds((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
+  const has = (id: string) => items.some((i) => i.exerciseId === id);
+  const toggle = (id: string) => setItems((cur) => (has(id) ? cur.filter((i) => i.exerciseId !== id) : [...cur, defaultItem(id)]));
+  const patch = (idx: number, p: Partial<RoutineItem>) => setItems((cur) => cur.map((it, i) => (i === idx ? { ...it, ...p } : it)));
   const move = (i: number, d: number) =>
-    setIds((cur) => {
+    setItems((cur) => {
       const next = [...cur];
       const j = i + d;
       if (j < 0 || j >= next.length) return cur;
@@ -25,9 +29,9 @@ export function RoutineForm({ routine, onClose }: { routine: Routine | null; onC
 
   async function save() {
     if (!name.trim()) return setError('名前を入力してください');
-    if (ids.length === 0) return setError('種目を1つ以上選んでください');
-    const prev = new Map(routine?.items.map((i) => [i.exerciseId, i]));
-    await saveRoutine({ ...routine, name: name.trim(), weekday: routine?.weekday ?? null, items: ids.map((id) => prev.get(id) ?? defaultItem(id)) });
+    if (items.length === 0) return setError('種目を1つ以上選んでください');
+    if (items.some((i) => !i.reps.trim())) return setError('回数を入力してください');
+    await saveRoutine({ ...routine, name: name.trim(), weekday, items });
     onClose();
   }
 
@@ -44,27 +48,46 @@ export function RoutineForm({ routine, onClose }: { routine: Routine | null; onC
         <span>ルーティン名</span>
         <input className={s.text} aria-label="ルーティン名" value={name} onChange={(e) => setName(e.target.value)} />
       </label>
-      {ids.length > 0 && (
+      <label className={s.field}>
+        <span>曜日</span>
+        <select className={s.select} aria-label="曜日" value={weekday ?? ''} onChange={(e) => setWeekday(e.target.value === '' ? null : Number(e.target.value))}>
+          <option value="">なし</option>
+          {[1, 2, 3, 4, 5, 6, 0].map((d) => <option key={d} value={d}>{WEEKDAY_LABEL[d]}曜</option>)}
+        </select>
+      </label>
+      {items.length > 0 && (
         <div className={s.field}>
-          <span>順番</span>
-          {ids.map((id, i) => (
-            <div key={id} className={s.order}>
-              <span>{map?.get(id)?.name ?? '—'}</span>
-              <button type="button" aria-label="上へ" onClick={() => move(i, -1)}>↑</button>
-              <button type="button" aria-label="下へ" onClick={() => move(i, 1)}>↓</button>
-            </div>
-          ))}
+          <span>種目と目標</span>
+          {items.map((it, i) => {
+            const n = map?.get(it.exerciseId)?.name ?? '—';
+            return (
+              <div key={it.exerciseId} className={s.itemBox}>
+                <div className={s.order}>
+                  <span>{n}</span>
+                  <button type="button" aria-label="上へ" onClick={() => move(i, -1)}>↑</button>
+                  <button type="button" aria-label="下へ" onClick={() => move(i, 1)}>↓</button>
+                </div>
+                <div className={s.itemGrid}>
+                  <label><span>セット</span><NumberInput aria-label={`${n} セット数`} value={it.sets} onChange={(v) => v != null && patch(i, { sets: v })} min={1} max={20} inputMode="numeric" /></label>
+                  <label><span>回数</span><input className={s.text} aria-label={`${n} 回数`} value={it.reps} onChange={(e) => patch(i, { reps: e.target.value })} /></label>
+                  <label><span>上げ幅kg</span><NumberInput aria-label={`${n} 上げ幅`} value={it.inc} onChange={(v) => v != null && patch(i, { inc: v })} min={0.5} max={20} inputMode="decimal" /></label>
+                  <label className={s.checkInline}><input type="checkbox" aria-label={`${n} メイン`} checked={it.main} onChange={(e) => patch(i, { main: e.target.checked })} />メイン</label>
+                </div>
+                <input className={s.text} aria-label={`${n} メモ`} placeholder="メモ" value={it.note} onChange={(e) => patch(i, { note: e.target.value })} />
+              </div>
+            );
+          })}
         </div>
       )}
       {BODY_PARTS.map((bp) => {
-        const items = exercises?.filter((e) => e.bodyPart === bp) ?? [];
-        if (!items.length) return null;
+        const list = exercises?.filter((e) => e.bodyPart === bp) ?? [];
+        if (!list.length) return null;
         return (
           <div key={bp} className={s.group}>
             <h3>{BODY_PART_LABEL[bp]}</h3>
-            {items.map((e) => (
+            {list.map((e) => (
               <label key={e.id} className={s.check}>
-                <input type="checkbox" checked={ids.includes(e.id)} onChange={() => toggle(e.id)} />
+                <input type="checkbox" checked={has(e.id)} onChange={() => toggle(e.id)} />
                 {e.name}
               </label>
             ))}

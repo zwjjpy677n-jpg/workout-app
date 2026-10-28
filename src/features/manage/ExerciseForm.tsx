@@ -13,6 +13,7 @@ export function ExerciseForm({ exercise, onClose }: { exercise: Exercise | null;
   const [bodyPart, setBodyPart] = useState<BodyPart>(exercise?.bodyPart ?? 'chest');
   const [type, setType] = useState<ExerciseType>(exercise?.type ?? 'weight');
   const [restSec, setRestSec] = useState<number | null>(exercise?.restSec ?? 90);
+  const [barKg, setBarKg] = useState<number | null>(exercise?.barKg ?? null);
   const [used, setUsed] = useState(false);
   const [error, setError] = useState('');
 
@@ -22,7 +23,7 @@ export function ExerciseForm({ exercise, onClose }: { exercise: Exercise | null;
 
   async function save() {
     if (!name.trim()) return setError('名前を入力してください');
-    const data = { name: name.trim(), bodyPart, type, restSec: restSec ?? 90, barKg: exercise?.barKg ?? null };
+    const data = { name: name.trim(), bodyPart, type, restSec: restSec ?? 90, barKg };
     try {
       if (exercise) await updateExercise(exercise.id, data);
       else await addExercise(data);
@@ -62,6 +63,12 @@ export function ExerciseForm({ exercise, onClose }: { exercise: Exercise | null;
         <span>レスト（秒）</span>
         <NumberInput value={restSec} onChange={setRestSec} min={0} max={3600} inputMode="numeric" aria-label="レスト（秒）" />
       </label>
+      {type === 'weight' && (
+        <label className={s.field}>
+          <span>バー重量（kg・空欄なら設定値。入れるとおすすめにプレート図が出ます）</span>
+          <NumberInput value={barKg} onChange={setBarKg} min={0} max={100} inputMode="decimal" aria-label="バー重量" />
+        </label>
+      )}
       {error && <p className={s.error}>{error}</p>}
       <div className={s.actions}>
         {exercise && <Button variant="danger" onClick={remove}>削除</Button>}
