@@ -342,3 +342,31 @@ test('終了するとレストタイマーも止まり、次のワークアウ�
   await screen.findByTestId('location');
   expect(localStorage.getItem('ironlog:rest')).toBeNull();
 });
+
+describe('自分で開始するレストタイマー', () => {
+  test('開いている種目のレスト秒数からカウントダウンを始める', async () => {
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    await rows();
+    expect(screen.queryByText('REST')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'レストタイマーを開始' }));
+    expect(await screen.findByText('REST')).toBeInTheDocument();
+    expect(screen.getByText('03:00')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '-15s' }));
+    expect(screen.getByText('02:45')).toBeInTheDocument();
+  });
+
+  test('種目を閉じていれば 1:30 から', async () => {
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    await rows();
+    await userEvent.click(screen.getByRole('button', { name: /ベンチプレス/, expanded: true }));
+    await userEvent.click(screen.getByRole('button', { name: 'レストタイマーを開始' }));
+    expect(await screen.findByText('01:30')).toBeInTheDocument();
+  });
+
+  test('過去の記録の編集中はボタンを出さない', async () => {
+    const past = (await listWorkouts()).find((w) => w.endedAt !== null)!;
+    renderRoute(`/workout/${past.id}`, '/workout/:id', <WorkoutPage />);
+    await rows();
+    expect(screen.queryByRole('button', { name: 'レストタイマーを開始' })).toBeNull();
+  });
+});

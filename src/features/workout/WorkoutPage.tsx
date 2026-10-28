@@ -73,6 +73,12 @@ export function WorkoutPage() {
   const open = openIdx === undefined ? (w.entries.length ? firstOpen : null) : openIdx;
   const deload = programStatus(program, toDateKey(w.startedAt)).deload;
 
+  /** 開いている種目のレスト秒数から、自分でレストのカウントダウンを始める（種目を閉じていれば 90 秒） */
+  function startManualRest() {
+    const e = open != null ? w!.entries[open] : undefined;
+    timer.start((e && exMap!.get(e.exerciseId)?.restSec) || 90);
+  }
+
   /** 入力のあるセットを完了にして、次の未完了の種目を開く（完了済みなら完了を取り消す） */
   function completeAndNext(i: number) {
     const e = w!.entries[i];
@@ -126,6 +132,11 @@ export function WorkoutPage() {
           {editMode ? <div className={s.timer}>EDIT</div> : <Elapsed startedAt={w.startedAt} />}
         </div>
         <div className={s.headBtns}>
+          {!editMode && (
+            <button type="button" aria-label="レストタイマーを開始" className={`${s.icon} ${timer.running ? s.has : ''}`} onClick={startManualRest}>
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2.5 2.5M9.5 2h5M12 2v3" /></svg>
+            </button>
+          )}
           <button type="button" aria-label="コンディション" className={`${s.icon} ${hasCondition ? s.has : ''}`} onClick={() => setSheet('condition')}>
             <svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4" /></svg>
           </button>
