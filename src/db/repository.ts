@@ -177,6 +177,13 @@ export async function saveSettings(s: Settings): Promise<void> {
   await db.settings.put({ key: 'app', barKg: s.barKg, plates: s.plates });
 }
 
+/** 最新の設定を読んで書き換える（素早い連続操作でも変更を取りこぼさない） */
+export async function updateSettings(fn: (s: Settings) => Settings): Promise<void> {
+  await db.transaction('rw', db.settings, async () => {
+    await saveSettings(fn(await getSettings()));
+  });
+}
+
 // --- プログラム ---
 export async function getProgram(): Promise<Program | null> {
   const row = await db.settings.get('program');

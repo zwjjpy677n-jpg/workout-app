@@ -1,5 +1,5 @@
 import { NumberInput } from '../../components/NumberInput';
-import { saveSettings } from '../../db/repository';
+import { updateSettings } from '../../db/repository';
 import { DEFAULT_SETTINGS } from '../../db/seed';
 import { useSettings } from '../../hooks/useData';
 import { formatKg } from '../../lib/calc';
@@ -10,10 +10,11 @@ export function SettingsForm() {
   if (!settings) return null;
   const all = [...new Set([...DEFAULT_SETTINGS.plates, ...settings.plates])].sort((a, b) => b - a);
 
-  const togglePlate = (p: number) => {
-    const plates = settings.plates.includes(p) ? settings.plates.filter((x) => x !== p) : [...settings.plates, p].sort((a, b) => b - a);
-    saveSettings({ ...settings, plates });
-  };
+  const togglePlate = (p: number) =>
+    updateSettings((cur) => ({
+      ...cur,
+      plates: cur.plates.includes(p) ? cur.plates.filter((x) => x !== p) : [...cur.plates, p].sort((a, b) => b - a),
+    }));
 
   return (
     <>
@@ -21,7 +22,7 @@ export function SettingsForm() {
         <span>バー重量（kg）</span>
         <NumberInput
           value={settings.barKg}
-          onChange={(v) => v != null && saveSettings({ ...settings, barKg: v })}
+          onChange={(v) => v != null && updateSettings((cur) => ({ ...cur, barKg: v }))}
           min={0}
           max={100}
           inputMode="decimal"

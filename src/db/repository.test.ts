@@ -4,7 +4,7 @@ import { resetDb } from './db';
 import {
   addExercise, deleteBodyweight, exportAll, finishWorkout, getActiveWorkout, getSettings, importAll, isExerciseUsed,
   listBodyweights, listExercises, listRoutines, listWorkouts, removeExercise, saveRoutine, saveSettings, saveWorkout,
-  setBodyweight, startWorkout, updateExercise, deleteRoutine, deleteWorkout, saveEditedWorkout, getProgram, saveProgram, startRoutineWorkout,
+  setBodyweight, startWorkout, updateExercise, deleteRoutine, deleteWorkout, saveEditedWorkout, getProgram, saveProgram, startRoutineWorkout, updateSettings,
 } from './repository';
 import { ensureSeeded, SEED_EXERCISES } from './seed';
 
@@ -205,4 +205,12 @@ test('シード直後に追加した種目は一覧の最後に並ぶ（作成�
   } finally {
     vi.useRealTimers();
   }
+});
+
+test('updateSettings は同時に呼んでも両方の変更が残る', async () => {
+  await Promise.all([
+    updateSettings((s) => ({ ...s, plates: s.plates.filter((p) => p !== 1.25) })),
+    updateSettings((s) => ({ ...s, plates: s.plates.filter((p) => p !== 2.5) })),
+  ]);
+  expect((await getSettings()).plates).toEqual([25, 20, 15, 10, 5]);
 });
