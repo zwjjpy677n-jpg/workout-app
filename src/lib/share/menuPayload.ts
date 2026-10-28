@@ -21,7 +21,7 @@ export interface MenuLog {
   result: 'replaced' | 'added' | null;
 }
 
-export const MENU = { name: 40, items: 50, restMin: 10, restMax: 600, setsMax: 20, reps: 20, incMax: 20, note: 100 };
+export const MENU = { name: 40, items: 50, restMin: 10, restMax: 600, setsMax: 20, reps: 20, incMin: 0.5, incMax: 20, note: 100 };
 
 export const menuTitle = (name: string, weekday: number | null) => (weekday == null || weekday < 0 ? name : `${name}（${WEEKDAY_LABEL[weekday]}）`);
 
@@ -32,7 +32,7 @@ export function parseMenuPayload(data: unknown): MenuPayload {
     const [name, part, type, rest, sets, reps, main, inc, note] = tup(e, 9);
     return [
       str(name, 1, MENU.name), int(part, 0, BODY_PARTS.length - 1), int(type, 0, TYPES.length - 1), int(rest, MENU.restMin, MENU.restMax),
-      int(sets, 1, MENU.setsMax), str(reps, 0, MENU.reps), int(main, 0, 1) as 0 | 1, num(inc, 0, MENU.incMax), str(note, 0, MENU.note),
+      int(sets, 1, MENU.setsMax), str(reps, 0, MENU.reps), int(main, 0, 1) as 0 | 1, num(inc, MENU.incMin, MENU.incMax), str(note, 0, MENU.note),
     ];
   });
   if (items.length === 0) fail();

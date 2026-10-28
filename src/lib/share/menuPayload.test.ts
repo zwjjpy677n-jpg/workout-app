@@ -8,7 +8,7 @@ const draft: MenuDraft = {
   weekday: 1,
   items: [
     { name: 'ベンチプレス', bodyPart: 'chest', type: 'weight', restSec: 75, sets: 3, reps: '5', main: true, inc: 2.5, note: '止める' },
-    { name: 'ディップス', bodyPart: 'chest', type: 'bodyweight', restSec: 90, sets: 3, reps: '10', main: false, inc: 0, note: '' },
+    { name: 'ディップス', bodyPart: 'chest', type: 'bodyweight', restSec: 90, sets: 3, reps: '10', main: false, inc: 2.5, note: '' },
   ],
 };
 
@@ -21,7 +21,7 @@ test('往復: 名前・曜日・種目（レスト・目標・メイン・上げ
   expect(p.mid).toMatch(/^[A-Za-z0-9]{12}$/);
   expect(p.items).toEqual([
     ['ベンチプレス', 0, 0, 75, 3, '5', 1, 2.5, '止める'],
-    ['ディップス', 0, 1, 90, 3, '10', 0, 0, ''],
+    ['ディップス', 0, 1, 90, 3, '10', 0, 2.5, ''],
   ]);
   const none = await buildMenuLink(me, 'friend000001', { ...draft, weekday: null }, NOW);
   expect(none.payload.weekday).toBe(-1);
@@ -33,6 +33,7 @@ test('範囲外は invalid', async () => {
   const bad: ((p: MenuPayload) => unknown)[] = [
     (p) => { p.items[0][3] = 5; return p; },
     (p) => { p.items[0][4] = 21; return p; },
+    (p) => { p.items[0][7] = 0; return p; },
     (p) => { p.items[0][0] = 'あ'.repeat(41); return p; },
     (p) => ({ ...p, items: [] }),
     (p) => ({ ...p, name: '' }),
