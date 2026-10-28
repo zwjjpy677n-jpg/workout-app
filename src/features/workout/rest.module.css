@@ -5,3 +5,7 @@
 .bar i { display: block; height: 100%; background: var(--red); border-radius: 2px; transition: width 1s linear; }
 .btns { display: flex; gap: 6px; }
 .btns button { min-height: 40px; padding: 0 10px; border-radius: 99px; background: var(--bg); font-size: 12px; }
+.finished { background: var(--red); border-color: var(--red); animation: flash 1s ease-in-out 3; }
+.finished .time { font-size: 18px; color: #fff; }
+.finished .btns button { background: rgba(0, 0, 0, .25); color: #fff; }
+@keyframes flash { 50% { filter: brightness(1.5); } }
