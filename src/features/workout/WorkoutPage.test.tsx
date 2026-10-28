@@ -426,6 +426,23 @@ describe('重量の「自重」', () => {
     expect(within(r1).getByLabelText('重量')).toHaveValue('');
   });
 
+  test('自重種目（懸垂など）にも自重ボタンがあり、前回の自重も「自重」と表示', async () => {
+    await resetDb();
+    await ensureSeeded();
+    const pullId = (await listExercises()).find((e) => e.name === '懸垂')!.id;
+    await saveWorkout(wk(new Date(2026, 9, 23, 18), [entry(pullId, [set({ weight: 0, reps: 10 })])]));
+    const active = wk(new Date(2026, 9, 27, 18), [entry(pullId, [{ ...set(), done: false }])], { endedAt: null });
+    await saveWorkout(active);
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    const [r1] = await rows('懸垂');
+    expect(within(r1).getByText('前回 自重×10')).toBeInTheDocument();
+    await userEvent.click(within(r1).getByRole('button', { name: '自重' }));
+    expect(within(r1).queryByLabelText('重量')).not.toBeInTheDocument();
+    await userEvent.type(within(r1).getByLabelText('回数'), '9');
+    await userEvent.click(within(r1).getByRole('button', { name: '完了' }));
+    await waitFor(async () => expect((await getWorkout(active.id))!.entries[0].sets[0]).toMatchObject({ weight: 0, reps: 9, done: true }));
+  });
+
   test('前回が自重なら前回列に「自重×回数」', async () => {
     await saveWorkout(wk(new Date(2026, 9, 25, 18), [entry(benchId, [set({ weight: 0, reps: 15 })])]));
     renderRoute('/workout', '/workout', <WorkoutPage />);
