@@ -42,3 +42,9 @@ test('範囲外は invalid', async () => {
   ];
   for (const f of bad) expect(() => parseMenuPayload(f(structuredClone(ok))), String(f)).toThrow(expect.objectContaining({ code: 'invalid' }));
 });
+
+test('同じ種目（前後の空白違いも）や空の目標は invalid', async () => {
+  const ok = (await buildMenuLink(me, 'friend000001', draft, NOW)).payload;
+  expect(() => parseMenuPayload({ ...ok, items: [ok.items[0], [' ベンチプレス ', ...ok.items[0].slice(1)]] })).toThrow(expect.objectContaining({ code: 'invalid' }));
+  expect(() => parseMenuPayload({ ...ok, items: [[...ok.items[0].slice(0, 5), ' ', ...ok.items[0].slice(6)]] })).toThrow(expect.objectContaining({ code: 'invalid' }));
+});

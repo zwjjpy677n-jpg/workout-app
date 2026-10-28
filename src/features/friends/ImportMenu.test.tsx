@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { resetDb } from '../../db/db';
 import { saveProfileName } from '../../db/friends';
@@ -68,4 +68,13 @@ test('受け取り済み・宛先違いは保存できない', async () => {
   await open(payload({ mid: 'menu00000009', to: 'someoneelse1' }));
   expect(await screen.findByText('あなた宛てではないメニューです')).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '追加する' })).toBeNull();
+});
+
+test('追加するを素早く2回押しても、メニューは1つ', async () => {
+  await open(payload());
+  const add = await screen.findByRole('button', { name: '追加する' });
+  fireEvent.click(add);
+  fireEvent.click(add);
+  await screen.findByTestId('location');
+  expect((await listRoutines()).filter((r) => r.name === 'PUSH')).toHaveLength(1);
 });

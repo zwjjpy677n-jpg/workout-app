@@ -36,6 +36,9 @@ export function parseMenuPayload(data: unknown): MenuPayload {
     ];
   });
   if (items.length === 0) fail();
+  // 同じ種目が2回あると、受け取った側のルーティン編集が壊れる。目標が空だと編集で保存できない
+  const names = items.map((it) => it[0].trim());
+  if (new Set(names).size !== names.length || items.some((it) => !it[5].trim())) fail();
   return {
     id: id(d.id), n: str(d.n, 1, 40), to: id(d.to), at: int(d.at, 0, Number.MAX_SAFE_INTEGER), mid: id(d.mid),
     name: str(d.name, 1, MENU.name), weekday: int(d.weekday, -1, 6), items,

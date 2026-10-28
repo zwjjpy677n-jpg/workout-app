@@ -33,7 +33,7 @@ export function MenuEditorPage() {
   const [naming, setNaming] = useState(false);
   const [note, setNote] = useState<ShareNote>(null);
 
-  const valid = name.trim().length >= 1 && name.trim().length <= MENU.name && items.length > 0 && items.every((it) => it.inc != null);
+  const valid = name.trim().length >= 1 && name.trim().length <= MENU.name && items.length > 0 && items.every((it) => it.inc != null && it.reps.trim() !== '');
   const draft = { name: name.trim(), weekday, items: items.map((it) => ({ ...it, reps: it.reps.trim(), note: it.note.trim(), inc: it.inc ?? 0 })) };
   const link = usePreparedLink(profile && valid ? () => buildMenuLink(profile, id, draft, Date.now()) : null, [profile, valid, JSON.stringify(draft)]);
 
@@ -117,15 +117,22 @@ export function MenuEditorPage() {
       {note && <p role={note.kind} className={note.kind === 'alert' ? s.error : s.ok}>{note.text}</p>}
       <Button block variant="primary" className={s.sendFb} disabled={!valid || (!!profile && !link)} onClick={send}>送る</Button>
 
-      <PickSheet open={picking} candidates={candidates} onPick={add} onClose={() => setPicking(false)} />
+      <PickSheet open={picking} candidates={candidates} added={new Set(items.map((it) => it.name.trim()))} onPick={add} onClose={() => setPicking(false)} />
       <NameSheet open={naming} initial="" onClose={() => setNaming(false)} onShare={send} ready={!!link} />
     </div>
   );
 }
 
-type PickProps = { open: boolean; candidates: Map<string, { bodyPart: BodyPart; type: ExerciseType }>; onPick(name: string, bodyPart: BodyPart, type: ExerciseType): void; onClose(): void };
+type PickProps = {
+  open: boolean;
+  candidates: Map<string, { bodyPart: BodyPart; type: ExerciseType }>;
+  /** 追加済みの種目名（同じ種目は2回入れられない） */
+  added: Set<string>;
+  onPick(name: string, bodyPart: BodyPart, type: ExerciseType): void;
+  onClose(): void;
+};
 
-function PickSheet({ open, candidates, onPick, onClose }: PickProps) {
+function PickSheet({ open, candidates, added, onPick, onClose }: PickProps) {
   const [name, setName] = useState('');
   const [part, setPart] = useState<BodyPart>('chest');
   const [type, setType] = useState<ExerciseType>('weight');
@@ -134,7 +141,7 @@ function PickSheet({ open, candidates, onPick, onClose }: PickProps) {
     <Sheet open={open} title="種目を追加" onClose={onClose}>
       <div className={s.pickList}>
         {[...candidates].map(([nm, e]) => (
-          <button key={nm} type="button" className={s.pick} onClick={() => onPick(nm, e.bodyPart, e.type)}>{nm}</button>
+          <button key={nm} type="button" className={s.pick} disabled={added.has(nm)} onClick={() => onPick(nm, e.bodyPart, e.type)}>{nm}</button>
         ))}
       </div>
       <div className={s.newEx}>
@@ -147,7 +154,7 @@ function PickSheet({ open, candidates, onPick, onClose }: PickProps) {
         </select>
         <Button
           block
-          disabled={!n}
+          disabled={!n || added.has(n)}
           onClick={() => {
             onPick(n, part, type);
             setName('');

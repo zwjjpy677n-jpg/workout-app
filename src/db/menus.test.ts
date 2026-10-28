@@ -65,3 +65,9 @@ test('送った履歴は友達ごとに新しい順', async () => {
 test('宛先違いは mine: false', async () => {
   expect((await previewMenu(payload({ to: 'someoneelse1' }))).mine).toBe(false);
 });
+
+test('同じメニューを続けて2回保存しても（ダブルタップ）、メニューは1つ', async () => {
+  await Promise.all([importMenu(payload(), 'add', 1), importMenu(payload(), 'add', 2)]);
+  expect((await listRoutines()).filter((r) => r.name === 'PUSH')).toHaveLength(1);
+  expect(await listMenuLog('received')).toHaveLength(1);
+});

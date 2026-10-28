@@ -109,3 +109,33 @@ test('友達のメニュータブに「メニューを組んで送る」と送�
   await userEvent.click(screen.getByRole('button', { name: 'メニューを組んで送る' }));
   expect(await screen.findByTestId('location')).toHaveTextContent('/friends/friend000001/menu/new');
 });
+
+test('追加済みの種目は一覧で選べず、目標が空だと送れない', async () => {
+  open();
+  await userEvent.type(await screen.findByRole('textbox', { name: 'メニュー名' }), 'PUSH');
+  await addFromList('ベンチプレス');
+  await userEvent.click(screen.getByRole('button', { name: '＋ 種目を追加' }));
+  expect(within(screen.getByRole('dialog', { name: '種目を追加' })).getByRole('button', { name: 'ベンチプレス' })).toBeDisabled();
+  await userEvent.click(within(screen.getByRole('dialog', { name: '種目を追加' })).getByRole('button', { name: '閉じる' }));
+  const send = screen.getByRole('button', { name: '送る' });
+  await waitFor(() => expect(send).toBeEnabled());
+  await userEvent.clear(within(screen.getByRole('group', { name: 'ベンチプレス' })).getByRole('textbox', { name: '目標' }));
+  expect(send).toBeDisabled();
+});
+
+test('共有画面が開いている間にもう一度押しても、二重に送らない', async () => {
+  share.mockReturnValue(new Promise(() => {}));
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+  open();
+  await userEvent.type(await screen.findByRole('textbox', { name: 'メニュー名' }), 'PUSH');
+  await addFromList('ベンチプレス');
+  const send = screen.getByRole('button', { name: '送る' });
+  await waitFor(() => expect(send).toBeEnabled());
+  fireEvent.click(send);
+  fireEvent.click(send);
+  await new Promise((r) => setTimeout(r, 50));
+  expect(share).toHaveBeenCalledTimes(1);
+  expect(writeText).not.toHaveBeenCalled();
+  expect(await listMenuLog('sent')).toEqual([]);
+});

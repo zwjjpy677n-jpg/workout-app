@@ -34,6 +34,11 @@ export async function previewMenu(p: MenuPayload) {
 /** 無い種目を作り、メニューを置き換え（ID はそのまま）または追加して、受け取った履歴を残す */
 export async function importMenu(p: MenuPayload, mode: 'replace' | 'add', now: number): Promise<Routine> {
   return db.transaction('rw', db.exercises, db.routines, db.menuLog, async () => {
+    // 素早く2回押されても、2つ目は何もしない
+    if (await db.menuLog.get(logId('received', p.mid))) {
+      const existing = (await db.routines.toArray()).find((r) => norm(r.name) === norm(p.name));
+      if (existing) return existing;
+    }
     const byName = await exerciseByName();
     const items: RoutineItem[] = [];
     for (const [name, part, type, restSec, sets, reps, main, inc, note] of p.items) {

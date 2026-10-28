@@ -44,14 +44,29 @@ export function useShareMine() {
   };
 }
 
-/** 共有画面で送る（無ければコピー）。タップの onClick の中で await より前に呼ぶこと */
+let sending = false;
+
+/**
+ * 共有画面で送る（無ければコピー）。タップの onClick の中で await より前に呼ぶこと。
+ * 共有画面が開いている間の2回目のタップは何もしない（送っていないのに送信済みにしないため）
+ */
 export async function sendText(text: string, setNote: (n: ShareNote) => void): Promise<'shared' | 'copied' | 'cancelled' | 'failed'> {
+  if (sending) return 'cancelled';
+  sending = true;
+  try {
+    return await send(text, setNote);
+  } finally {
+    sending = false;
+  }
+}
+
+async function send(text: string, setNote: (n: ShareNote) => void): Promise<'shared' | 'copied' | 'cancelled' | 'failed'> {
   if (navigator.share) {
     try {
       await navigator.share({ text });
       return 'shared';
     } catch (e) {
-      if (e instanceof DOMException && e.name === 'AbortError') return 'cancelled';
+      if (e instanceof DOMException && (e.name === 'AbortError' || e.name === 'InvalidStateError')) return 'cancelled';
     }
   }
   try {

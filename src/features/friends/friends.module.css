@@ -60,3 +60,4 @@
 .newEx { display: flex; flex-direction: column; gap: 0; border-top: 1px solid var(--line); padding-top: 14px; }
 .sentList { display: flex; flex-direction: column; gap: 6px; margin-top: 18px; }
 .menuPreview { list-style: none; padding: 0; margin: 10px 0; }
+.pick:disabled { opacity: .35; }

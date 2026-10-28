@@ -101,3 +101,16 @@ test('共有が無い端末ではコピーして送信済み', async () => {
   expect(await screen.findByText('コピーしました。LINE に貼り付けて送ってください')).toBeInTheDocument();
   expect(await screen.findByRole('button', { name: 'あなた: いい日（送信済み）' })).toBeInTheDocument();
 });
+
+test('共有画面が開いている間にもう一度押しても、送信済みにならない', async () => {
+  share.mockReturnValue(new Promise(() => {}));
+  open();
+  await write('この日にコメント', 'いい日');
+  const b = await sendButton(1);
+  fireEvent.click(b);
+  fireEvent.click(b);
+  await new Promise((r) => setTimeout(r, 50));
+  expect(share).toHaveBeenCalledTimes(1);
+  expect(writeText).not.toHaveBeenCalled();
+  expect((await listFeedbackOut('friend000001'))[0].sentAt).toBeNull();
+});

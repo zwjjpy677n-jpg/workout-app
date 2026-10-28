@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
@@ -55,13 +55,18 @@ export function ImportPage() {
     };
   }, [d]);
 
+  const busy = useRef(false);
   const save = async (run: () => Promise<unknown>, to: string) => {
+    if (busy.current) return;
+    busy.current = true;
     setSaveFailed(false);
     try {
       await run();
       navigate(to, { replace: true });
     } catch {
       setSaveFailed(true);
+    } finally {
+      busy.current = false;
     }
   };
   const failed = saveFailed && <p role="alert" className={s.error}>保存できませんでした。もう一度お試しください</p>;
