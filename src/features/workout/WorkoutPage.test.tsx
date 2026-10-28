@@ -1,9 +1,10 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { resetDb } from '../../db/db';
-import { getActiveWorkout, getWorkout, listExercises, listWorkouts, saveWorkout, startWorkout } from '../../db/repository';
+import { getActiveWorkout, getWorkout, listExercises, listWorkouts, saveRoutine, saveWorkout, startRoutineWorkout, startWorkout } from '../../db/repository';
 import { ensureSeeded } from '../../db/seed';
-import { entry, set, wk } from '../../test/factories';
+import { entry, item, set, wk } from '../../test/factories';
+import { cleanup } from '@testing-library/react';
 import { renderRoute } from '../../test/render';
 import { WorkoutPage } from './WorkoutPage';
 
@@ -20,16 +21,16 @@ beforeEach(async () => {
   await saveWorkout(active);
 });
 
-const rows = async () => {
-  const card = await screen.findByRole('region', { name: 'ベンチプレス' });
-  return within(card).getAllByRole('row').slice(1);
+const rows = async (name = 'ベンチプレス') => {
+  const card = await screen.findByRole('region', { name });
+  return within(card).getAllByRole('group', { name: /セット目|ウォームアップ/ });
 };
 
 test('前回のトップセットと、行ごとの前回値・プレースホルダーを表示', async () => {
   renderRoute('/workout', '/workout', <WorkoutPage />);
   expect(await screen.findByText('前回 10/23 ・ 80kg × 8 @RPE8')).toBeInTheDocument();
   const [r1] = await rows();
-  expect(within(r1).getByText('80×8')).toBeInTheDocument();
+  expect(within(r1).getByText('前回 80×8')).toBeInTheDocument();
   expect(within(r1).getByLabelText('重量')).toHaveAttribute('placeholder', '80');
   expect(within(r1).getByLabelText('回数')).toHaveAttribute('placeholder', '8');
 });
@@ -39,12 +40,12 @@ test('セット追加で2行目の前回が出て、ウォームアップ切替�
   await rows();
   await userEvent.click(screen.getByRole('button', { name: '＋ セット追加' }));
   let [r1, r2] = await rows();
-  expect(within(r2).getByText('80×7')).toBeInTheDocument();
-  await userEvent.click(within(r1).getByRole('button', { name: '1' }));
+  expect(within(r2).getByText('前回 80×7')).toBeInTheDocument();
+  await userEvent.click(within(r1).getByRole('button', { name: '1セット目' }));
   [r1, r2] = await rows();
-  expect(within(r1).getByRole('button', { name: 'W' })).toBeInTheDocument();
-  expect(within(r2).getByRole('button', { name: '1' })).toBeInTheDocument();
-  expect(within(r2).getByText('80×8')).toBeInTheDocument();
+  expect(within(r1).getByRole('button', { name: 'Wウォームアップ' })).toBeInTheDocument();
+  expect(within(r2).getByRole('button', { name: '1セット目' })).toBeInTheDocument();
+  expect(within(r2).getByText('前回 80×8')).toBeInTheDocument();
 });
 
 test('完了チェックで空欄は前回値で埋まり保存される', async () => {
@@ -186,4 +187,96 @@ test('過去編集で全セットの完了を外して保存すると、破棄�
   await userEvent.click(screen.getByRole('button', { name: '保存' }));
   await screen.findByTestId('location');
   expect(await getWorkout(past.id)).toBeUndefined();
+});
+
+describe('ルーティンから始めた記録画面', () => {
+  let squatId = '';
+  let workoutId = '';
+  beforeEach(async () => {
+    await resetDb();
+    await ensureSeeded();
+    const ex = await listExercises();
+    benchId = ex.find((e) => e.name === 'ベンチプレス')!.id;
+    squatId = ex.find((e) => e.name === 'スクワット')!.id;
+    await saveWorkout(wk(new Date(2026, 9, 23, 18), [entry(benchId, [set({ weight: 80, reps: 5 }), set({ weight: 80, reps: 5 }), set({ weight: 80, reps: 5 })])]));
+    const r = await saveRoutine({ name: 'PUSH', weekday: null, items: [item(benchId, { sets: 3, reps: '5', main: true }), item(squatId, { sets: 3, reps: '5' })] });
+    workoutId = (await startRoutineWorkout(r.id)).id;
+  });
+
+  const header = (name: string) => screen.getByRole('button', { name: new RegExp(name), expanded: undefined });
+  const saved = async () => (await getWorkout(workoutId))!;
+
+  test('最初の種目だけ開き、別の種目を開くと前の種目は閉じる', async () => {
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    await rows();
+    expect(screen.getByRole('button', { name: /ベンチプレス/, expanded: true })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /スクワット/, expanded: false })).toBeInTheDocument();
+    await userEvent.click(header('スクワット'));
+    expect(screen.getByRole('button', { name: /スクワット/, expanded: true })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /ベンチプレス/, expanded: false })).toBeInTheDocument();
+  });
+
+  test('ヘッダーにメインと目標、開いた種目におすすめとプレート図', async () => {
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    const card = await screen.findByRole('region', { name: 'ベンチプレス' });
+    expect(within(card).getByText('メイン')).toBeInTheDocument();
+    expect(within(card).getByText('3セット×5 ・ レスト 3:00')).toBeInTheDocument();
+    expect(within(card).getByText('今回のおすすめ')).toBeInTheDocument();
+    expect(within(card).getByText('82.5')).toBeInTheDocument();
+    expect(within(card).getByText('前回はスピードを保てたので+2.5kg')).toBeInTheDocument();
+    expect(within(card).getByText('片側 25 + 5 + 1.25 ・ バー20kg')).toBeInTheDocument();
+  });
+
+  test('ステッパーで重量を上げると保存される', async () => {
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    const [r1] = await rows();
+    expect(within(r1).getByLabelText('重量')).toHaveValue('82.5');
+    await userEvent.click(within(r1).getByRole('button', { name: '重量を増やす' }));
+    expect(within(r1).getByLabelText('重量')).toHaveValue('85');
+    await waitFor(async () => expect((await saved()).entries[0].sets[0].weight).toBe(85));
+  });
+
+  test('この種目を完了して次へ', async () => {
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    await rows();
+    await userEvent.click(screen.getByRole('button', { name: 'この種目を完了して次へ' }));
+    await waitFor(async () => expect((await saved()).entries[0].sets.every((x) => x.done)).toBe(true));
+    expect(within(screen.getByRole('region', { name: 'ベンチプレス' })).getByLabelText('種目完了')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /スクワット/, expanded: true })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /ベンチプレス/, expanded: false })).toBeInTheDocument();
+  });
+
+  test('スピード低下を記録し、再読み込み後も入力・完了と一緒に残る', async () => {
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    const [r1] = await rows();
+    await userEvent.click(within(r1).getByRole('button', { name: '重量を増やす' }));
+    await userEvent.click(within(r1).getByRole('button', { name: '完了' }));
+    await userEvent.click(screen.getByRole('button', { name: '最後の回でスピードが落ちた' }));
+    await waitFor(async () => expect((await saved()).entries[0].slowed).toBe(true));
+    cleanup();
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    const [again] = await rows();
+    expect(within(again).getByLabelText('重量')).toHaveValue('85');
+    expect(within(again).getByRole('button', { name: '完了' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '最後の回でスピードが落ちた' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('前回なしの重量種目は「今回の目標」と回数表記', async () => {
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    await rows();
+    await userEvent.click(header('スクワット'));
+    const card = screen.getByRole('region', { name: 'スクワット' });
+    expect(within(card).getByText('今回の目標')).toBeInTheDocument();
+    expect(within(card).getByText('初回：フォームが崩れず、目標回数をきれいにこなせる重さで')).toBeInTheDocument();
+  });
+});
+
+test('「この種目を完了して次へ」も空欄を前回値で埋める（セットの完了ボタンと同じ）', async () => {
+  renderRoute('/workout', '/workout', <WorkoutPage />);
+  await rows();
+  await userEvent.click(screen.getByRole('button', { name: 'この種目を完了して次へ' }));
+  await waitFor(async () => {
+    const w = (await listWorkouts()).find((x) => x.id === activeId)!;
+    expect(w.entries[0].sets[0]).toMatchObject({ weight: 80, reps: 8, done: true });
+  });
 });

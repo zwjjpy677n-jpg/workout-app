@@ -1,9 +1,10 @@
-import { ex } from '../test/factories';
+import { ex, item } from '../test/factories';
+import { toDateKey } from '../lib/dates';
 import { resetDb } from './db';
 import {
   addExercise, deleteBodyweight, exportAll, finishWorkout, getActiveWorkout, getSettings, importAll, isExerciseUsed,
   listBodyweights, listExercises, listRoutines, listWorkouts, removeExercise, saveRoutine, saveSettings, saveWorkout,
-  setBodyweight, startWorkout, updateExercise, deleteRoutine, deleteWorkout, saveEditedWorkout,
+  setBodyweight, startWorkout, updateExercise, deleteRoutine, deleteWorkout, saveEditedWorkout, getProgram, saveProgram, startRoutineWorkout,
 } from './repository';
 import { ensureSeeded, SEED_EXERCISES } from './seed';
 
@@ -20,7 +21,7 @@ test('ensureSeededは冪等で14種目', async () => {
 });
 
 test('種目の追加・更新', async () => {
-  const e = await addExercise({ name: 'ブルガリアンスクワット', bodyPart: 'legs', type: 'weight', restSec: 90 });
+  const e = await addExercise({ name: 'ブルガリアンスクワット', bodyPart: 'legs', type: 'weight', restSec: 90, barKg: null });
   expect(e.archived).toBe(false);
   await updateExercise(e.id, { name: 'BSS' });
   expect((await listExercises())[0].name).toBe('BSS');
@@ -73,9 +74,10 @@ test('finishWorkout: 完了セット0の種目は除外、全0なら empty', asy
 });
 
 test('ルーティンのCRUD', async () => {
-  const r = await saveRoutine({ name: 'PUSH', exerciseIds: ['a'] });
+  const r = await saveRoutine({ name: 'PUSH', weekday: 1, items: [item('a', { sets: 5, reps: '3〜5', main: true })] });
   await saveRoutine({ ...r, name: 'PUSH2' });
   expect((await listRoutines()).map((x) => x.name)).toEqual(['PUSH2']);
+  expect((await listRoutines())[0]).toMatchObject({ weekday: 1, items: [item('a', { sets: 5, reps: '3〜5', main: true })] });
   await deleteRoutine(r.id);
   expect(await listRoutines()).toHaveLength(0);
 });
@@ -99,7 +101,7 @@ test('export→importで往復し、importAll途中失敗時は元データの�
   await ensureSeeded();
   await setBodyweight('2026-10-28', 70);
   const data = await exportAll(123);
-  expect(data).toMatchObject({ app: 'ironlog', version: 1, exportedAt: 123 });
+  expect(data).toMatchObject({ app: 'ironlog', version: 2, exportedAt: 123, program: null });
   await importAll({ ...data, exercises: [ex('only')], bodyweights: [] });
   expect(await listExercises()).toHaveLength(1);
   await importAll(data);
@@ -130,9 +132,65 @@ test('種目を削除・アーカイブするとルーティンからも外れ�
   await ensureSeeded();
   const all = await listExercises();
   const [a, b] = all;
-  await saveRoutine({ name: 'R', exerciseIds: [a.id, b.id] });
+  await saveRoutine({ name: 'R', weekday: null, items: [item(a.id), item(b.id)] });
   await startWorkout({ name: 'X', exerciseIds: [b.id] });
   expect(await removeExercise(a.id)).toBe('deleted');
   expect(await removeExercise(b.id)).toBe('archived');
-  expect((await listRoutines())[0].exerciseIds).toEqual([]);
+  expect((await listRoutines())[0].items).toEqual([]);
+});
+
+test('startWorkout は routineId null', async () => {
+  expect((await startWorkout({ name: 'X', exerciseIds: [] })).routineId).toBeNull();
+});
+
+test('プログラムの保存・削除と、バックアップ往復', async () => {
+  expect(await getProgram()).toBeNull();
+  const p = { startDate: '2026-10-26', tests: { start: { date: '2026-10-26', bodyweight: 70, lifts: { a: 100 } }, end: null } };
+  await saveProgram(p);
+  expect(await getProgram()).toEqual(p);
+  const data = await exportAll(1);
+  expect(data.program).toEqual(p);
+  await saveProgram(null);
+  expect(await getProgram()).toBeNull();
+  await importAll(data);
+  expect(await getProgram()).toEqual(p);
+  await importAll({ ...data, program: null });
+  expect(await getProgram()).toBeNull();
+});
+
+test('シード種目のバー重量', async () => {
+  await ensureSeeded();
+  const bar = Object.fromEntries((await listExercises()).map((e) => [e.name, e.barKg]));
+  expect([bar['ベンチプレス'], bar['スクワット'], bar['デッドリフト'], bar['懸垂']]).toEqual([20, 20, 20, null]);
+});
+
+describe('startRoutineWorkout', () => {
+  const dayMs = 86_400_000;
+  async function setup() {
+    await ensureSeeded();
+    const squat = (await listExercises()).find((e) => e.name === 'スクワット')!;
+    const r = await saveRoutine({ name: 'LEG', weekday: 1, items: [item(squat.id, { sets: 4, reps: '5', main: true })] });
+    return { squat, r };
+  }
+
+  test('routineId と名前、目標入りのエントリー。進行中があればそれを返す', async () => {
+    const { squat, r } = await setup();
+    const w = await startRoutineWorkout(r.id);
+    expect(w).toMatchObject({ name: 'LEG', routineId: r.id, endedAt: null });
+    expect(w.entries[0]).toMatchObject({ exerciseId: squat.id, target: { sets: 4, reps: '5', main: true } });
+    expect(w.entries[0].sets).toHaveLength(4);
+    expect((await startRoutineWorkout(r.id)).id).toBe(w.id);
+    expect(await listWorkouts()).toHaveLength(1);
+  });
+
+  test('プログラム4週目は回復週でセット半分', async () => {
+    const { r } = await setup();
+    const now = Date.now();
+    await saveProgram({ startDate: toDateKey(now - 21 * dayMs), tests: { start: null, end: null } });
+    expect((await startRoutineWorkout(r.id, now)).entries[0].sets).toHaveLength(2);
+  });
+
+  test('存在しないルーティンはエラー', async () => {
+    await expect(startRoutineWorkout('nope')).rejects.toThrow();
+  });
 });

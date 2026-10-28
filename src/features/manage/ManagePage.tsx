@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { BackupPanel } from './BackupPanel';
 import { BodyweightList } from './BodyweightList';
 import { ExerciseList } from './ExerciseList';
+import { ProgramPanel } from './ProgramPanel';
 import { RoutineList } from './RoutineList';
 import { SettingsForm } from './SettingsForm';
 import s from './manage.module.css';
@@ -9,6 +10,7 @@ import s from './manage.module.css';
 const SECTIONS = [
   { key: 'exercises', label: '種目', el: <ExerciseList /> },
   { key: 'routines', label: 'ルーティン', el: <RoutineList /> },
+  { key: 'program', label: 'プログラム', el: <ProgramPanel /> },
   { key: 'bodyweight', label: '体重', el: <BodyweightList /> },
   { key: 'settings', label: '設定', el: <SettingsForm /> },
   { key: 'backup', label: 'バックアップ', el: <BackupPanel /> },

@@ -20,3 +20,12 @@
 .tip { background: var(--surface2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 12px; }
 .tip b { display: block; font-family: var(--font-num); font-size: 16px; }
 .tip span { color: var(--muted); }
+.testCard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; margin-bottom: 18px; }
+.testTable { width: 100%; border-collapse: collapse; font-size: 13px; }
+.testTable th { color: var(--muted); font-weight: 400; font-size: 11px; text-align: right; padding: 4px; }
+.testTable td { text-align: right; padding: 7px 4px; border-top: 1px solid var(--line); font-family: var(--font-num); font-size: 15px; }
+.testTable th:first-child, .testTable td:first-child { text-align: left; font-family: var(--font-body); font-size: 13px; }
+.testBtns { display: flex; gap: 8px; margin-top: 10px; }
+.testBtns > * { flex: 1; }
+.testNote { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+.testField { display: grid; grid-template-columns: 1fr 120px; align-items: center; gap: 10px; padding: 4px 0; font-size: 14px; }

@@ -7,6 +7,7 @@ import { completed } from '../../lib/summary';
 import { PercentTable } from '../tools/PercentSheet';
 import { PlateSheet } from '../tools/PlateSheet';
 import { ProgressChart } from './ProgressChart';
+import { TestCard } from './TestCard';
 import s from './progress.module.css';
 
 const BW = '__bodyweight';
@@ -56,6 +57,7 @@ export function ProgressPage() {
   return (
     <div className="page">
       <h1 className="page-title">PROGRESS</h1>
+      <TestCard />
       <select className={s.select} aria-label="対象" value={currentId} onChange={(e) => setTarget(e.target.value)}>
         {recorded.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
         <option value={BW}>体重</option>

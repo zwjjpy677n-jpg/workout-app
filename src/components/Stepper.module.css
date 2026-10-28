@@ -1,0 +1,7 @@
+.stepper { display: grid; grid-template-columns: 30px minmax(0, 1fr) 30px; align-items: center; border-radius: 10px; background: var(--surface2); overflow: hidden; }
+.stepper:focus-within { box-shadow: inset 0 0 0 1.5px var(--red); }
+.stepper > button { height: 44px; font-size: 22px; font-weight: 700; color: var(--muted); }
+.stepper > button:active { background: var(--line); }
+.field { display: flex; align-items: baseline; justify-content: center; min-width: 0; }
+.field i { font-style: normal; font-size: 10px; color: var(--muted); margin-right: 2px; flex: none; }
+.input { background: transparent !important; box-shadow: none !important; font-size: 19px !important; font-weight: 700 !important; min-height: 44px; padding: 0; }

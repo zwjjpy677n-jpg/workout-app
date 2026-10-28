@@ -1,10 +1,12 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { resetDb } from '../../db/db';
-import { getActiveWorkout, listBodyweights, listExercises, saveRoutine, saveWorkout, setBodyweight, startWorkout } from '../../db/repository';
+import { getActiveWorkout, listBodyweights, listExercises, listRoutines, saveProgram, saveRoutine, saveWorkout, setBodyweight, startRoutineWorkout, startWorkout } from '../../db/repository';
+import { ensureMenuSeeded } from '../../db/menuSeed';
 import { ensureSeeded } from '../../db/seed';
 import { entry, set, wk } from '../../test/factories';
 import { renderRoute } from '../../test/render';
+import { defaultItem } from '../../lib/types';
 import { HomePage } from './HomePage';
 
 let bench = '';
@@ -20,11 +22,11 @@ afterEach(() => vi.useRealTimers());
 
 const home = () => renderRoute('/', '/', <HomePage />);
 
-test('START WORKOUT で進行中ワークアウトを作り記録画面へ', async () => {
+test('自由に記録する で進行中ワークアウトを作り記録画面へ', async () => {
   home();
-  await userEvent.click(await screen.findByRole('button', { name: 'START WORKOUT' }));
+  await userEvent.click(await screen.findByRole('button', { name: '自由に記録する' }));
   expect(await screen.findByTestId('location')).toHaveTextContent('/workout');
-  expect(await getActiveWorkout()).toBeDefined();
+  expect((await getActiveWorkout())?.routineId).toBeNull();
 });
 
 test('進行中があれば RESUME WORKOUT', async () => {
@@ -34,7 +36,7 @@ test('進行中があれば RESUME WORKOUT', async () => {
 });
 
 test('ルーティンから開始するとその種目入り', async () => {
-  await saveRoutine({ name: 'PUSH', exerciseIds: [bench] });
+  await saveRoutine({ name: 'PUSH', weekday: null, items: [defaultItem(bench)] });
   home();
   await userEvent.click(await screen.findByRole('button', { name: /PUSH/ }));
   await screen.findByTestId('location');
@@ -68,4 +70,88 @@ test('体重を記録すると値と前回比を表示', async () => {
   expect(await screen.findByText('71.2')).toBeInTheDocument();
   expect(screen.getByText('+1.2')).toBeInTheDocument();
   expect(await listBodyweights()).toContainEqual({ date: '2026-10-28', kg: 71.2 });
+});
+
+describe('今日のトレーニング', () => {
+  beforeEach(async () => {
+    await ensureMenuSeeded();
+  });
+
+  const today = () => screen.findByRole('region', { name: '今日のトレーニング' });
+
+  test('曜日のメニューを表示し、始めると記録画面へ', async () => {
+    home();
+    const card = await today();
+    expect(within(card).getByText('脚・瞬発')).toBeInTheDocument();
+    expect(within(card).getByText('8種目 ・ 24セット')).toBeInTheDocument();
+    expect(within(card).getByText('進捗 0 / 8')).toBeInTheDocument();
+    await userEvent.click(within(card).getByRole('button', { name: 'トレーニングを始める' }));
+    expect(await screen.findByTestId('location')).toHaveTextContent('/workout');
+    const w = await getActiveWorkout();
+    const r = (await listRoutines()).find((x) => x.name === '脚・瞬発')!;
+    expect(w).toMatchObject({ name: '脚・瞬発', routineId: r.id });
+  });
+
+  test('進行中なら進捗と「続きを記録する」', async () => {
+    const r = (await listRoutines()).find((x) => x.name === '脚・瞬発')!;
+    const w = await startRoutineWorkout(r.id);
+    w.entries[0].sets = w.entries[0].sets.map((x) => ({ ...x, weight: 40, reps: 3, done: true }));
+    await saveWorkout(w);
+    home();
+    const card = await today();
+    expect(await within(card).findByText('進捗 1 / 8')).toBeInTheDocument();
+    expect(within(card).getByRole('button', { name: '続きを記録する' })).toBeInTheDocument();
+  });
+
+  test('今日完了済みなら「記録を見直す」でカレンダーへ', async () => {
+    const r = (await listRoutines()).find((x) => x.name === '脚・瞬発')!;
+    await saveWorkout(wk(new Date(2026, 9, 28, 7), [entry(bench, [set({ weight: 50, reps: 5 })])], { routineId: r.id, name: r.name }));
+    home();
+    await userEvent.click(within(await today()).getByRole('button', { name: '記録を見直す' }));
+    expect(await screen.findByTestId('location')).toHaveTextContent('/calendar?date=2026-10-28');
+  });
+
+  test('予定のない日は休みと次の予定', async () => {
+    vi.setSystemTime(new Date(2026, 9, 29, 10));
+    home();
+    const card = await screen.findByRole('region', { name: '今日は休み' });
+    expect(within(card).getByText('次は金曜 上半身・瞬発')).toBeInTheDocument();
+  });
+
+  test('日曜のルーティンも出る', async () => {
+    vi.setSystemTime(new Date(2026, 10, 1, 10));
+    await saveRoutine({ name: '日曜練', weekday: 0, items: [] });
+    home();
+    expect(within(await today()).getByText('日曜練')).toBeInTheDocument();
+  });
+
+  test('別のワークアウトが進行中なら RESUME を優先', async () => {
+    await startWorkout({ name: 'X', exerciseIds: [] });
+    home();
+    expect(await screen.findByRole('button', { name: 'RESUME WORKOUT' })).toBeInTheDocument();
+    expect(within(await today()).queryByRole('button', { name: 'トレーニングを始める' })).toBeNull();
+  });
+});
+
+describe('週ヘッダー', () => {
+  test('プログラム4週目は回復週', async () => {
+    await saveProgram({ startDate: '2026-10-07', tests: { start: null, end: null } });
+    home();
+    const h = await screen.findByRole('region', { name: 'プログラム' });
+    expect(within(h).getByText('4')).toBeInTheDocument();
+    expect(within(h).getByText('週目 / 8')).toBeInTheDocument();
+    expect(within(h).getByText('回復週：重さはそのまま、セット数を半分に')).toBeInTheDocument();
+    const bars = h.querySelectorAll('[data-state]');
+    expect(bars).toHaveLength(8);
+    expect(bars[3]).toHaveAttribute('data-state', 'now');
+    expect(bars[3]).toHaveAttribute('data-deload');
+    expect(bars[0]).toHaveAttribute('data-state', 'done');
+    expect(bars[5]).toHaveAttribute('data-state', 'future');
+  });
+
+  test('プログラムなしでは出ない', async () => {
+    home();
+    await screen.findByText('トレーニング日数');
+    expect(screen.queryByRole('region', { name: 'プログラム' })).toBeNull();
+  });
 });

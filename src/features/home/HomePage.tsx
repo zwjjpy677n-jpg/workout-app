@@ -2,8 +2,11 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Stat } from '../../components/Stat';
-import { startWorkout } from '../../db/repository';
-import { useActiveWorkout, useExerciseMap, useRoutines, useWorkouts } from '../../hooks/useData';
+import { startRoutineWorkout, startWorkout } from '../../db/repository';
+import { useActiveWorkout, useExerciseMap, useProgram, useRoutines, useWorkouts } from '../../hooks/useData';
+import { programStatus } from '../../lib/program';
+import { ProgramHeader } from './ProgramHeader';
+import { TodayCard } from './TodayCard';
 import { volumeParts } from '../../lib/calc';
 import { formatMDW, toDateKey } from '../../lib/dates';
 import { completed, weekSummary, weeklySetsByBodyPart, workoutVolume } from '../../lib/summary';
@@ -17,12 +20,22 @@ export function HomePage() {
   const routines = useRoutines();
   const workouts = useWorkouts();
   const exMap = useExerciseMap();
+  const program = useProgram();
   const now = Date.now();
+  const status = programStatus(program ?? null, toDateKey(now));
 
-  async function start(name: string, exerciseIds: string[]) {
-    await startWorkout({ name, exerciseIds });
+  async function startFree() {
+    await startWorkout({ name: 'Workout', exerciseIds: [] });
     navigate('/workout');
   }
+
+  async function startRoutine(id: string) {
+    await startRoutineWorkout(id);
+    navigate('/workout');
+  }
+
+  const todayRoutine = routines?.find((r) => r.weekday === new Date(now).getDay());
+  const showResume = !!active && active.routineId !== (todayRoutine?.id ?? '__none');
 
   const week = workouts && exMap ? weekSummary(workouts, exMap, now) : null;
   const vol = volumeParts(week?.volume ?? 0);
@@ -35,12 +48,18 @@ export function HomePage() {
         <div className={s.date}>{formatMDW(now)}</div>
       </div>
 
-      {active === undefined ? (
-        <Button block variant="primary" disabled>…</Button>
-      ) : active ? (
-        <Button block variant="primary" onClick={() => navigate('/workout')}>RESUME WORKOUT</Button>
-      ) : (
-        <Button block variant="primary" onClick={() => start('Workout', [])}>START WORKOUT</Button>
+      <ProgramHeader status={status} />
+
+      {showResume && (
+        <div style={{ marginBottom: 12 }}>
+          <Button block variant="primary" onClick={() => navigate('/workout')}>RESUME WORKOUT</Button>
+        </div>
+      )}
+      {routines && workouts && active !== undefined && (
+        <TodayCard routines={routines} workouts={workouts} active={active} status={status} now={now} />
+      )}
+      {active === null && (
+        <Button block onClick={startFree}>自由に記録する</Button>
       )}
 
       <BodyweightCard />
@@ -56,9 +75,9 @@ export function HomePage() {
           <div className="sec">Routines</div>
           <div className={s.routines}>
             {routines.map((r) => (
-              <button key={r.id} type="button" className={s.routine} onClick={() => start(r.name, r.exerciseIds)}>
+              <button key={r.id} type="button" className={s.routine} onClick={() => startRoutine(r.id)}>
                 <b>{r.name}</b>
-                <span>{r.exerciseIds.length}種目</span>
+                <span>{r.items.length}種目</span>
               </button>
             ))}
           </div>
@@ -70,7 +89,7 @@ export function HomePage() {
 
       <div className="sec">Recent</div>
       <section aria-label="最近のワークアウト" className={s.recent}>
-        {recent.length === 0 && <p className={s.empty}>まだ記録がありません。START WORKOUT から始めましょう。</p>}
+        {recent.length === 0 && <p className={s.empty}>まだ記録がありません。今日のトレーニングか「自由に記録する」から始めましょう。</p>}
         {recent.map((w) => {
           const v = volumeParts(exMap ? workoutVolume(w, exMap) : 0);
           return (

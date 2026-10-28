@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo } from 'react';
-import { getActiveWorkout, getSettings, listBodyweights, listExercises, listRoutines, listWorkouts } from '../db/repository';
+import { getActiveWorkout, getProgram, getSettings, listBodyweights, listExercises, listRoutines, listWorkouts } from '../db/repository';
 import type { Exercise } from '../lib/types';
 
 export const useExercises = (includeArchived = false) => useLiveQuery(() => listExercises({ includeArchived }), [includeArchived]);
@@ -15,3 +15,5 @@ export function useExerciseMap(): Map<string, Exercise> | undefined {
   const all = useExercises(true);
   return useMemo(() => (all ? new Map(all.map((e) => [e.id, e])) : undefined), [all]);
 }
+
+export const useProgram = () => useLiveQuery(async () => (await getProgram()) ?? null);
