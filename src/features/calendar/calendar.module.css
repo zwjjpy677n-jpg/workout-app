@@ -27,3 +27,4 @@
 .ex span:last-child { font-family: var(--font-num); color: var(--muted); text-align: right; }
 .note { font-size: 12px; color: #c9c9cf; background: var(--bg); border-radius: 8px; padding: 8px 10px; margin-top: 8px; white-space: pre-wrap; }
 .empty { font-size: 13px; color: var(--muted); text-align: center; padding: 20px 0; }
+.feedback { font-size: 12.5px; line-height: 1.5; padding: 6px 10px; margin: 4px 0; border-radius: 10px; background: var(--surface2); border-left: 3px solid var(--red); }

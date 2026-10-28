@@ -46,7 +46,7 @@ test('壊れたリンク・中身がおかしいリンク・まだ読めない�
   const r2 = await open(await encodeShare('r', { id: 'x', n: '', at: 0, x: [], w: [], r: [], p: [] }));
   expect(await screen.findByText('読み込めないリンクです')).toBeInTheDocument();
   r2.unmount();
-  await open(await encodeShare('f', { a: 1 }));
+  await open(await encodeShare('m', { a: 1 }));
   expect(await screen.findByText('このアプリではまだ読み込めません。GRIND を最新にしてください')).toBeInTheDocument();
   expect(await getFriend('x')).toBeUndefined();
 });
