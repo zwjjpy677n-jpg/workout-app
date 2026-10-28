@@ -1,0 +1,43 @@
+.wrap { max-width: 560px; margin: 0 auto; padding: calc(env(safe-area-inset-top) + 8px) 12px 140px; }
+.head { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 4px 12px; background: linear-gradient(var(--bg) 80%, transparent); }
+.title { font-size: 11px; color: var(--muted); letter-spacing: .1em; }
+.timer { font-family: var(--font-num); font-weight: 700; font-size: 26px; line-height: 1.1; }
+.headBtns { display: flex; gap: 6px; align-items: center; }
+.icon { width: 44px; height: 44px; border-radius: 12px; background: var(--surface2); display: inline-flex; align-items: center; justify-content: center; color: var(--muted); }
+.icon svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.icon.has { color: var(--text); }
+.finish { min-height: 44px; padding: 0 18px; border-radius: 99px; background: var(--red); color: #fff; font-weight: 700; font-size: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 12px 12px; margin-bottom: 12px; }
+.cardHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.exName { font-weight: 700; font-size: 16px; }
+.pr { font-family: var(--font-num); font-size: 10px; letter-spacing: .05em; background: var(--red); color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 6px; vertical-align: 2px; }
+.prev { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.prevStrong { color: #ff6b66; font-family: var(--font-num); font-weight: 500; font-size: 12px; }
+.menu { width: 40px; height: 40px; margin: -6px -4px 0 0; border-radius: 10px; color: var(--muted); font-size: 20px; letter-spacing: 1px; }
+.table { width: 100%; border-collapse: separate; border-spacing: 0 5px; margin-top: 8px; table-layout: fixed; }
+.table th { color: var(--muted); font-weight: 400; font-size: 10px; letter-spacing: .05em; text-align: center; }
+.table td { text-align: center; padding: 0 2px; }
+.colSet { width: 38px; }
+.colPrev { width: 58px; }
+.colCheck { width: 44px; }
+.colNote { width: 30px; }
+.setNo { width: 34px; height: 34px; border-radius: 9px; font-family: var(--font-num); font-size: 14px; color: var(--text); }
+.setNo.warm { color: #f5b041; background: rgba(245, 176, 65, .12); }
+.pv { color: #5d5d66; font-family: var(--font-num); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.done input { background: var(--red-soft); }
+.check { width: 40px; height: 40px; border-radius: 10px; background: var(--surface2); display: inline-flex; align-items: center; justify-content: center; }
+.check svg { width: 18px; height: 18px; stroke: #fff; stroke-width: 3; fill: none; opacity: .25; }
+.check[aria-pressed='true'] { background: var(--red); }
+.check[aria-pressed='true'] svg { opacity: 1; }
+.noteBtn { width: 28px; height: 36px; color: #5d5d66; font-size: 14px; }
+.noteBtn.has { color: var(--text); }
+.add { width: 100%; min-height: 40px; margin-top: 4px; border: 1px dashed var(--line); border-radius: 10px; font-size: 13px; color: var(--muted); }
+.addEx { width: 100%; min-height: 52px; border-radius: var(--radius); background: var(--surface2); font-weight: 700; }
+.filters { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; }
+.filters button { flex: none; min-height: 36px; padding: 0 12px; border-radius: 99px; background: var(--surface2); font-size: 12px; color: var(--muted); }
+.filters button[aria-pressed='true'] { background: var(--text); color: var(--bg); font-weight: 700; }
+.search { width: 100%; min-height: 44px; padding: 0 12px; margin-bottom: 10px; border-radius: 10px; border: 0; outline: 0; background: var(--surface2); }
+.pickList { display: flex; flex-direction: column; gap: 4px; }
+.pickList button { min-height: 48px; padding: 0 12px; text-align: left; border-radius: 10px; background: var(--bg); }
+.actions { display: flex; flex-direction: column; gap: 8px; }
+.textarea { width: 100%; min-height: 110px; padding: 12px; border-radius: 10px; border: 0; outline: 0; background: var(--surface2); resize: vertical; }

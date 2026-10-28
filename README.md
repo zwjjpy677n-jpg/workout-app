@@ -1,1 +1,44 @@
-# workout-app
+# IRON LOG
+
+アスリート向けの筋トレ記録アプリ（スマホ向けPWA）。データは端末のブラウザ内（IndexedDB）にのみ保存されます。
+
+## 機能
+
+- **記録**: 重量×回数 / 自重(＋加重)×回数 / 時間 の3タイプ。RPE・セットメモ・ウォームアップ区別
+- **前回の記録**: 種目ごとの前回トップセットと、セット行ごとの前回値（空欄で完了すると前回値を採用）
+- **レストタイマー**: セット完了で種目ごとの秒数から自動スタート（±15秒・スキップ）
+- **PR**: 自己ベスト（推定1RM 等）更新でバッジ表示
+- **コンディション・メモ**: 睡眠/疲労感/やる気（1–5）とワークアウトメモ
+- **カレンダー**: ボリュームに応じた3段階の色、日付タップで詳細・編集・削除
+- **グラフ**: 推定1RM / 最大重量 / ボリューム / 最大加重 / 総回数 / 時間 / 体重の推移（1M/3M/1Y/ALL）
+- **ホーム**: 今週の日数・ボリューム、部位別セット数、ルーティンからワンタップ開始、体重記録
+- **ツール**: %1RM表、プレート計算（バー重量・使えるプレートは設定可能）
+- **管理**: 種目（部位・タイプ・レスト秒）、ルーティン、体重履歴、設定、JSONバックアップ
+
+## 開発
+
+```bash
+npm install
+npm run dev      # 開発サーバー
+npm test         # テスト（Vitest）
+npm run lint     # 型チェック
+npm run build    # 本番ビルド（dist/、PWA の service worker を含む）
+npm run preview  # ビルド結果の確認
+```
+
+`dist/` は静的ファイルのみなので、GitHub Pages などにそのまま置けます（HashRouter・相対パス）。
+
+## 公開（GitHub Pages）
+
+`.github/workflows/deploy.yml` が main へのプッシュごとに 型チェック → テスト → ビルド → GitHub Pages へのデプロイ を行います（PR ではテストとビルドのみ）。
+
+初回のみ、リポジトリの **Settings → Pages → Build and deployment → Source** を **GitHub Actions** にしてください。公開URLは `https://<ユーザー名>.github.io/workout-app/` です。スマホで開いて「ホーム画面に追加」するとアプリとして使えます。
+
+※ private リポジトリで Pages を使うには GitHub Pro 以上のプランが必要です。
+
+## 構成
+
+- `src/lib/` 計算・集計・フォーマット（純粋関数）
+- `src/db/` Dexie スキーマ・シード・リポジトリ
+- `src/features/` 画面（home / workout / calendar / progress / manage / tools）
+- 設計: `docs/superpowers/specs/2026-10-28-ironlog-design.md`

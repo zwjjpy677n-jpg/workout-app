@@ -1,0 +1,2 @@
+.card { display: block; width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; }
+.click:active { background: var(--surface2); }
