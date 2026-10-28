@@ -1,5 +1,5 @@
 import { isWorking } from '../../lib/calc';
-import { emptySet, type WorkoutEntry, type WorkoutSet } from '../../lib/types';
+import { emptySet, type ExerciseType, type WorkoutEntry, type WorkoutSet } from '../../lib/types';
 
 /** ウォームアップは null、それ以外は 1 始まりの通し番号 */
 export function workingNumber(sets: WorkoutSet[], index: number): number | null {
@@ -31,13 +31,17 @@ export function removeSet(sets: WorkoutSet[], index: number): WorkoutSet[] {
   return sets.filter((_, i) => i !== index);
 }
 
-export function completeSet(sets: WorkoutSet[], index: number, placeholder: WorkoutSet | null): WorkoutSet[] {
+/** 完了を切り替える。完了時は空欄をプレースホルダーで埋め、必須値が揃わなければ何もしない */
+export function completeSet(type: ExerciseType, sets: WorkoutSet[], index: number, placeholder: WorkoutSet | null): WorkoutSet[] {
   const s = sets[index];
   if (s.done) return updateSet(sets, index, { done: false });
-  return updateSet(sets, index, {
-    done: true,
+  const filled = {
     weight: s.weight ?? placeholder?.weight ?? null,
     reps: s.reps ?? placeholder?.reps ?? null,
     durationSec: s.durationSec ?? placeholder?.durationSec ?? null,
-  });
+  };
+  const ready =
+    type === 'weight' ? filled.weight != null && filled.reps != null : type === 'bodyweight' ? filled.reps != null : filled.durationSec != null;
+  if (!ready) return sets;
+  return updateSet(sets, index, { done: true, ...filled });
 }

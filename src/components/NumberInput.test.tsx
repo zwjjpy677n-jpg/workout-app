@@ -26,18 +26,28 @@ test('空にすると null', async () => {
   expect(spy).toHaveBeenLastCalledWith(null);
 });
 
-test('非数・範囲外は onChange せず、blurで元に戻る', async () => {
+test('非数は null にして invalid 表示', async () => {
   const { spy, input } = setup(80);
   await userEvent.clear(input);
-  spy.mockClear();
   await userEvent.type(input, 'abc');
-  expect(spy).not.toHaveBeenCalled();
-  await userEvent.clear(input);
-  await userEvent.type(input, '1001');
-  expect(spy).not.toHaveBeenCalledWith(1001);
-  expect(spy).toHaveBeenLastCalledWith(100);
+  expect(spy).toHaveBeenLastCalledWith(null);
+  expect(input).toHaveAttribute('aria-invalid', 'true');
+});
+
+test('範囲外は途中の値を残さず null（350 を 35 として保存しない）', async () => {
+  const { spy, input } = setup(null, 20, 300);
+  await userEvent.type(input, '350');
+  expect(spy).toHaveBeenLastCalledWith(null);
+  expect(input).toHaveAttribute('aria-invalid', 'true');
   await userEvent.tab();
-  expect(input.value).toBe('100');
+  expect(input.value).toBe('');
+});
+
+test('消して短くした値がそのまま値になる（75 → 7）', async () => {
+  const { spy, input } = setup(null, 0, 300);
+  await userEvent.type(input, '75{Backspace}');
+  expect(spy).toHaveBeenLastCalledWith(7);
+  expect(input).not.toHaveAttribute('aria-invalid', 'true');
 });
 
 test('負の最小値なら負数を受け付ける', async () => {

@@ -18,9 +18,9 @@ test('placeholderFor は前回の同じ番号のワーキングセット', () =>
 });
 
 test('completeSet は空欄をプレースホルダーで埋め、再タップで未完了に戻す', () => {
-  const r = completeSet([{ ...emptySet(), reps: 6 }], 0, { ...emptySet(), weight: 80, reps: 8 });
+  const r = completeSet('weight', [{ ...emptySet(), reps: 6 }], 0, { ...emptySet(), weight: 80, reps: 8 });
   expect(r[0]).toMatchObject({ weight: 80, reps: 6, done: true });
-  expect(completeSet(r, 0, null)[0]).toMatchObject({ weight: 80, reps: 6, done: false });
+  expect(completeSet('weight', r, 0, null)[0]).toMatchObject({ weight: 80, reps: 6, done: false });
 });
 
 test('addSet は直前をコピーし done=false・メモ空', () => {
@@ -37,4 +37,12 @@ test('toggleWarmup / updateSet / removeSet は不変更新', () => {
   expect(removeSet(orig, 0)).toHaveLength(1);
   expect(orig[0].warmup).toBe(false);
   expect(orig).toHaveLength(2);
+});
+
+test('completeSet: 必須値もプレースホルダーもなければ完了にしない', () => {
+  expect(completeSet('weight', [emptySet()], 0, null)[0].done).toBe(false);
+  expect(completeSet('weight', [{ ...emptySet(), weight: 60 }], 0, null)[0].done).toBe(false);
+  expect(completeSet('bodyweight', [{ ...emptySet(), reps: 10 }], 0, null)[0]).toMatchObject({ done: true, weight: null });
+  expect(completeSet('time', [emptySet()], 0, null)[0].done).toBe(false);
+  expect(completeSet('time', [{ ...emptySet(), durationSec: 60 }], 0, null)[0].done).toBe(true);
 });

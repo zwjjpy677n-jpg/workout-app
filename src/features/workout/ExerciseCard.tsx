@@ -28,9 +28,10 @@ export function ExerciseCard({ entry, exercise, prev, pr, onChange, onRemove, on
   const prevTop = prev && topSet(exercise.type, prev.entry.sets);
 
   function toggleDone(i: number) {
-    const wasDone = sets[i].done;
-    onChange(completeSet(sets, i, placeholderFor(prev?.entry ?? null, sets, i)));
-    if (!wasDone) onSetDone?.();
+    const next = completeSet(exercise.type, sets, i, placeholderFor(prev?.entry ?? null, sets, i));
+    if (next === sets) return;
+    onChange(next);
+    if (next[i].done) onSetDone?.();
   }
 
   return (

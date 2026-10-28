@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { resetDb } from '../../db/db';
-import { getActiveWorkout, listExercises, listWorkouts, saveWorkout, startWorkout } from '../../db/repository';
+import { getActiveWorkout, getWorkout, listExercises, listWorkouts, saveWorkout, startWorkout } from '../../db/repository';
 import { ensureSeeded } from '../../db/seed';
 import { entry, set, wk } from '../../test/factories';
 import { renderRoute } from '../../test/render';
@@ -172,4 +172,18 @@ test('過去編集モードではレストもコンディションも出ない',
   await userEvent.click(within(r1).getByRole('button', { name: '完了' }));
   expect(screen.queryByText('REST')).toBeNull();
   expect(screen.queryByRole('dialog', { name: 'コンディション' })).toBeNull();
+});
+
+test('過去編集で全セットの完了を外して保存すると、破棄確認のうえ削除', async () => {
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
+  const past = (await listWorkouts()).find((w) => w.endedAt !== null)!;
+  renderRoute(`/workout/${past.id}`, '/workout/:id', <WorkoutPage />);
+  const rs = await rows();
+  for (const r of rs) {
+    const b = within(r).getByRole('button', { name: '完了' });
+    if (b.getAttribute('aria-pressed') === 'true') await userEvent.click(b);
+  }
+  await userEvent.click(screen.getByRole('button', { name: '保存' }));
+  await screen.findByTestId('location');
+  expect(await getWorkout(past.id)).toBeUndefined();
 });

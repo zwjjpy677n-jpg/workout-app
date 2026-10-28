@@ -32,12 +32,18 @@ export async function updateExercise(id: string, patch: Partial<Omit<Exercise, '
 }
 
 export async function removeExercise(id: string): Promise<'deleted' | 'archived'> {
-  if (await isExerciseUsed(id)) {
-    await db.exercises.update(id, { archived: true });
-    return 'archived';
-  }
-  await db.exercises.delete(id);
-  return 'deleted';
+  return db.transaction('rw', db.exercises, db.workouts, db.routines, async () => {
+    const routines = await db.routines.toArray();
+    for (const r of routines) {
+      if (r.exerciseIds.includes(id)) await db.routines.update(r.id, { exerciseIds: r.exerciseIds.filter((x) => x !== id) });
+    }
+    if (await isExerciseUsed(id)) {
+      await db.exercises.update(id, { archived: true });
+      return 'archived';
+    }
+    await db.exercises.delete(id);
+    return 'deleted';
+  });
 }
 
 // --- ルーティン ---
@@ -92,6 +98,16 @@ export async function finishWorkout(id: string, now: number = Date.now()): Promi
   const entries = w.entries.filter((e) => e.sets.some((s) => s.done));
   if (entries.length === 0) return 'empty';
   await db.workouts.put({ ...w, entries, endedAt: now });
+  return 'saved';
+}
+
+/** 過去ワークアウトの編集を確定: 完了セットのない種目を除く（endedAt は維持）。完了セットが0なら変更せず 'empty' */
+export async function saveEditedWorkout(id: string): Promise<'saved' | 'empty'> {
+  const w = await db.workouts.get(id);
+  if (!w) return 'empty';
+  const entries = w.entries.filter((e) => e.sets.some((s) => s.done));
+  if (entries.length === 0) return 'empty';
+  await db.workouts.put({ ...w, entries });
   return 'saved';
 }
 

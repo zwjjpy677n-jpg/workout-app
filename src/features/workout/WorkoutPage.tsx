@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { deleteWorkout, finishWorkout, getActiveWorkout, getWorkout, saveWorkout } from '../../db/repository';
+import { deleteWorkout, finishWorkout, getActiveWorkout, getWorkout, saveEditedWorkout, saveWorkout } from '../../db/repository';
 import { useElapsed } from '../../hooks/useElapsed';
 import { useRestTimer } from '../../hooks/useRestTimer';
 import { Button } from '../../components/Button';
@@ -65,13 +65,12 @@ export function WorkoutPage() {
 
   async function finish() {
     if (!w) return;
-    if (editMode) return navigate(calendarUrl);
-    if (!window.confirm('ワークアウトを終了しますか？')) return;
-    const r = await finishWorkout(w.id);
+    if (!editMode && !window.confirm('ワークアウトを終了しますか？')) return;
+    const r = editMode ? await saveEditedWorkout(w.id) : await finishWorkout(w.id);
     if (r === 'saved') return navigate(calendarUrl);
     if (window.confirm('完了したセットがありません。このワークアウトを破棄しますか？')) {
       await deleteWorkout(w.id);
-      navigate('/');
+      navigate(editMode ? calendarUrl : '/');
     }
   }
 

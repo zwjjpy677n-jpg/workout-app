@@ -17,16 +17,19 @@ const show = (v: number | null) => (v == null ? '' : String(v));
 
 export function NumberInput({ value, onChange, min, max, placeholder, inputMode, className, ...rest }: Props) {
   const [text, setText] = useState(show(value));
+  const [invalid, setInvalid] = useState(false);
 
   useEffect(() => {
-    setText((t) => (t !== '' && Number(t) === value ? t : show(value)));
+    setText((t) => (t !== '' && Number(t) === value ? t : invalid && value == null ? t : show(value)));
   }, [value]);
 
   function handle(next: string) {
     setText(next);
-    if (next.trim() === '') return onChange(null);
     const n = Number(next);
-    if (Number.isFinite(n) && n >= min && n <= max) onChange(n);
+    const ok = next.trim() === '' || (Number.isFinite(n) && n >= min && n <= max);
+    setInvalid(!ok);
+    // 範囲外・非数は途中の値を残さず null にする（表示と保存値を食い違わせない）
+    onChange(ok && next.trim() !== '' ? n : null);
   }
 
   return (
@@ -37,7 +40,11 @@ export function NumberInput({ value, onChange, min, max, placeholder, inputMode,
       value={text}
       placeholder={placeholder}
       onChange={(e) => handle(e.target.value)}
-      onBlur={() => setText(show(value))}
+      aria-invalid={invalid || undefined}
+      onBlur={() => {
+        setInvalid(false);
+        setText(show(value));
+      }}
       {...rest}
     />
   );

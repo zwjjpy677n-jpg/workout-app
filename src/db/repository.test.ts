@@ -3,7 +3,7 @@ import { resetDb } from './db';
 import {
   addExercise, deleteBodyweight, exportAll, finishWorkout, getActiveWorkout, getSettings, importAll, isExerciseUsed,
   listBodyweights, listExercises, listRoutines, listWorkouts, removeExercise, saveRoutine, saveSettings, saveWorkout,
-  setBodyweight, startWorkout, updateExercise, deleteRoutine, deleteWorkout,
+  setBodyweight, startWorkout, updateExercise, deleteRoutine, deleteWorkout, saveEditedWorkout,
 } from './repository';
 import { ensureSeeded, SEED_EXERCISES } from './seed';
 
@@ -107,4 +107,32 @@ test('export→importで往復し、importAll途中失敗時は元データの�
   await expect(importAll({ ...data, exercises: [ex('dup'), ex('dup')] })).rejects.toThrow();
   expect(await listExercises()).toHaveLength(14);
   expect(await listBodyweights()).toHaveLength(1);
+});
+
+test('saveEditedWorkout: 完了セットのない種目を除き endedAt は維持、全0なら empty', async () => {
+  const w = await startWorkout({ name: 'P', exerciseIds: ['a', 'b'] });
+  w.entries[0].sets[0] = { ...w.entries[0].sets[0], weight: 50, reps: 5, done: true };
+  await saveWorkout(w);
+  await finishWorkout(w.id, 77);
+  const edited = (await listWorkouts())[0];
+  edited.entries.push({ exerciseId: 'c', sets: [{ ...edited.entries[0].sets[0], done: false }] });
+  await saveWorkout(edited);
+  expect(await saveEditedWorkout(w.id)).toBe('saved');
+  expect((await listWorkouts())[0]).toMatchObject({ endedAt: 77 });
+  expect((await listWorkouts())[0].entries.map((e) => e.exerciseId)).toEqual(['a']);
+  const cur = (await listWorkouts())[0];
+  cur.entries[0].sets[0].done = false;
+  await saveWorkout(cur);
+  expect(await saveEditedWorkout(w.id)).toBe('empty');
+});
+
+test('種目を削除・アーカイブするとルーティンからも外れる', async () => {
+  await ensureSeeded();
+  const all = await listExercises();
+  const [a, b] = all;
+  await saveRoutine({ name: 'R', exerciseIds: [a.id, b.id] });
+  await startWorkout({ name: 'X', exerciseIds: [b.id] });
+  expect(await removeExercise(a.id)).toBe('deleted');
+  expect(await removeExercise(b.id)).toBe('archived');
+  expect((await listRoutines())[0].exerciseIds).toEqual([]);
 });
