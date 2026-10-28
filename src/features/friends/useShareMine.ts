@@ -1,9 +1,10 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { getProfile } from '../../db/friends';
 import { listExercises, listRoutines, listWorkouts } from '../../db/repository';
 import { ShareError } from '../../lib/share/codec';
 import { buildShareLink } from '../../lib/share/sharePayload';
+import { usePreparedLink } from './usePreparedLink';
 
 export type ShareNote = { kind: 'status' | 'alert'; text: string } | null;
 type Link = Awaited<ReturnType<typeof buildShareLink>>;
@@ -23,20 +24,8 @@ export function useShareMine() {
     if (!profile) return null;
     return { profile, exercises: await listExercises({ includeArchived: true }), routines: await listRoutines(), workouts: await listWorkouts() };
   });
-  const [link, setLink] = useState<Link | ShareError | null>(null);
+  const link = usePreparedLink<Link>(src ? () => buildShareLink(src, Date.now()) : null, [src]);
   const [note, setNote] = useState<ShareNote>(null);
-
-  useEffect(() => {
-    if (!src) return setLink(null);
-    let alive = true;
-    buildShareLink(src, Date.now()).then(
-      (l) => alive && setLink(l),
-      (e: unknown) => alive && setLink(e instanceof ShareError ? e : new ShareError('invalid')),
-    );
-    return () => {
-      alive = false;
-    };
-  }, [src]);
 
   const shareMine = () => {
     setNote(null);
@@ -55,19 +44,37 @@ export function useShareMine() {
   };
 }
 
-export async function sendText(text: string, setNote: (n: ShareNote) => void) {
+let sending = false;
+
+/**
+ * 共有画面で送る（無ければコピー）。タップの onClick の中で await より前に呼ぶこと。
+ * 共有画面が開いている間の2回目のタップは何もしない（送っていないのに送信済みにしないため）
+ */
+export async function sendText(text: string, setNote: (n: ShareNote) => void): Promise<'shared' | 'copied' | 'cancelled' | 'failed'> {
+  if (sending) return 'cancelled';
+  sending = true;
+  try {
+    return await send(text, setNote);
+  } finally {
+    sending = false;
+  }
+}
+
+async function send(text: string, setNote: (n: ShareNote) => void): Promise<'shared' | 'copied' | 'cancelled' | 'failed'> {
   if (navigator.share) {
     try {
       await navigator.share({ text });
-      return;
+      return 'shared';
     } catch (e) {
-      if (e instanceof DOMException && e.name === 'AbortError') return;
+      if (e instanceof DOMException && (e.name === 'AbortError' || e.name === 'InvalidStateError')) return 'cancelled';
     }
   }
   try {
     await navigator.clipboard.writeText(text);
     setNote({ kind: 'status', text: 'コピーしました。LINE に貼り付けて送ってください' });
+    return 'copied';
   } catch {
     setNote({ kind: 'alert', text: '共有できませんでした' });
+    return 'failed';
   }
 }

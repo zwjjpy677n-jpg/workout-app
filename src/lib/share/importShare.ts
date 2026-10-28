@@ -1,5 +1,5 @@
 import { BODY_PARTS, emptyCondition, type Exercise, type Routine, type Workout, type WorkoutSet } from '../types';
-import { ShareError } from './codec';
+import { arr, fail, id, int, numOrNull, str, tup } from './validate';
 import { LIMIT, TYPES, type SetTuple, type SharePayload } from './sharePayload';
 
 export interface Friend {
@@ -20,17 +20,6 @@ export interface FriendWorkout extends Workout {
 }
 
 // --- 検証（細工されたリンクも来る前提で、型と値の範囲を全部確かめる） ---
-const fail = (): never => {
-  throw new ShareError('invalid');
-};
-const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
-const int = (v: unknown, lo: number, hi: number) => (isNum(v) && Number.isInteger(v) && v >= lo && v <= hi ? v : fail());
-const numOrNull = (v: unknown, lo: number, hi: number) => (v === null ? null : isNum(v) && v >= lo && v <= hi ? v : fail());
-const str = (v: unknown, lo: number, hi: number) => (typeof v === 'string' && v.length >= lo && v.length <= hi ? v : fail());
-const id = (v: unknown) => (typeof v === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(v) ? v : fail());
-const arr = (v: unknown, max: number) => (Array.isArray(v) && v.length <= max ? v : fail());
-const tup = (v: unknown, n: number) => (Array.isArray(v) && v.length === n ? v : fail());
-
 const setTuple = (v: unknown): SetTuple => {
   const [w, r, s, rpe] = tup(v, 4);
   return [numOrNull(w, -200, 1000), numOrNull(r, 0, 999), numOrNull(s, 0, 36000), numOrNull(rpe, 1, 10)];

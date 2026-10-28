@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../../components/Card';
 import { deleteWorkout } from '../../db/repository';
+import { useFeedbackForWorkouts } from '../../hooks/useData';
 import { formatKg } from '../../lib/calc';
 import { formatMDW, fromDateKey, toDateKey } from '../../lib/dates';
 import type { BodyweightLog, Condition, Exercise, Workout } from '../../lib/types';
@@ -20,6 +21,11 @@ export function DayDetail({ dateKey, workouts, bodyweights, exercises }: Props) 
   const title = formatMDW(fromDateKey(dateKey).getTime());
   const list = workouts.filter((w) => w.endedAt !== null && toDateKey(w.startedAt) === dateKey);
   const bw = bodyweights.find((b) => b.date === dateKey);
+  const feedback = useFeedbackForWorkouts(list.map((w) => w.id)) ?? [];
+  const said = (workoutId: string, exerciseId: string | null) =>
+    feedback.filter((f) => f.workoutId === workoutId && f.exerciseId === exerciseId).map((f) => (
+      <div key={f.id} className={s.feedback}>{`${f.friendName}さん: ${f.text}`}</div>
+    ));
 
   return (
     <section aria-label={title} className={s.detail}>
@@ -49,13 +55,17 @@ export function DayDetail({ dateKey, workouts, bodyweights, exercises }: Props) 
             const text = ex ? summarizeSets(ex.type, e.sets) : '';
             if (!ex || !text) return null;
             return (
-              <div key={i} className={s.ex}>
-                <span>{ex.name}</span>
-                <span>{text}</span>
+              <div key={i}>
+                <div className={s.ex}>
+                  <span>{ex.name}</span>
+                  <span>{text}</span>
+                </div>
+                {said(w.id, e.exerciseId)}
               </div>
             );
           })}
           {w.note && <div className={s.note}>{w.note}</div>}
+          {said(w.id, null)}
         </Card>
       ))}
     </section>

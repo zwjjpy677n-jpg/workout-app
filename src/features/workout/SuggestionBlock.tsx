@@ -39,7 +39,7 @@ export function SuggestionBlock({ exercise, target, prev, deload, plates }: Prop
         <span>前回{prev ? `（${formatMD(prev.workout.startedAt)}）` : ''}<b>{prev ? summarizeSets(exercise.type, prev.entry.sets) : 'なし'}</b></span>
         <span>目標<b>{sg.sets}セット</b></span>
         {e1 > 0 && <span>前回の推定1RM<b>{formatKg(Math.round(e1 * 10) / 10)}kg</b></span>}
-        <span>レスト<b>{formatDuration(exercise.restSec)}</b></span>
+        <span>レスト<b>{formatDuration(target.restSec ?? exercise.restSec)}</b></span>
         {prev?.entry.slowed && <span>前回はスピードが落ちた</span>}
       </div>
       {target.note && <p className={s.targetNote}>{target.note}</p>}

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { BackupPanel } from './BackupPanel';
 import { BodyweightList } from './BodyweightList';
 import { ExerciseList } from './ExerciseList';
@@ -16,8 +17,15 @@ const SECTIONS = [
   { key: 'backup', label: 'バックアップ', el: <BackupPanel /> },
 ] as const;
 
-export function ManagePage() {
-  const [cur, setCur] = useState<string>('exercises');
+/** URL の ?tab= で最初に開く区分を決める（受け取ったメニューを保存したあとはルーティンを開く） */
+export function ManageRoute() {
+  const [params] = useSearchParams();
+  const tab = params.get('tab');
+  return <ManagePage initial={SECTIONS.some((x) => x.key === tab) ? tab! : undefined} />;
+}
+
+export function ManagePage({ initial = 'exercises' }: { initial?: string }) {
+  const [cur, setCur] = useState<string>(initial);
   return (
     <div className="page">
       <h1 className="page-title">MANAGE</h1>

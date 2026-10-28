@@ -13,13 +13,15 @@ type Props = {
   className?: string;
   /** blur しても範囲外・空の入力を元に戻さず、invalid 表示のまま残す */
   keepInvalid?: boolean;
+  /** keepInvalid でも空欄は正しい入力として扱う（空欄 = 既定値を使う欄） */
+  allowEmpty?: boolean;
   /** 範囲外・非数かどうかが変わったら呼ばれる */
   onInvalidChange?(invalid: boolean): void;
 } & Pick<InputHTMLAttributes<HTMLInputElement>, 'autoFocus' | 'onFocus'>;
 
 const show = (v: number | null) => (v == null ? '' : String(v));
 
-export function NumberInput({ value, onChange, min, max, placeholder, inputMode, className, keepInvalid, onInvalidChange, ...rest }: Props) {
+export function NumberInput({ value, onChange, min, max, placeholder, inputMode, className, keepInvalid, allowEmpty, onInvalidChange, ...rest }: Props) {
   const [text, setText] = useState(show(value));
   const [invalid, setInvalid] = useState(false);
 
@@ -32,7 +34,7 @@ export function NumberInput({ value, onChange, min, max, placeholder, inputMode,
     const n = Number(next);
     const empty = next.trim() === '';
     // keepInvalid の欄では空も「未入力」として赤く残す（勝手に元の値へ戻さない）
-    const ok = empty ? !keepInvalid : Number.isFinite(n) && n >= min && n <= max;
+    const ok = empty ? !keepInvalid || !!allowEmpty : Number.isFinite(n) && n >= min && n <= max;
     setInvalid(!ok);
     onInvalidChange?.(!ok);
     // 範囲外・非数は途中の値を残さず null にする（表示と保存値を食い違わせない）

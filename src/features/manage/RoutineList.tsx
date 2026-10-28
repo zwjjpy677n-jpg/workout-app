@@ -3,6 +3,7 @@ import { Button } from '../../components/Button';
 import { useRoutines } from '../../hooks/useData';
 import { loadReferenceMenu } from '../../db/menuSeed';
 import { WEEKDAY_LABEL, type Routine } from '../../lib/types';
+import { ReceivedMenus } from './ReceivedMenus';
 import { RoutineForm } from './RoutineForm';
 import s from './manage.module.css';
 
@@ -34,6 +35,7 @@ export function RoutineList() {
           参考メニューを読み込む
         </Button>
       </div>
+      <ReceivedMenus />
       {editing && <RoutineForm routine={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
     </>
   );

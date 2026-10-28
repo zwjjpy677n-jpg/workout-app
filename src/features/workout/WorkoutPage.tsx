@@ -20,6 +20,7 @@ import { entryComplete } from '../../lib/routineEntries';
 import { completeSet, placeholderFor } from './workoutOps';
 import { toDateKey } from '../../lib/dates';
 import { previousEntry } from '../../lib/summary';
+import { restOf } from '../../lib/rest';
 import { emptySet, type Exercise, type Workout, type WorkoutEntry, type WorkoutSet } from '../../lib/types';
 import { ExerciseRow } from './ExerciseRow';
 import { ExercisePicker } from './ExercisePicker';
@@ -85,7 +86,8 @@ export function WorkoutPage() {
 
   /** 自分でセットするレストタイマーの初期値: 開いている種目のレスト秒数（種目を閉じていれば 90 秒） */
   const openEntry = open != null ? w.entries[open] : undefined;
-  const manualRestSec = (openEntry && exMap.get(openEntry.exerciseId)?.restSec) || 90;
+  const openEx = openEntry && exMap.get(openEntry.exerciseId);
+  const manualRestSec = (openEntry && openEx && restOf(openEntry, openEx)) || 90;
 
   /** 入力のあるセットを完了にして、次の未完了の種目を開く（完了済みなら完了を取り消す） */
   function completeAndNext(i: number) {
@@ -106,7 +108,7 @@ export function WorkoutPage() {
     if (!newlyDone) return;
     const next = { ...e, sets };
     setEntry(i, next);
-    if (!editMode) timer.start(ex.restSec);
+    if (!editMode) timer.start(restOf(e, ex));
     const entries = w!.entries.map((x, j) => (j === i ? next : x));
     // 後ろの未完了 → 無ければ前に戻って最初の未完了
     const order = [...entries.keys()].filter((j) => j > i).concat([...entries.keys()].filter((j) => j < i));
@@ -178,7 +180,7 @@ export function WorkoutPage() {
               update({ ...w, entries: w.entries.filter((_, j) => j !== i) });
               setOpenIdx(open === i ? null : open != null && open > i ? open - 1 : open);
             }}
-            onSetDone={editMode ? undefined : () => timer.start(ex.restSec)}
+            onSetDone={editMode ? undefined : () => timer.start(restOf(e, ex))}
             onCompleteAndNext={() => completeAndNext(i)}
             extraActions={
               ex.type === 'weight'

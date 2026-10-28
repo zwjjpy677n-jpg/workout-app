@@ -22,6 +22,8 @@ export interface RoutineItem {
   /** 重量の上げ幅 kg */
   inc: number;
   note: string;
+  /** このメニューでのレスト秒。null・無し = 種目のレスト秒 */
+  restSec?: number | null;
 }
 
 export interface Routine {
@@ -100,7 +102,7 @@ export function emptySet(): WorkoutSet {
 }
 
 export function defaultItem(exerciseId: string): RoutineItem {
-  return { exerciseId, sets: 3, reps: '10', main: false, inc: 2.5, note: '' };
+  return { exerciseId, sets: 3, reps: '10', main: false, inc: 2.5, note: '', restSec: null };
 }
 
 export function emptyCondition(): Condition {
@@ -115,6 +117,8 @@ export interface EntryTarget {
   main: boolean;
   inc: number;
   note: string;
+  /** ルーティンのレスト秒（null・無し = 種目のレスト秒） */
+  restSec?: number | null;
 }
 
 export interface TestResult {

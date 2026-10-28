@@ -14,7 +14,7 @@ const r = routine('LEG', [item('squat', { sets: 3, reps: '5', main: true }), ite
 test('buildRoutineEntries: おすすめ値を実値で入れ target を写す', () => {
   const es = buildRoutineEntries({ routine: r, exercises: map, history, deload: false, at: now });
   expect(es.map((e) => e.exerciseId)).toEqual(['squat', 'plank']);
-  expect(es[0].target).toEqual({ sets: 3, reps: '5', main: true, inc: 2.5, note: '' });
+  expect(es[0].target).toEqual({ sets: 3, reps: '5', main: true, inc: 2.5, note: '', restSec: null });
   expect(es[0].sets).toHaveLength(3);
   expect(es[0].sets[0]).toMatchObject({ weight: 82.5, reps: 5, durationSec: null, done: false, warmup: false });
   expect(es[0].slowed).toBe(false);
@@ -42,4 +42,9 @@ test('entryComplete', () => {
   expect(entryComplete(entry('a', [set(), set({ done: false })]))).toBe(false);
   expect(entryComplete(entry('a', [set({ warmup: true })]))).toBe(false);
   expect(entryComplete(entry('a', []))).toBe(false);
+});
+
+test('buildRoutineEntries: メニューのレストを target に写す', () => {
+  const rr = routine('LEG', [item('squat', { restSec: 45 })]);
+  expect(buildRoutineEntries({ routine: rr, exercises: map, history, deload: false, at: now })[0].target?.restSec).toBe(45);
 });

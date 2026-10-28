@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/Button';
 import { useFriends, useProfile } from '../../hooks/useData';
 import { formatMD } from '../../lib/dates';
+import { Inbox } from './Inbox';
 import { NameSheet } from './NameSheet';
 import { PasteSheet } from './PasteSheet';
 import { useShareMine } from './useShareMine';
@@ -26,6 +27,8 @@ export function FriendsPage() {
         <Button block onClick={() => setSheet('paste')}>リンクを貼り付けて追加</Button>
       </div>
       {note && <p role={note.kind} className={note.kind === 'alert' ? s.error : s.ok}>{note.text}</p>}
+
+      <Inbox />
 
       {friends && friends.length === 0 && <p className={s.empty}>まだ友達がいません。友達に GRIND の記録を送ってもらって、ここに貼り付けてください</p>}
       <div className={s.list}>

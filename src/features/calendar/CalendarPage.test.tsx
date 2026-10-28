@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { resetDb } from '../../db/db';
+import { db, resetDb } from '../../db/db';
 import { listExercises, listWorkouts, saveWorkout, setBodyweight } from '../../db/repository';
 import { ensureSeeded } from '../../db/seed';
 import { entry, set, wk } from '../../test/factories';
@@ -83,4 +83,15 @@ test('削除と編集', async () => {
   const d3 = await screen.findByRole('region', { name: '10/3 SAT' });
   await userEvent.click(within(d3).getByRole('button', { name: '編集' }));
   expect(await screen.findByTestId('location')).toHaveTextContent(/^\/workout\/w\d+$/);
+});
+
+test('届いたフィードバックが記録の下と種目の下に出る', async () => {
+  await db.feedbackIn.bulkPut([
+    { id: 'fb1', friendId: 'f1', friendName: 'じろう', workoutId: w22, week: null, exerciseId: null, text: 'いい日だね', at: 1, read: false },
+    { id: 'fb2', friendId: 'f1', friendName: 'じろう', workoutId: w22, week: null, exerciseId: ids['ベンチプレス'], text: 'ベンチ伸びてる', at: 2, read: false },
+  ]);
+  renderRoute('/calendar?date=2026-10-22', '/calendar', <CalendarPage />);
+  const detail = await screen.findByRole('region', { name: /10\/22/ });
+  expect(await within(detail).findByText('じろうさん: いい日だね')).toBeInTheDocument();
+  expect(within(detail).getByText('じろうさん: ベンチ伸びてる')).toBeInTheDocument();
 });

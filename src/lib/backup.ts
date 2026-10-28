@@ -47,8 +47,9 @@ const isExerciseBase = (v: unknown): v is Obj =>
 const isExercise = (v: unknown) => isExerciseBase(v) && inRange(v.barKg, 0, 100);
 
 const isRoutineV1 = (v: unknown) => isObj(v) && isStr(v.id) && isStr(v.name) && arrOf(v.exerciseIds, isStr) && isNum(v.createdAt);
+const isRest = (v: unknown) => v === undefined || inRange(v, 10, 600);
 const isItem = (v: unknown) =>
-  isObj(v) && isStr(v.exerciseId) && inRange(v.sets, 1, 20, false) && isStr(v.reps) && isBool(v.main) && inRange(v.inc, 0.5, 20, false) && isStr(v.note);
+  isObj(v) && isRest(v.restSec) && isStr(v.exerciseId) && inRange(v.sets, 1, 20, false) && isStr(v.reps) && isBool(v.main) && inRange(v.inc, 0.5, 20, false) && isStr(v.note);
 const isRoutine = (v: unknown) =>
   isObj(v) && isStr(v.id) && isStr(v.name) && (v.weekday === null || (Number.isInteger(v.weekday) && (v.weekday as number) >= 0 && (v.weekday as number) <= 6)) &&
   arrOf(v.items, isItem) && isNum(v.createdAt);
@@ -56,7 +57,7 @@ const isRoutine = (v: unknown) =>
 const isSet = (v: unknown) =>
   isObj(v) && inRange(v.weight, -200, 1000) && inRange(v.reps, 0, 999) && inRange(v.durationSec, 0, 36000) && inRange(v.rpe, 1, 10) &&
   isBool(v.warmup) && isStr(v.note) && isBool(v.done);
-const isTarget = (v: unknown) => v === undefined || (isObj(v) && isNum(v.sets) && isStr(v.reps) && isBool(v.main) && isNum(v.inc) && isStr(v.note));
+const isTarget = (v: unknown) => v === undefined || (isObj(v) && isRest(v.restSec) && isNum(v.sets) && isStr(v.reps) && isBool(v.main) && isNum(v.inc) && isStr(v.note));
 const isEntry = (v: unknown) => isObj(v) && isStr(v.exerciseId) && arrOf(v.sets, isSet) && isTarget(v.target) && (v.slowed === undefined || isBool(v.slowed));
 const isCondition = (v: unknown) => isObj(v) && inRange(v.sleep, 1, 5) && inRange(v.fatigue, 1, 5) && inRange(v.motivation, 1, 5);
 const isWorkoutBase = (v: unknown): v is Obj =>

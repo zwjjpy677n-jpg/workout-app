@@ -6,7 +6,8 @@ import { exportAll, getProgram, getSettings, listExercises, listRoutines, saveRo
 import { db } from '../../db/db';
 import { defaultItem } from '../../lib/types';
 import { ensureSeeded } from '../../db/seed';
-import { ManagePage } from './ManagePage';
+import { ManagePage, ManageRoute } from './ManagePage';
+import { renderRoute } from '../../test/render';
 
 beforeEach(async () => {
   await resetDb();
@@ -54,6 +55,35 @@ test('ルーティンを作成できる', async () => {
   const [r] = await listRoutines();
   expect(r.name).toBe('PUSH');
   expect(r.items).toHaveLength(2);
+});
+
+test('ルーティンの種目ごとにレストを決められる（空欄は種目の設定、範囲外は保存しない）', async () => {
+  render(<ManagePage />);
+  await tab('ルーティン');
+  await userEvent.click(screen.getByRole('button', { name: '＋ ルーティンを追加' }));
+  const dlg = screen.getByRole('dialog', { name: 'ルーティンを追加' });
+  await userEvent.type(within(dlg).getByLabelText('ルーティン名'), 'PUSH');
+  await userEvent.click(await within(dlg).findByRole('checkbox', { name: 'ベンチプレス' }));
+  await userEvent.click(within(dlg).getByRole('checkbox', { name: 'ディップス' }));
+  const rest = within(dlg).getByLabelText('ベンチプレス レスト秒');
+  await userEvent.type(rest, '5');
+  await userEvent.click(within(dlg).getByRole('button', { name: '保存' }));
+  expect(await within(dlg).findByText('ベンチプレスのレストは10〜600秒で入力してください')).toBeInTheDocument();
+  await userEvent.clear(rest);
+  await userEvent.type(rest, '60');
+  await userEvent.click(within(dlg).getByRole('button', { name: '保存' }));
+  await waitFor(async () => expect((await listRoutines())[0]?.items.map((i) => i.restSec)).toEqual([60, null]));
+});
+
+test('ルーティンの下に受け取ったメニューの履歴', async () => {
+  const { saveProfileName } = await import('../../db/friends');
+  const { importMenu } = await import('../../db/menus');
+  const me = await saveProfileName('たろう');
+  await importMenu({ id: 'friend000001', n: 'じろう', to: me.id, at: 1, mid: 'menu00000001', name: 'PULL', weekday: 2, items: [['懸垂', 1, 1, 90, 3, '8', 0, 2.5, '']] }, 'add', new Date(2026, 9, 28, 9).getTime());
+  render(<ManagePage />);
+  await tab('ルーティン');
+  const hist = await screen.findByRole('region', { name: '受け取ったメニュー' });
+  expect(within(hist).getByText('10/28 じろうさん PULL（火） ・ 追加')).toBeInTheDocument();
 });
 
 test('体重履歴を表示・削除', async () => {
@@ -270,4 +300,9 @@ test('体重履歴に体脂肪率を表示・編集できる', async () => {
   await userEvent.type(fat, '14.8');
   await userEvent.click(within(dlg).getByRole('button', { name: '保存' }));
   expect(await screen.findByText('14.8%')).toBeInTheDocument();
+});
+
+test('?tab=routines で開くとルーティンが最初から開いている', async () => {
+  renderRoute('/manage?tab=routines', '/manage', <ManageRoute />);
+  expect(await screen.findByRole('tab', { name: 'ルーティン', selected: true })).toBeInTheDocument();
 });
