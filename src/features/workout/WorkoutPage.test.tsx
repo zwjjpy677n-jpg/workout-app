@@ -261,6 +261,36 @@ describe('ルーティンから始めた記録画面', () => {
     expect(screen.getByRole('button', { name: '最後の回でスピードが落ちた' })).toHaveAttribute('aria-pressed', 'true');
   });
 
+  test('最後の種目を完了すると、前に残っている未完了の種目に戻る', async () => {
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    await rows();
+    await userEvent.click(header('スクワット'));
+    const sq = await rows('スクワット');
+    for (const r of sq) {
+      await userEvent.type(within(r).getByLabelText('重量'), '60');
+    }
+    await userEvent.click(screen.getByRole('button', { name: 'この種目を完了して次へ' }));
+    expect(await screen.findByRole('button', { name: /ベンチプレス/, expanded: true })).toBeInTheDocument();
+  });
+
+  test('何も完了できなければ「次へ」でも開いたまま', async () => {
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    await rows();
+    await userEvent.click(header('スクワット'));
+    await userEvent.click(screen.getByRole('button', { name: 'この種目を完了して次へ' }));
+    expect(screen.getByRole('button', { name: /スクワット/, expanded: true })).toBeInTheDocument();
+  });
+
+  test('開いている種目を削除すると、どれも開かない', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    await rows();
+    await userEvent.click(within(screen.getByRole('region', { name: 'ベンチプレス' })).getByRole('button', { name: 'メニュー' }));
+    await userEvent.click(screen.getByRole('button', { name: '種目を削除' }));
+    expect(screen.queryByRole('region', { name: 'ベンチプレス' })).toBeNull();
+    expect(screen.queryByRole('button', { expanded: true })).toBeNull();
+  });
+
   test('前回なしの重量種目は「今回の目標」と回数表記', async () => {
     renderRoute('/workout', '/workout', <WorkoutPage />);
     await rows();
