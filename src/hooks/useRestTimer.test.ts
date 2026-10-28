@@ -1,5 +1,8 @@
 import { act, renderHook } from '@testing-library/react';
+import { beep, setSoundPrefs } from '../lib/sound';
 import { useRestTimer } from './useRestTimer';
+
+vi.mock('../lib/sound', async (orig) => ({ ...(await orig<typeof import('../lib/sound')>()), beep: vi.fn() }));
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
@@ -73,5 +76,29 @@ describe('再読み込みと終了表示', () => {
     act(() => result.current.start(30));
     act(() => result.current.skip());
     expect(result.current.finished).toBe(false);
+  });
+});
+
+describe('終了の音', () => {
+  beforeEach(() => vi.mocked(beep).mockClear());
+
+  test('残り3・2・1秒で短い音、0で終了の音', () => {
+    const { result } = renderHook(() => useRestTimer());
+    act(() => result.current.start(5));
+    act(() => vi.advanceTimersByTime(1000));
+    expect(beep).not.toHaveBeenCalled();
+    for (let i = 0; i < 3; i++) act(() => vi.advanceTimersByTime(1000));
+    expect(vi.mocked(beep).mock.calls.map((c) => c[0])).toEqual(['tick', 'tick', 'tick']);
+    act(() => vi.advanceTimersByTime(1000));
+    expect(vi.mocked(beep).mock.calls.map((c) => c[0])).toEqual(['tick', 'tick', 'tick', 'end']);
+  });
+
+  test('音をオフにすると鳴らない', () => {
+    setSoundPrefs({ on: false, silent: false });
+    const { result } = renderHook(() => useRestTimer());
+    act(() => result.current.start(3));
+    act(() => vi.advanceTimersByTime(4000));
+    expect(result.current.finished).toBe(true);
+    expect(beep).not.toHaveBeenCalled();
   });
 });

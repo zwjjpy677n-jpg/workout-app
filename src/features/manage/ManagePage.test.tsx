@@ -1,6 +1,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { resetDb } from '../../db/db';
+import { getSoundPrefs } from '../../lib/sound';
 import { exportAll, getProgram, getSettings, listExercises, listRoutines, saveRoutine, setBodyweight, startWorkout } from '../../db/repository';
 import { db } from '../../db/db';
 import { defaultItem } from '../../lib/types';
@@ -70,6 +71,20 @@ test('設定でプレートをオフにすると保存される', async () => {
   await tab('設定');
   await userEvent.click(await screen.findByRole('checkbox', { name: '1.25kg' }));
   await waitFor(async () => expect((await getSettings()).plates).not.toContain(1.25));
+});
+
+test('設定でレスト終了の音を切り替えられる（端末に保存）', async () => {
+  render(<ManagePage />);
+  await tab('設定');
+  const on = await screen.findByRole('checkbox', { name: 'レスト終了を音で知らせる' });
+  const silent = screen.getByRole('checkbox', { name: 'マナーモード中も鳴らす' });
+  expect(on).toBeChecked();
+  expect(silent).not.toBeChecked();
+  await userEvent.click(silent);
+  expect(getSoundPrefs()).toEqual({ on: true, silent: true });
+  await userEvent.click(on);
+  expect(getSoundPrefs()).toEqual({ on: false, silent: true });
+  expect(screen.getByRole('checkbox', { name: 'マナーモード中も鳴らす' })).toBeDisabled();
 });
 
 test('不正なJSONのインポートはエラー表示し、データは変わらない', async () => {

@@ -3,6 +3,8 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { deleteWorkout, finishWorkout, getActiveWorkout, getWorkout, saveEditedWorkout, saveWorkout } from '../../db/repository';
 import { useElapsed } from '../../hooks/useElapsed';
 import { useRestTimer } from '../../hooks/useRestTimer';
+import { useWakeLock } from '../../hooks/useWakeLock';
+import { unlockSound } from '../../lib/sound';
 import { Button } from '../../components/Button';
 import { Sheet } from '../../components/Sheet';
 import { isPR } from '../../lib/progress';
@@ -43,6 +45,13 @@ export function WorkoutPage() {
   /** 開いている種目の index。undefined = まだ決めていない（最初の未完了を開く） */
   const [openIdx, setOpenIdx] = useState<number | null | undefined>(undefined);
   const [saveFailed, setSaveFailed] = useState(false);
+  // 記録中は画面を消さず、タップのたびに音を出せる状態にしておく（iPhone はタップ中しか許可されない）
+  useWakeLock(!editMode && !!w);
+  useEffect(() => {
+    if (editMode) return;
+    document.addEventListener('pointerdown', unlockSound);
+    return () => document.removeEventListener('pointerdown', unlockSound);
+  }, [editMode]);
 
   useEffect(() => {
     let alive = true;
