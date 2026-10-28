@@ -1,5 +1,5 @@
 import { emptySet, type WorkoutSet } from './types';
-import { estimate1RM, formatDuration, formatKg, formatSet, isWorking, setVolume, topSet } from './calc';
+import { estimate1RM, formatDuration, formatKg, formatSet, formatVolume, isWorking, setVolume, topSet, volumeParts } from './calc';
 
 const s = (o: Partial<WorkoutSet>): WorkoutSet => ({ ...emptySet(), done: true, ...o });
 
@@ -47,4 +47,12 @@ test('formatSet', () => {
   expect(formatSet('bodyweight', u({ weight: -15, reps: 6 }))).toBe('自重-15kg × 6');
   expect(formatSet('bodyweight', u({ weight: null, reps: 15 }))).toBe('自重 × 15');
   expect(formatSet('time', u({ durationSec: 90, rpe: 7.5 }))).toBe('1:30 @RPE7.5');
+});
+
+test('formatVolume は1000kg未満はkg、以上はt', () => {
+  expect(formatVolume(850)).toBe('850kg');
+  expect(formatVolume(1500)).toBe('1.5t');
+  expect(formatVolume(4000)).toBe('4.0t');
+  expect(volumeParts(18420)).toEqual({ value: '18.4', unit: 't' });
+  expect(volumeParts(0)).toEqual({ value: '0', unit: 'kg' });
 });

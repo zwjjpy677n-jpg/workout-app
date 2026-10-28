@@ -63,3 +63,12 @@ export function formatSet(type: ExerciseType, set: WorkoutSet): string {
       return `${formatDuration(set.durationSec ?? 0)}${rpeSuffix(set)}`;
   }
 }
+
+export function volumeParts(kg: number): { value: string; unit: 'kg' | 't' } {
+  return kg < 1000 ? { value: String(Math.round(kg)), unit: 'kg' } : { value: (kg / 1000).toFixed(1), unit: 't' };
+}
+
+export function formatVolume(kg: number): string {
+  const p = volumeParts(kg);
+  return p.value + p.unit;
+}
