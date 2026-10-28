@@ -74,6 +74,17 @@ test('ルーティンの種目ごとにレストを決められる（空欄は�
   await waitFor(async () => expect((await listRoutines())[0]?.items.map((i) => i.restSec)).toEqual([60, null]));
 });
 
+test('ルーティンの下に受け取ったメニューの履歴', async () => {
+  const { saveProfileName } = await import('../../db/friends');
+  const { importMenu } = await import('../../db/menus');
+  const me = await saveProfileName('たろう');
+  await importMenu({ id: 'friend000001', n: 'じろう', to: me.id, at: 1, mid: 'menu00000001', name: 'PULL', weekday: 2, items: [['懸垂', 1, 1, 90, 3, '8', 0, 2.5, '']] }, 'add', new Date(2026, 9, 28, 9).getTime());
+  render(<ManagePage />);
+  await tab('ルーティン');
+  const hist = await screen.findByRole('region', { name: '受け取ったメニュー' });
+  expect(within(hist).getByText('10/28 じろうさん PULL（火） ・ 追加')).toBeInTheDocument();
+});
+
 test('体重履歴を表示・削除', async () => {
   await setBodyweight('2026-10-28', 71.2);
   vi.spyOn(window, 'confirm').mockReturnValue(true);

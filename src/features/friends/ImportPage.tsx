@@ -1,13 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { importFeedback, previewFeedback } from '../../db/feedback';
 import { getProfile, previewImport, saveImportedShare } from '../../db/friends';
+import { importMenu, previewMenu } from '../../db/menus';
+import { formatDuration } from '../../lib/calc';
 import { formatMD, formatMDRange } from '../../lib/dates';
 import { decodeShare, ShareError } from '../../lib/share/codec';
 import { parseFeedbackPayload, type FeedbackPayload } from '../../lib/share/feedbackPayload';
 import { parseSharePayload } from '../../lib/share/importShare';
+import { menuTitle, parseMenuPayload, type MenuPayload } from '../../lib/share/menuPayload';
 import type { SharePayload } from '../../lib/share/sharePayload';
 import { READ_ERRORS } from './PasteSheet';
 import s from './friends.module.css';
@@ -16,7 +19,8 @@ type State =
   | { kind: 'loading' }
   | { kind: 'error'; text: string }
   | { kind: 'records'; p: SharePayload; mine: boolean; preview: Awaited<ReturnType<typeof previewImport>> }
-  | { kind: 'feedback'; p: FeedbackPayload; preview: Awaited<ReturnType<typeof previewFeedback>> };
+  | { kind: 'feedback'; p: FeedbackPayload; preview: Awaited<ReturnType<typeof previewFeedback>> }
+  | { kind: 'menu'; p: MenuPayload; preview: Awaited<ReturnType<typeof previewMenu>> };
 
 async function load(d: string): Promise<State> {
   try {
@@ -29,7 +33,8 @@ async function load(d: string): Promise<State> {
       const p = parseFeedbackPayload(data);
       return { kind: 'feedback', p, preview: await previewFeedback(p) };
     }
-    return { kind: 'error', text: 'このアプリではまだ読み込めません。GRIND を最新にしてください' };
+    const p = parseMenuPayload(data);
+    return { kind: 'menu', p, preview: await previewMenu(p) };
   } catch (e) {
     return { kind: 'error', text: (e instanceof ShareError && READ_ERRORS[e.code]) || READ_ERRORS.invalid };
   }
@@ -102,7 +107,44 @@ export function ImportPage() {
           </div>
         </Card>
       )}
+      {st.kind === 'menu' && <MenuCard st={st} failed={failed} cancel={cancel} onSave={(mode) => save(() => importMenu(st.p, mode, Date.now()), '/manage')} />}
       <p className={s.hint}>ホーム画面に追加した GRIND で使うには、このリンクをコピーして『友達』タブに貼り付けてください</p>
     </div>
+  );
+}
+
+type MenuState = Extract<State, { kind: 'menu' }>;
+
+function MenuCard({ st, failed, cancel, onSave }: { st: MenuState; failed: ReactNode; cancel: ReactNode; onSave(mode: 'replace' | 'add'): void }) {
+  const { p, preview } = st;
+  const blocked = !preview.mine ? 'あなた宛てではないメニューです' : preview.received ? 'このメニューは受け取り済みです' : null;
+  const isNew = new Set(preview.newExercises);
+  return (
+    <Card>
+      <h2 className={s.importTitle}>{`${p.n}さんからのメニュー『${menuTitle(p.name, p.weekday)}』`}</h2>
+      <ul className={s.menuPreview}>
+        {p.items.map(([name, , , rest, sets, reps], i) => (
+          <li key={i} className={s.entry}>
+            <span>
+              {name}
+              {isNew.has(name.trim()) && <em className={s.main}>新しく追加</em>}
+            </span>
+            <span className="num">{`${sets}セット×${reps} ・ レスト ${formatDuration(rest)}`}</span>
+          </li>
+        ))}
+      </ul>
+      {blocked && <p role="alert" className={s.error}>{blocked}</p>}
+      {failed}
+      <div className={s.actions}>
+        {!blocked && preview.sameName && (
+          <>
+            <Button block variant="primary" onClick={() => onSave('replace')}>置き換える</Button>
+            <Button block onClick={() => onSave('add')}>別のメニューとして追加</Button>
+          </>
+        )}
+        {!blocked && !preview.sameName && <Button block variant="primary" onClick={() => onSave('add')}>追加する</Button>}
+        {cancel}
+      </div>
+    </Card>
   );
 }
