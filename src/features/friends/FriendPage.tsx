@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '../../components/Button';
 import { deleteFriend } from '../../db/friends';
 import { useFriend, useFriendWorkouts } from '../../hooks/useData';
@@ -21,7 +21,8 @@ export function FriendPage() {
   const navigate = useNavigate();
   const friend = useFriend(id);
   const workouts = useFriendWorkouts(id);
-  const [tab, setTab] = useState<(typeof TABS)[number]['key']>('weeks');
+  const [params] = useSearchParams();
+  const [tab, setTab] = useState<(typeof TABS)[number]['key']>(TABS.find((t) => t.key === params.get('tab'))?.key ?? 'weeks');
   const exMap = useMemo(() => new Map(friend?.exercises.map((e) => [e.id, e])), [friend]);
 
   if (friend === null) return <Navigate to="/friends" replace />;
