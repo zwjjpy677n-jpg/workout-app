@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { getProfile, previewImport, saveImportedShare } from '../../db/friends';
-import { formatMD } from '../../lib/dates';
+import { formatMD, formatMDRange } from '../../lib/dates';
 import { decodeShare, ShareError } from '../../lib/share/codec';
 import { parseSharePayload } from '../../lib/share/importShare';
 import type { SharePayload } from '../../lib/share/sharePayload';
@@ -56,7 +56,7 @@ export function ImportPage() {
       {st.kind === 'ready' && (
         <Card>
           <h2 className={s.importTitle}>
-            {st.p.n}さんの記録（{st.preview.total}回分{st.preview.from != null && `・${formatMD(st.preview.from)}〜${formatMD(st.preview.to!)}`}）
+            {st.p.n}さんの記録（{st.preview.total}回分{st.preview.from != null && `・${formatMDRange(st.preview.from, st.preview.to!)}`}）
           </h2>
           <p className={s.sub}>種目 {st.p.x.length} ・ メニュー {st.p.r.length}</p>
           {st.mine ? (

@@ -47,6 +47,11 @@ export function formatMD(ts: number): string {
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
+/** 期間の表示。同じ日なら1つだけ */
+export function formatMDRange(from: number, to: number): string {
+  return toDateKey(from) === toDateKey(to) ? formatMD(from) : `${formatMD(from)}〜${formatMD(to)}`;
+}
+
 export function formatMDW(ts: number): string {
   return `${formatMD(ts)} ${WEEKDAYS[new Date(ts).getDay()]}`;
 }

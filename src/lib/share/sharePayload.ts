@@ -1,5 +1,5 @@
 import { isWorking, topSet } from '../calc';
-import { DAY, formatMD } from '../dates';
+import { DAY, formatMDRange } from '../dates';
 import { completed } from '../summary';
 import { BODY_PARTS, type Exercise, type ExerciseType, type Routine, type Workout, type WorkoutSet } from '../types';
 import { encodeShare, ShareError, shareUrl } from './codec';
@@ -71,7 +71,7 @@ export async function buildShareLink(src: ShareSource, now: number) {
     const starts = p.w.map((wo) => wo[1] * 60000);
     const from = starts.length ? Math.min(...starts) : now;
     const to = starts.length ? Math.max(...starts) : now;
-    const range = starts.length ? `${formatMD(from)}〜${formatMD(to)}・` : '';
+    const range = starts.length ? `${formatMDRange(from, to)}・` : '';
     const text = `GRIND の記録です（${range}${p.w.length}回分）。GRIND の『友達』タブに貼り付けてね\n${link}`;
     return { text, weeks, trimmed: weeks < 8, count: p.w.length, from, to };
   }

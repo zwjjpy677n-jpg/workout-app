@@ -1,4 +1,4 @@
-import { formatMD, formatMDW, monthGrid, startOfWeek, toDateKey } from './dates';
+import { formatMD, formatMDRange, formatMDW, monthGrid, startOfWeek, toDateKey } from './dates';
 
 test('日曜は月曜始まりの当週に入る', () => {
   const sun = new Date(2026, 10, 1, 23, 59).getTime(); // 2026-11-01 (日)
@@ -23,4 +23,9 @@ test('formatMD / formatMDW', () => {
   const t = new Date(2026, 9, 22, 9).getTime();
   expect(formatMD(t)).toBe('10/22');
   expect(formatMDW(t)).toBe('10/22 THU');
+});
+
+test('formatMDRange は同じ日なら1つだけ', () => {
+  expect(formatMDRange(new Date(2026, 9, 28, 9).getTime(), new Date(2026, 9, 28, 20).getTime())).toBe('10/28');
+  expect(formatMDRange(new Date(2026, 8, 3).getTime(), new Date(2026, 9, 27).getTime())).toBe('9/3〜10/27');
 });
