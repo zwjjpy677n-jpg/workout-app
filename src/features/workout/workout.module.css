@@ -76,8 +76,8 @@
 .iconBtn.has { color: var(--text); }
 .doneBtn { min-height: 34px; padding: 0 14px; border-radius: 99px; border: 1.5px solid var(--line); font-weight: 700; font-size: 13px; color: var(--muted); }
 .doneBtn[aria-pressed='true'] { background: var(--red); border-color: var(--red); color: #fff; }
-.inputs { display: grid; grid-template-columns: 1fr 1fr 64px; gap: 8px; }
-.inputs.single { grid-template-columns: 1fr 64px; }
+.inputs { display: grid; grid-template-columns: 1.25fr 1fr 52px; gap: 6px; }
+.inputs.single { grid-template-columns: 1fr 52px; }
 .rpe { display: flex; flex-direction: column; justify-content: center; }
 .rpe span { font-size: 10px; color: var(--muted); text-align: center; letter-spacing: .05em; }
 .rpe input { min-height: 34px; font-size: 15px; }
