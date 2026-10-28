@@ -1,5 +1,6 @@
 import { toFriendRecords, type Friend, type FriendWorkout } from '../lib/share/importShare';
 import type { SharePayload } from '../lib/share/sharePayload';
+import { randomId } from '../lib/share/ids';
 import { db } from './db';
 
 export type Profile = { id: string; name: string };
@@ -9,13 +10,11 @@ export async function getProfile(): Promise<Profile | null> {
   return row?.key === 'profile' ? { id: row.id, name: row.name } : null;
 }
 
-const ALNUM = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-const newId = () => Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => ALNUM[b % ALNUM.length]).join('');
 
 /** 名前を保存する。ID が無ければこのとき作る（以後変えない） */
 export async function saveProfileName(name: string): Promise<Profile> {
   return db.transaction('rw', db.settings, async () => {
-    const p = { id: (await getProfile())?.id ?? newId(), name };
+    const p = { id: (await getProfile())?.id ?? randomId(), name };
     await db.settings.put({ key: 'profile', ...p });
     return p;
   });

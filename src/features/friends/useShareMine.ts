@@ -1,9 +1,10 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { getProfile } from '../../db/friends';
 import { listExercises, listRoutines, listWorkouts } from '../../db/repository';
 import { ShareError } from '../../lib/share/codec';
 import { buildShareLink } from '../../lib/share/sharePayload';
+import { usePreparedLink } from './usePreparedLink';
 
 export type ShareNote = { kind: 'status' | 'alert'; text: string } | null;
 type Link = Awaited<ReturnType<typeof buildShareLink>>;
@@ -23,20 +24,8 @@ export function useShareMine() {
     if (!profile) return null;
     return { profile, exercises: await listExercises({ includeArchived: true }), routines: await listRoutines(), workouts: await listWorkouts() };
   });
-  const [link, setLink] = useState<Link | ShareError | null>(null);
+  const link = usePreparedLink<Link>(src ? () => buildShareLink(src, Date.now()) : null, [src]);
   const [note, setNote] = useState<ShareNote>(null);
-
-  useEffect(() => {
-    if (!src) return setLink(null);
-    let alive = true;
-    buildShareLink(src, Date.now()).then(
-      (l) => alive && setLink(l),
-      (e: unknown) => alive && setLink(e instanceof ShareError ? e : new ShareError('invalid')),
-    );
-    return () => {
-      alive = false;
-    };
-  }, [src]);
 
   const shareMine = () => {
     setNote(null);
