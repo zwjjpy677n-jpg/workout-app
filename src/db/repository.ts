@@ -155,8 +155,8 @@ export async function listWorkouts(): Promise<Workout[]> {
 }
 
 // --- 体重 ---
-export async function setBodyweight(date: string, kg: number): Promise<void> {
-  await db.bodyweights.put({ date, kg });
+export async function setBodyweight(date: string, kg: number, fatPct: number | null = null): Promise<void> {
+  await db.bodyweights.put({ date, kg, fatPct });
 }
 
 export async function deleteBodyweight(date: string): Promise<void> {
@@ -164,7 +164,7 @@ export async function deleteBodyweight(date: string): Promise<void> {
 }
 
 export async function listBodyweights(): Promise<BodyweightLog[]> {
-  return db.bodyweights.orderBy('date').toArray();
+  return (await db.bodyweights.orderBy('date').toArray()).map((l) => ({ ...l, fatPct: l.fatPct ?? null }));
 }
 
 // --- 設定 ---

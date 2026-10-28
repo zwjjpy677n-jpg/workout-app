@@ -1,5 +1,5 @@
 import { entry, ex, set, wk } from '../test/factories';
-import { bodyweightSeries, isPR, METRICS, personalBest, progressSeries, rangeStart } from './progress';
+import { bodyfatSeries, bodyweightSeries, isPR, METRICS, personalBest, progressSeries, rangeStart } from './progress';
 
 const bench = ex('bench');
 const pullup = ex('pullup', { type: 'bodyweight' });
@@ -56,4 +56,9 @@ test('isPR: 初回はfalse、過去最高超えでtrue、同値はfalse', () => 
   expect(isPR(same, bench, all)).toBe(false);
   const noSet = wk(now, [entry('bench', [set({ weight: 200, reps: 5, done: false })])], { endedAt: null });
   expect(isPR(noSet, bench, all)).toBe(false);
+});
+
+test('bodyfatSeries は体脂肪率のある日だけ', () => {
+  const logs = [{ date: '2026-10-27', kg: 71, fatPct: 15.3 }, { date: '2026-10-26', kg: 71, fatPct: null }, { date: '2026-10-20', kg: 71 }];
+  expect(bodyfatSeries(logs, 'ALL', now)).toEqual([{ date: new Date(2026, 9, 27).getTime(), value: 15.3 }]);
 });

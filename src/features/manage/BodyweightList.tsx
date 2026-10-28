@@ -12,10 +12,14 @@ export function BodyweightList() {
   const logs = useBodyweights();
   const [editing, setEditing] = useState<BodyweightLog | null>(null);
   const [kg, setKg] = useState<number | null>(null);
+  const [fat, setFat] = useState<number | null>(null);
+  const [fatInvalid, setFatInvalid] = useState(false);
 
   const open = (l: BodyweightLog) => {
     setEditing(l);
     setKg(l.kg);
+    setFat(l.fatPct ?? null);
+    setFatInvalid(false);
   };
 
   return (
@@ -25,12 +29,22 @@ export function BodyweightList() {
         {[...(logs ?? [])].reverse().map((l) => (
           <button key={l.date} type="button" className={s.item} onClick={() => open(l)}>
             <span className="muted">{l.date.replaceAll('-', '/')}</span>
-            <span className="num">{formatKg(l.kg)}kg</span>
+            <span>
+              <span className="num">{formatKg(l.kg)}kg</span>
+              {l.fatPct != null && <span className="num muted" style={{ marginLeft: 10 }}>{formatKg(l.fatPct)}%</span>}
+            </span>
           </button>
         ))}
       </div>
       <Sheet open={!!editing} title={`体重 ${editing?.date ?? ''}`} onClose={() => setEditing(null)}>
-        <NumberInput value={kg} onChange={setKg} min={20} max={300} inputMode="decimal" aria-label="体重(kg)" />
+        <label className={s.field}>
+          <span>体重（kg）</span>
+          <NumberInput value={kg} onChange={setKg} min={20} max={300} inputMode="decimal" aria-label="体重(kg)" />
+        </label>
+        <label className={s.field}>
+          <span>体脂肪率（%・任意、3〜60）</span>
+          <NumberInput value={fat} onChange={setFat} onInvalidChange={setFatInvalid} min={3} max={60} inputMode="decimal" aria-label="体脂肪率(%)" />
+        </label>
         <div className={s.actions}>
           <Button
             variant="danger"
@@ -45,9 +59,9 @@ export function BodyweightList() {
           </Button>
           <Button
             variant="primary"
-            disabled={kg == null || kg < 20}
+            disabled={kg == null || kg < 20 || fatInvalid}
             onClick={async () => {
-              if (editing && kg != null) await setBodyweight(editing.date, kg);
+              if (editing && kg != null) await setBodyweight(editing.date, kg, fat);
               setEditing(null);
             }}
           >

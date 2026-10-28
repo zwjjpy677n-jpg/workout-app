@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Card } from '../../components/Card';
 import { useBodyweights, useExercises, useWorkouts } from '../../hooks/useData';
 import { estimate1RM, formatDuration, formatKg, formatSet, formatVolume, isWorking } from '../../lib/calc';
-import { bodyweightSeries, METRICS, personalBest, progressSeries, RANGES, type Metric, type Range } from '../../lib/progress';
+import { bodyfatSeries, bodyweightSeries, METRICS, personalBest, progressSeries, RANGES, type Metric, type Range } from '../../lib/progress';
 import { completed } from '../../lib/summary';
 import { PercentTable } from '../tools/PercentSheet';
 import { PlateSheet } from '../tools/PlateSheet';
@@ -11,10 +11,12 @@ import { TestCard } from './TestCard';
 import s from './progress.module.css';
 
 const BW = '__bodyweight';
+const FAT = '__bodyfat';
 type Fmt = { value(v: number): string; unit: string; delta(v: number): string };
 
 const kg1 = (v: number) => formatKg(Math.round(v * 10) / 10);
-const FORMATS: Record<Metric | 'bw', Fmt> = {
+const FORMATS: Record<Metric | 'bw' | 'fat', Fmt> = {
+  fat: { value: kg1, unit: '%', delta: (v) => `${kg1(v)}%` },
   e1rm: { value: kg1, unit: 'kg', delta: (v) => `${kg1(v)}kg` },
   maxWeight: { value: kg1, unit: 'kg', delta: (v) => `${kg1(v)}kg` },
   maxAdded: { value: kg1, unit: 'kg', delta: (v) => `${kg1(v)}kg` },
@@ -47,8 +49,12 @@ export function ProgressPage() {
   const exercise = recorded.find((e) => e.id === currentId) ?? null;
   const metrics = exercise ? METRICS[exercise.type] : [];
   const activeMetric = metrics.find((m) => m.key === metric)?.key ?? metrics[0]?.key;
-  const data = exercise && activeMetric ? progressSeries(workouts, exercise, activeMetric, range, now) : bodyweightSeries(logs, range, now);
-  const fmt = FORMATS[exercise && activeMetric ? activeMetric : 'bw'];
+  const data = exercise && activeMetric
+    ? progressSeries(workouts, exercise, activeMetric, range, now)
+    : currentId === FAT
+      ? bodyfatSeries(logs, range, now)
+      : bodyweightSeries(logs, range, now);
+  const fmt = FORMATS[exercise && activeMetric ? activeMetric : currentId === FAT ? 'fat' : 'bw'];
   const last = data.at(-1);
   const diff = data.length >= 2 ? data[data.length - 1].value - data[0].value : 0;
   const best = exercise ? personalBest(workouts, exercise) : null;
@@ -61,12 +67,13 @@ export function ProgressPage() {
       <select className={s.select} aria-label="対象" value={currentId} onChange={(e) => setTarget(e.target.value)}>
         {recorded.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
         <option value={BW}>体重</option>
+        {logs.some((l) => l.fatPct != null) && <option value={FAT}>体脂肪率</option>}
       </select>
       <div className={s.seg}>
         {RANGES.map((r) => <button key={r} type="button" aria-pressed={range === r} onClick={() => setRange(r)}>{r}</button>)}
       </div>
 
-      <div className={s.metricLabel}>{exercise ? metrics.find((m) => m.key === activeMetric)?.label : '体重'}</div>
+      <div className={s.metricLabel}>{exercise ? metrics.find((m) => m.key === activeMetric)?.label : currentId === FAT ? '体脂肪率' : '体重'}</div>
       <div className={s.hero}>
         <div className={s.big}>{last ? fmt.value(last.value) : '–'}{last && fmt.unit && <small>{fmt.unit}</small>}</div>
         {data.length >= 2 && (

@@ -69,7 +69,7 @@ test('体重を記録すると値と前回比を表示', async () => {
   await userEvent.click(screen.getByRole('button', { name: '保存' }));
   expect(await screen.findByText('71.2')).toBeInTheDocument();
   expect(screen.getByText('+1.2')).toBeInTheDocument();
-  expect(await listBodyweights()).toContainEqual({ date: '2026-10-28', kg: 71.2 });
+  expect(await listBodyweights()).toContainEqual({ date: '2026-10-28', kg: 71.2, fatPct: null });
 });
 
 describe('今日のトレーニング', () => {
@@ -200,4 +200,46 @@ test('アプリ名 GRIND を表示', async () => {
   home();
   expect(await screen.findByLabelText('GRIND')).toBeInTheDocument();
   expect(screen.queryByText(/IRON/)).toBeNull();
+});
+
+test('体重と一緒に体脂肪率も記録でき、前回比も出る', async () => {
+  await setBodyweight('2026-10-27', 70, 16);
+  home();
+  await userEvent.click(await screen.findByRole('button', { name: '体重を記録' }));
+  await userEvent.type(screen.getByLabelText('体重(kg)'), '71.2');
+  await userEvent.type(screen.getByLabelText('体脂肪率(%)'), '15.3');
+  await userEvent.click(screen.getByRole('button', { name: '保存' }));
+  expect(await screen.findByText('体脂肪 15.3%')).toBeInTheDocument();
+  expect(screen.getByText('-0.7')).toBeInTheDocument();
+  expect(await listBodyweights()).toContainEqual({ date: '2026-10-28', kg: 71.2, fatPct: 15.3 });
+});
+
+test('体脂肪率が範囲外なら保存できない', async () => {
+  home();
+  await userEvent.click(await screen.findByRole('button', { name: '体重を記録' }));
+  await userEvent.type(screen.getByLabelText('体重(kg)'), '71');
+  await userEvent.type(screen.getByLabelText('体脂肪率(%)'), '80');
+  expect(screen.getByRole('button', { name: '保存' })).toBeDisabled();
+  await userEvent.clear(screen.getByLabelText('体脂肪率(%)'));
+  await userEvent.type(screen.getByLabelText('体脂肪率(%)'), '18');
+  expect(screen.getByRole('button', { name: '保存' })).toBeEnabled();
+});
+
+test('体脂肪率を入れてから消しても、体重だけで保存できる', async () => {
+  home();
+  await userEvent.click(await screen.findByRole('button', { name: '体重を記録' }));
+  await userEvent.type(screen.getByLabelText('体重(kg)'), '71');
+  await userEvent.type(screen.getByLabelText('体脂肪率(%)'), '18');
+  await userEvent.clear(screen.getByLabelText('体脂肪率(%)'));
+  expect(screen.getByRole('button', { name: '保存' })).toBeEnabled();
+});
+
+test('範囲外のまま欄を離れると空に戻り、保存できる', async () => {
+  home();
+  await userEvent.click(await screen.findByRole('button', { name: '体重を記録' }));
+  await userEvent.type(screen.getByLabelText('体重(kg)'), '71');
+  await userEvent.type(screen.getByLabelText('体脂肪率(%)'), '80');
+  await userEvent.tab();
+  expect(screen.getByLabelText('体脂肪率(%)')).toHaveValue('');
+  expect(screen.getByRole('button', { name: '保存' })).toBeEnabled();
 });

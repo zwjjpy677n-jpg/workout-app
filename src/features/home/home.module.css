@@ -45,3 +45,5 @@
 .pbar { height: 6px; border-radius: 3px; background: var(--surface2); overflow: hidden; margin: 4px 0; }
 .pbar i { display: block; height: 100%; background: var(--red); }
 .freeBtn { margin-top: 10px; }
+.fatRow { display: flex; align-items: baseline; gap: 2px; margin-top: 2px; font-size: 13px; color: var(--muted); }
+.bwField { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; font-size: 12px; color: var(--muted); }

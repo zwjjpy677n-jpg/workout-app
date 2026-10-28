@@ -241,3 +241,18 @@ describe('ルーティン編集の範囲チェック', () => {
     expect((await listRoutines())[0].items[0].sets).toBe(3);
   });
 });
+
+test('体重履歴に体脂肪率を表示・編集できる', async () => {
+  await setBodyweight('2026-10-28', 71.2, 15.3);
+  render(<ManagePage />);
+  await tab('体重');
+  expect(await screen.findByText('15.3%')).toBeInTheDocument();
+  await userEvent.click(screen.getByText('71.2kg'));
+  const dlg = screen.getByRole('dialog');
+  const fat = within(dlg).getByLabelText('体脂肪率(%)');
+  expect(fat).toHaveValue('15.3');
+  await userEvent.clear(fat);
+  await userEvent.type(fat, '14.8');
+  await userEvent.click(within(dlg).getByRole('button', { name: '保存' }));
+  expect(await screen.findByText('14.8%')).toBeInTheDocument();
+});

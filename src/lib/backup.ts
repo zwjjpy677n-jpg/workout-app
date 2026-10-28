@@ -62,7 +62,8 @@ const isWorkoutBase = (v: unknown): v is Obj =>
   isCondition(v.condition) && arrOf(v.entries, isEntry);
 const isWorkout = (v: unknown) => isWorkoutBase(v) && (v.routineId === null || isStr(v.routineId));
 
-const isBodyweight = (v: unknown) => isObj(v) && isDateKey(v.date) && inRange(v.kg, 20, 300, false);
+const isBodyweight = (v: unknown) =>
+  isObj(v) && isDateKey(v.date) && inRange(v.kg, 20, 300, false) && (v.fatPct === undefined || inRange(v.fatPct, 3, 60));
 const isSettings = (v: unknown) => isObj(v) && inRange(v.barKg, 0, 100, false) && arrOf(v.plates, (p) => isNum(p) && p > 0);
 const isTest = (v: unknown) =>
   v === null ||

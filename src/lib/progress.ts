@@ -61,6 +61,15 @@ export function progressSeries(workouts: Workout[], exercise: Exercise, metric: 
     });
 }
 
+export function bodyfatSeries(logs: BodyweightLog[], range: Range, now: number): Point[] {
+  const from = rangeStart(range, now);
+  return logs
+    .filter((l): l is BodyweightLog & { fatPct: number } => l.fatPct != null)
+    .map((l) => ({ date: fromDateKey(l.date).getTime(), value: l.fatPct }))
+    .filter((p) => p.date >= from)
+    .sort((a, b) => a.date - b.date);
+}
+
 export function bodyweightSeries(logs: BodyweightLog[], range: Range, now: number): Point[] {
   const from = rangeStart(range, now);
   return logs

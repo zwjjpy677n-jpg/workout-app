@@ -76,6 +76,8 @@ export interface BodyweightLog {
   /** 'YYYY-MM-DD' */
   date: string;
   kg: number;
+  /** 体脂肪率 %。未入力・以前の記録は null（古いデータでは項目自体が無いこともある） */
+  fatPct?: number | null;
 }
 
 export interface Settings {
