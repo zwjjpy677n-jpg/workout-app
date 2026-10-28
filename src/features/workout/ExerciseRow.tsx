@@ -7,6 +7,7 @@ import { entryComplete } from '../../lib/routineEntries';
 import { deloadSets } from '../../lib/program';
 import type { Exercise, Workout, WorkoutEntry, WorkoutSet } from '../../lib/types';
 import { SetCard } from './SetCard';
+import { restOf } from '../../lib/rest';
 import { SuggestionBlock } from './SuggestionBlock';
 import { addSet, completeSet, placeholderFor, removeSet, toggleWarmup, updateSet, workingNumber } from './workoutOps';
 import s from './workout.module.css';
@@ -36,7 +37,7 @@ export function ExerciseRow({ index, entry, exercise, prev, open, onToggle, pr, 
   const prevTop = prev && topSet(exercise.type, prev.entry.sets);
   const prevWorking = prev?.entry.sets.filter(isWorking) ?? [];
   const setSets = (next: WorkoutSet[]) => onChange({ ...entry, sets: next });
-  const rest = `レスト ${formatDuration(exercise.restSec)}`;
+  const rest = `レスト ${formatDuration(restOf(entry, exercise))}`;
 
   function toggleDone(i: number) {
     const next = completeSet(exercise.type, sets, i, placeholderFor(prev?.entry ?? null, sets, i));

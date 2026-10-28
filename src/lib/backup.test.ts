@@ -109,3 +109,11 @@ test('プロフィールは有っても無くても読め、形がおかしけ�
   expect(() => parseBackup(mutate((d) => (d.profile = { id: '', name: 'x' })))).toThrow();
   expect(() => parseBackup(mutate((d) => (d.profile = { id: 'abcdefghijkl', name: '' })))).toThrow();
 });
+
+test('メニューのレストは無くても null でも 10〜600 でも読め、範囲外は拒否', () => {
+  for (const restSec of [undefined, null, 60]) {
+    expect(() => parseBackup(mutate((d) => { d.routines[0].items[0].restSec = restSec; d.workouts[0].entries[0].target = { sets: 3, reps: '5', main: false, inc: 2.5, note: '', restSec }; }))).not.toThrow();
+  }
+  expect(() => parseBackup(mutate((d) => (d.routines[0].items[0].restSec = 5)))).toThrow();
+  expect(() => parseBackup(mutate((d) => (d.workouts[0].entries[0].target = { sets: 3, reps: '5', main: false, inc: 2.5, note: '', restSec: 601 })))).toThrow();
+});

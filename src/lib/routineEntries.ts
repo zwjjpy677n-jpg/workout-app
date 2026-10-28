@@ -15,7 +15,7 @@ export function buildRoutineEntries(args: {
   for (const it of routine.items) {
     const ex = exercises.get(it.exerciseId);
     if (!ex || ex.archived) continue;
-    const target = { sets: it.sets, reps: it.reps, main: it.main, inc: it.inc, note: it.note };
+    const target = { sets: it.sets, reps: it.reps, main: it.main, inc: it.inc, note: it.note, restSec: it.restSec ?? null };
     const prev = previousEntry(history, ex.id, { startedAt: at });
     const sg = suggest({ target, type: ex.type, prev: prev && { sets: prev.entry.sets, slowed: !!prev.entry.slowed }, deload });
     const sets = Array.from({ length: sg.sets }, () => ({ ...emptySet(), weight: sg.weight, reps: sg.reps, durationSec: sg.durationSec }));

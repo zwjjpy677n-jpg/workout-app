@@ -29,6 +29,7 @@ export function RoutineForm({ routine, onClose }: { routine: Routine | null; onC
     // 外す・付け直すと初期値に戻るので、その種目の入力エラーも消す
     mark(`${id}:sets`, true);
     mark(`${id}:inc`, true);
+    mark(`${id}:rest`, true);
     setItems((cur) => (has(id) ? cur.filter((i) => i.exerciseId !== id) : [...cur, defaultItem(id)]));
   };
   const patch = (idx: number, p: Partial<RoutineItem>) => setItems((cur) => cur.map((it, i) => (i === idx ? { ...it, ...p } : it)));
@@ -45,6 +46,8 @@ export function RoutineForm({ routine, onClose }: { routine: Routine | null; onC
     if (!name.trim()) return setError('名前を入力してください');
     if (items.length === 0) return setError('種目を1つ以上選んでください');
     if (items.some((i) => !i.reps.trim())) return setError('回数を入力してください');
+    const badRest = items.find((i) => bad.has(`${i.exerciseId}:rest`));
+    if (badRest) return setError(`${map?.get(badRest.exerciseId)?.name ?? ''}のレストは10〜600秒で入力してください`);
     const badItem = items.find((i) => bad.has(`${i.exerciseId}:sets`) || bad.has(`${i.exerciseId}:inc`));
     if (badItem) return setError(`${map?.get(badItem.exerciseId)?.name ?? ''}のセット数は1〜20、上げ幅は0.5〜20kgで入力してください`);
     await saveRoutine({ ...routine, name: name.trim(), weekday, items });
@@ -87,6 +90,7 @@ export function RoutineForm({ routine, onClose }: { routine: Routine | null; onC
                   <label><span>セット（1〜20）</span><NumberInput aria-label={`${n} セット数`} value={it.sets} onChange={(v) => { mark(`${it.exerciseId}:sets`, v != null); if (v != null) patch(i, { sets: v }); }} min={1} max={20} inputMode="numeric" keepInvalid /></label>
                   <label><span>回数</span><input className={s.text} aria-label={`${n} 回数`} value={it.reps} onChange={(e) => patch(i, { reps: e.target.value })} /></label>
                   <label><span>上げ幅kg（0.5〜20）</span><NumberInput aria-label={`${n} 上げ幅`} value={it.inc} onChange={(v) => { mark(`${it.exerciseId}:inc`, v != null); if (v != null) patch(i, { inc: v }); }} min={0.5} max={20} inputMode="decimal" keepInvalid /></label>
+                  <label><span>レスト秒（空欄=種目の設定）</span><NumberInput aria-label={`${n} レスト秒`} value={it.restSec ?? null} onChange={(v) => patch(i, { restSec: v })} onInvalidChange={(bad) => mark(`${it.exerciseId}:rest`, !bad)} min={10} max={600} inputMode="numeric" placeholder={String(map?.get(it.exerciseId)?.restSec ?? '')} keepInvalid allowEmpty /></label>
                   <label className={s.checkInline}><input type="checkbox" aria-label={`${n} メイン`} checked={it.main} onChange={(e) => patch(i, { main: e.target.checked })} />メイン</label>
                 </div>
                 <input className={s.text} aria-label={`${n} メモ`} placeholder="メモ" value={it.note} onChange={(e) => patch(i, { note: e.target.value })} />

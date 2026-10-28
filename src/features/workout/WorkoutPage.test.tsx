@@ -450,3 +450,20 @@ describe('重量の「自重」', () => {
     expect(within(r1).getByText('前回 自重×15')).toBeInTheDocument();
   });
 });
+
+describe('メニューのレスト', () => {
+  test('メニューで決めたレストが見出しとタイマーに使われる', async () => {
+    await resetDb();
+    await ensureSeeded();
+    const bench = (await listExercises()).find((e) => e.name === 'ベンチプレス')!;
+    const r = await saveRoutine({ name: 'PUSH', weekday: null, items: [item(bench.id, { sets: 1, reps: '5', restSec: 45 })] });
+    await startRoutineWorkout(r.id);
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    const card = await screen.findByRole('region', { name: 'ベンチプレス' });
+    expect(within(card).getAllByText(/レスト 0:45/).length).toBeGreaterThan(0);
+    const [r1] = await rows();
+    await userEvent.type(within(r1).getByLabelText('重量'), '60');
+    await userEvent.click(within(r1).getByRole('button', { name: '完了' }));
+    expect(await screen.findByText('00:45')).toBeInTheDocument();
+  });
+});

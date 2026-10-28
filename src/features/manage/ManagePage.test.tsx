@@ -56,6 +56,24 @@ test('ルーティンを作成できる', async () => {
   expect(r.items).toHaveLength(2);
 });
 
+test('ルーティンの種目ごとにレストを決められる（空欄は種目の設定、範囲外は保存しない）', async () => {
+  render(<ManagePage />);
+  await tab('ルーティン');
+  await userEvent.click(screen.getByRole('button', { name: '＋ ルーティンを追加' }));
+  const dlg = screen.getByRole('dialog', { name: 'ルーティンを追加' });
+  await userEvent.type(within(dlg).getByLabelText('ルーティン名'), 'PUSH');
+  await userEvent.click(await within(dlg).findByRole('checkbox', { name: 'ベンチプレス' }));
+  await userEvent.click(within(dlg).getByRole('checkbox', { name: 'ディップス' }));
+  const rest = within(dlg).getByLabelText('ベンチプレス レスト秒');
+  await userEvent.type(rest, '5');
+  await userEvent.click(within(dlg).getByRole('button', { name: '保存' }));
+  expect(await within(dlg).findByText('ベンチプレスのレストは10〜600秒で入力してください')).toBeInTheDocument();
+  await userEvent.clear(rest);
+  await userEvent.type(rest, '60');
+  await userEvent.click(within(dlg).getByRole('button', { name: '保存' }));
+  await waitFor(async () => expect((await listRoutines())[0]?.items.map((i) => i.restSec)).toEqual([60, null]));
+});
+
 test('体重履歴を表示・削除', async () => {
   await setBodyweight('2026-10-28', 71.2);
   vi.spyOn(window, 'confirm').mockReturnValue(true);
