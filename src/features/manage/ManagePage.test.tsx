@@ -1,7 +1,8 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { resetDb } from '../../db/db';
-import { getProgram, getSettings, listExercises, listRoutines, saveRoutine, setBodyweight, startWorkout } from '../../db/repository';
+import { exportAll, getProgram, getSettings, listExercises, listRoutines, saveRoutine, setBodyweight, startWorkout } from '../../db/repository';
+import { db } from '../../db/db';
 import { defaultItem } from '../../lib/types';
 import { ensureSeeded } from '../../db/seed';
 import { ManagePage } from './ManagePage';
@@ -180,4 +181,15 @@ test('ルーティンの範囲外のセット数は保存せずに知らせる',
   await userEvent.click(within(dlg).getByRole('button', { name: '保存' }));
   expect(within(dlg).getByText('ベンチプレスのセット数は1〜20、上げ幅は0.5〜20kgで入力してください')).toBeInTheDocument();
   expect((await listRoutines())[0].items[0].sets).toBe(3);
+});
+
+test('読み込み中にDBエラーが起きたら日本語で知らせ、データは変わらない', async () => {
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
+  const text = JSON.stringify({ ...(await exportAll()), exercises: [] , routines: [], workouts: [] });
+  vi.spyOn(db, 'transaction').mockRejectedValueOnce(new Error('QuotaExceededError: The quota has been exceeded.'));
+  render(<ManagePage />);
+  await tab('バックアップ');
+  await userEvent.upload(screen.getByLabelText('インポート'), new File([text], 'b.json', { type: 'application/json' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('バックアップを読み込めませんでした。データは変更していません。');
+  expect(await listExercises()).toHaveLength(14);
 });
