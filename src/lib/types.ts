@@ -80,3 +80,29 @@ export function emptySet(): WorkoutSet {
 export function emptyCondition(): Condition {
   return { sleep: null, fatigue: null, motivation: null };
 }
+
+/** ルーティンから始めたときの目標のスナップショット */
+export interface EntryTarget {
+  sets: number;
+  /** 目標の表記（"5", "左右8", "8〜10", "6〜8本", "左右30秒"） */
+  reps: string;
+  main: boolean;
+  inc: number;
+  note: string;
+}
+
+export interface TestResult {
+  /** 'YYYY-MM-DD' */
+  date: string;
+  bodyweight: number | null;
+  /** exerciseId → 5RM の重量 kg */
+  lifts: Record<string, number>;
+}
+
+export interface Program {
+  /** 'YYYY-MM-DD'。開始日が1週目の初日で、7日ごとに次の週 */
+  startDate: string;
+  tests: { start: TestResult | null; end: TestResult | null };
+}
+
+export const WEEKDAY_LABEL = ['日', '月', '火', '水', '木', '金', '土'];
