@@ -89,7 +89,7 @@ export function ProgressPage() {
 
       {oneRM > 0 && (
         <>
-          <div className="sec">%1RM（推定1RM {kg1(oneRM)}kg）</div>
+          <div className="sec" style={{ textTransform: 'none' }}>%1RM（推定1RM {kg1(oneRM)}kg）</div>
           <PercentTable oneRM={oneRM} onPickWeight={setPlateKg} />
         </>
       )}
