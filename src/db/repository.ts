@@ -5,15 +5,9 @@ import { buildRoutineEntries } from '../lib/routineEntries';
 import { emptyCondition, emptySet, type BodyweightLog, type Exercise, type Program, type Routine, type RoutineItem, type Settings, type Workout } from '../lib/types';
 import { db } from './db';
 import { DEFAULT_SETTINGS } from './seed';
+import { stamp } from './stamp';
 
 const uid = () => crypto.randomUUID();
-
-let lastStamp = 0;
-/** 作成順の並びが崩れないよう、同じミリ秒でも必ず増える作成時刻 */
-function stamp(): number {
-  lastStamp = Math.max(Date.now(), lastStamp + 1);
-  return lastStamp;
-}
 
 // --- 種目 ---
 export async function listExercises(opts: { includeArchived?: boolean } = {}): Promise<Exercise[]> {

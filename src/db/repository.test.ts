@@ -194,3 +194,15 @@ describe('startRoutineWorkout', () => {
     await expect(startRoutineWorkout('nope')).rejects.toThrow();
   });
 });
+
+test('シード直後に追加した種目は一覧の最後に並ぶ（作成時刻が重ならない）', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(2026, 9, 28, 10));
+  try {
+    await ensureSeeded();
+    await addExercise({ name: 'NEW', bodyPart: 'chest', type: 'weight', restSec: 90, barKg: null });
+    expect((await listExercises()).at(-1)?.name).toBe('NEW');
+  } finally {
+    vi.useRealTimers();
+  }
+});
