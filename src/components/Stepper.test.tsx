@@ -60,3 +60,10 @@ test('値が空ならプレースホルダーを基準に増減', async () => {
   await userEvent.click(screen.getByRole('button', { name: 'Pを増やす' }));
   expect(spy).toHaveBeenLastCalledWith(82.5);
 });
+
+test('空で−を押しても min（-200）に飛ばず 0 から', async () => {
+  const spy = vi.fn();
+  render(<Stepper value={null} onChange={spy} step={2.5} min={-200} max={1000} unit="kg" inputMode="decimal" label="Q" />);
+  await userEvent.click(screen.getByRole('button', { name: 'Qを減らす' }));
+  expect(spy).toHaveBeenLastCalledWith(0);
+});

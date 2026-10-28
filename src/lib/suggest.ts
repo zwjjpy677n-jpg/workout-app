@@ -17,7 +17,9 @@ export function suggest(args: {
   const r = targetNumber(target.reps);
   const base = { sets, reps: type === 'time' ? null : r, durationSec: type === 'time' ? r : null };
   const working = prev?.sets.filter(isWorking) ?? [];
-  const lw = Math.max(0, ...working.map((s) => s.weight ?? 0));
+  // 自重種目のアシスト（負の加重）も残すため、入力のある重量だけで最大を取る。無ければ 0
+  const weights = working.map((s) => s.weight).filter((w): w is number => w != null);
+  const lw = weights.length ? Math.max(...weights) : 0;
 
   if (type !== 'weight') {
     return {

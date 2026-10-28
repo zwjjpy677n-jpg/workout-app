@@ -55,3 +55,8 @@ test('自重・時間', () => {
     sets: 2, weight: null, reps: null, durationSec: 30, reason: '回復週：セット数を減らして軽めに',
   });
 });
+
+test('自重のアシスト（負の加重）を引き継ぐ', () => {
+  expect(suggest({ target: t({ reps: '8' }), type: 'bodyweight', prev: { sets: [set({ weight: -20, reps: 8 }), set({ weight: -20, reps: 8 })], slowed: false }, deload: false }).weight).toBe(-20);
+  expect(suggest({ target: t({ reps: '8' }), type: 'bodyweight', prev: { sets: [set({ weight: null, reps: 8 })], slowed: false }, deload: false }).weight).toBeNull();
+});

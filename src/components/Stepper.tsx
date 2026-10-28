@@ -19,7 +19,8 @@ const round2 = (x: number) => Math.round(x * 100) / 100;
 export function Stepper({ value, onChange, step, min, max, unit, inputMode, label, placeholder }: Props) {
   const bump = (dir: 1 | -1) => {
     const base = value ?? placeholder;
-    const next = base == null ? (dir > 0 ? step : min) : base + step * dir;
+    // 空のときは 0 を基準にする（自重の min=-200 にいきなり飛ばない）
+    const next = base == null ? (dir > 0 ? step : Math.max(min, 0)) : base + step * dir;
     onChange(round2(Math.min(max, Math.max(min, next))));
   };
   return (

@@ -270,3 +270,13 @@ describe('ルーティンから始めた記録画面', () => {
     expect(within(card).getByText('初回：フォームが崩れず、目標回数をきれいにこなせる重さで')).toBeInTheDocument();
   });
 });
+
+test('「この種目を完了して次へ」も空欄を前回値で埋める（セットの完了ボタンと同じ）', async () => {
+  renderRoute('/workout', '/workout', <WorkoutPage />);
+  await rows();
+  await userEvent.click(screen.getByRole('button', { name: 'この種目を完了して次へ' }));
+  await waitFor(async () => {
+    const w = (await listWorkouts()).find((x) => x.id === activeId)!;
+    expect(w.entries[0].sets[0]).toMatchObject({ weight: 80, reps: 8, done: true });
+  });
+});

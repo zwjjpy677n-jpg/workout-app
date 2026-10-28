@@ -14,7 +14,7 @@ import { RestTimerBar } from './RestTimerBar';
 import { useExerciseMap, useProgram, useSettings, useWorkouts } from '../../hooks/useData';
 import { programStatus } from '../../lib/program';
 import { entryComplete } from '../../lib/routineEntries';
-import { completeSet } from './workoutOps';
+import { completeSet, placeholderFor } from './workoutOps';
 import { toDateKey } from '../../lib/dates';
 import { previousEntry } from '../../lib/summary';
 import { emptySet, type Exercise, type Workout, type WorkoutEntry, type WorkoutSet } from '../../lib/types';
@@ -77,9 +77,11 @@ export function WorkoutPage() {
       setEntry(i, { ...e, sets: e.sets.map((x) => ({ ...x, done: false })) });
       return;
     }
+    const prevEntry = previousEntry(all!, e.exerciseId, { startedAt: w!.startedAt, id: w!.id })?.entry ?? null;
     let sets = e.sets;
     sets.forEach((x, k) => {
-      if (!x.done && !x.warmup) sets = completeSet(ex.type, sets, k, null);
+      // セットの完了ボタンと同じく、空欄は前回の同番号セットで埋める
+      if (!x.done && !x.warmup) sets = completeSet(ex.type, sets, k, placeholderFor(prevEntry, sets, k));
     });
     const next = { ...e, sets };
     setEntry(i, next);
