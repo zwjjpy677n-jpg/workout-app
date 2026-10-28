@@ -30,6 +30,10 @@ export function HomePage() {
   }
 
   async function startRoutine(id: string) {
+    if (active) {
+      if (window.confirm(`記録中のワークアウト「${active.name}」があります。先にそちらを終了してください。記録中のワークアウトを開きますか？`)) navigate('/workout');
+      return;
+    }
     await startRoutineWorkout(id);
     navigate('/workout');
   }

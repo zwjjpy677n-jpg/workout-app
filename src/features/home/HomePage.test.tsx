@@ -172,3 +172,26 @@ describe('週ヘッダー', () => {
     expect(screen.queryByRole('region', { name: 'プログラム' })).toBeNull();
   });
 });
+
+describe('記録中にルーティンをタップ', () => {
+  test('確認を出し、キャンセルならホームに留まる', async () => {
+    await saveRoutine({ name: 'PUSH', weekday: null, items: [defaultItem(bench)] });
+    await startWorkout({ name: '自由', exerciseIds: [] });
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    home();
+    await userEvent.click(await screen.findByRole('button', { name: /PUSH/ }));
+    expect(confirm).toHaveBeenCalledWith('記録中のワークアウト「自由」があります。先にそちらを終了してください。記録中のワークアウトを開きますか？');
+    expect(screen.queryByTestId('location')).toBeNull();
+    expect((await getActiveWorkout())?.name).toBe('自由');
+  });
+
+  test('OKなら記録中のワークアウトを開く', async () => {
+    await saveRoutine({ name: 'PUSH', weekday: null, items: [defaultItem(bench)] });
+    await startWorkout({ name: '自由', exerciseIds: [] });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    home();
+    await userEvent.click(await screen.findByRole('button', { name: /PUSH/ }));
+    expect(await screen.findByTestId('location')).toHaveTextContent('/workout');
+    expect((await getActiveWorkout())?.name).toBe('自由');
+  });
+});
