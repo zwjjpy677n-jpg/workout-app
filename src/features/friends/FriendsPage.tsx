@@ -12,7 +12,7 @@ export function FriendsPage() {
   const navigate = useNavigate();
   const friends = useFriends();
   const profile = useProfile();
-  const { shareMine, note, ready, hasProfile } = useShareMine();
+  const { shareMine, note, ready, hasProfile, loading, trimmedWeeks } = useShareMine();
   const [sheet, setSheet] = useState<'name' | 'rename' | 'paste' | null>(null);
 
   const onShare = () => (hasProfile ? shareMine() : setSheet('name'));
@@ -21,7 +21,8 @@ export function FriendsPage() {
     <div className="page">
       <h1 className="page-title">FRIENDS</h1>
       <div className={s.actions}>
-        <Button block variant="primary" disabled={hasProfile && !ready} onClick={onShare}>自分の記録を共有</Button>
+        <Button block variant="primary" disabled={loading || (hasProfile && !ready)} onClick={onShare}>自分の記録を共有</Button>
+        {trimmedWeeks != null && <p className={s.hint}>直近{trimmedWeeks}週ぶんを共有します</p>}
         <Button block onClick={() => setSheet('paste')}>リンクを貼り付けて追加</Button>
       </div>
       {note && <p role={note.kind} className={note.kind === 'alert' ? s.error : s.ok}>{note.text}</p>}

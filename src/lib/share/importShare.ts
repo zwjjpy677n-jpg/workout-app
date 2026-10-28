@@ -1,6 +1,6 @@
 import { BODY_PARTS, emptyCondition, type Exercise, type Routine, type Workout, type WorkoutSet } from '../types';
 import { ShareError } from './codec';
-import { TYPES, type SetTuple, type SharePayload } from './sharePayload';
+import { LIMIT, TYPES, type SetTuple, type SharePayload } from './sharePayload';
 
 export interface Friend {
   id: string;
@@ -41,7 +41,7 @@ export function parseSharePayload(data: unknown): SharePayload {
   const d = data as Record<string, unknown>;
   const x = arr(d.x, 300).map((e): SharePayload['x'][number] => {
     const [i8, name, part, type] = tup(e, 4);
-    return [id(i8), str(name, 1, 40), int(part, 0, BODY_PARTS.length - 1), int(type, 0, TYPES.length - 1)];
+    return [id(i8), str(name, 1, LIMIT.name), int(part, 0, BODY_PARTS.length - 1), int(type, 0, TYPES.length - 1)];
   });
   const xi = (v: unknown) => int(v, 0, x.length - 1);
   return {
@@ -54,21 +54,21 @@ export function parseSharePayload(data: unknown): SharePayload {
       return [
         id(w8),
         int(start, 0, Number.MAX_SAFE_INTEGER),
-        str(name, 0, 40),
-        arr(entries, 50).map((en): [number, SetTuple[]] => {
+        str(name, 0, LIMIT.name),
+        arr(entries, LIMIT.entries).map((en): [number, SetTuple[]] => {
           const [i, sets] = tup(en, 2);
-          return [xi(i), arr(sets, 50).map(setTuple)];
+          return [xi(i), arr(sets, LIMIT.sets).map(setTuple)];
         }),
       ];
     }),
-    r: arr(d.r, 30).map((e): SharePayload['r'][number] => {
+    r: arr(d.r, LIMIT.menus).map((e): SharePayload['r'][number] => {
       const [name, weekday, items] = tup(e, 3);
       return [
-        str(name, 1, 40),
+        str(name, 1, LIMIT.name),
         int(weekday, -1, 6),
-        arr(items, 50).map((it): [number, number, string, 0 | 1] => {
+        arr(items, LIMIT.entries).map((it): [number, number, string, 0 | 1] => {
           const [i, sets, reps, main] = tup(it, 4);
-          return [xi(i), int(sets, 1, 20), str(reps, 0, 20), int(main, 0, 1) as 0 | 1];
+          return [xi(i), int(sets, 1, 20), str(reps, 0, LIMIT.reps), int(main, 0, 1) as 0 | 1];
         }),
       ];
     }),

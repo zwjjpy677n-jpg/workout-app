@@ -18,6 +18,8 @@ export type ShareSource = { profile: { id: string; name: string }; exercises: Ex
 
 export const TYPES: ExerciseType[] = ['weight', 'bodyweight', 'time'];
 export const MAX_LINK = 7500;
+/** 受け取る側（parseSharePayload）の上限に合わせて切り詰める。超えるとリンク全体が読めなくなるため */
+export const LIMIT = { name: 40, reps: 20, entries: 50, sets: 50, menus: 30 };
 const min = (ms: number) => Math.floor(ms / 60000);
 const tuple = (s: WorkoutSet): SetTuple => [s.weight, s.reps, s.durationSec, s.rpe];
 
@@ -30,7 +32,7 @@ export function buildSharePayload(src: ShareSource, now: number, days = 56): Sha
     let i = xIndex.get(id);
     if (i == null) {
       const e = exById.get(id)!;
-      i = x.push([e.id.slice(0, 8), e.name, BODY_PARTS.indexOf(e.bodyPart), TYPES.indexOf(e.type)]) - 1;
+      i = x.push([e.id.slice(0, 8), e.name.slice(0, LIMIT.name), BODY_PARTS.indexOf(e.bodyPart), TYPES.indexOf(e.type)]) - 1;
       xIndex.set(id, i);
     }
     return i;
@@ -42,16 +44,19 @@ export function buildSharePayload(src: ShareSource, now: number, days = 56): Sha
     if (wo.startedAt < now - days * DAY) continue;
     const e = wo.entries
       .filter((en) => exById.has(en.exerciseId))
-      .map((en) => [en.exerciseId, en.sets.filter(isWorking).map(tuple)] as const)
+      .map((en) => [en.exerciseId, en.sets.filter(isWorking).slice(0, LIMIT.sets).map(tuple)] as const)
       .filter(([, sets]) => sets.length > 0)
       .map(([id, sets]): [number, SetTuple[]] => [ref(id), sets]);
-    if (e.length) w.push([wo.id.slice(0, 8), min(wo.startedAt), wo.name, e]);
+    if (e.length) w.push([wo.id.slice(0, 8), min(wo.startedAt), wo.name.slice(0, LIMIT.name), e.slice(0, LIMIT.entries)]);
   }
 
-  const r: SharePayload['r'] = src.routines.map((ro) => [
-    ro.name,
+  const r: SharePayload['r'] = src.routines.slice(0, LIMIT.menus).map((ro) => [
+    ro.name.slice(0, LIMIT.name),
     ro.weekday ?? -1,
-    ro.items.filter((it) => exById.has(it.exerciseId)).map((it): [number, number, string, 0 | 1] => [ref(it.exerciseId), it.sets, it.reps, it.main ? 1 : 0]),
+    ro.items
+      .filter((it) => exById.has(it.exerciseId))
+      .slice(0, LIMIT.entries)
+      .map((it): [number, number, string, 0 | 1] => [ref(it.exerciseId), it.sets, it.reps.slice(0, LIMIT.reps), it.main ? 1 : 0]),
   ]);
 
   const p: SharePayload['p'] = [];

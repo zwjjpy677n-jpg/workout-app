@@ -57,9 +57,24 @@ export async function saveImportedShare(p: SharePayload, now: number): Promise<v
   const { friend, workouts } = toFriendRecords(p, now);
   await db.transaction('rw', db.friends, db.friendWorkouts, async () => {
     const old = await db.friends.get(friend.id);
-    await db.friends.put(old && old.sharedAt > friend.sharedAt ? { ...old, receivedAt: now } : friend);
-    await db.friendWorkouts.bulkPut(workouts);
+    if (old && old.sharedAt > friend.sharedAt) {
+      // 古いリンク: まだ無い記録・種目・自己ベストだけ足す（保存済みは新しい方のまま）
+      await db.friends.put({ ...old, receivedAt: now, exercises: mergeById(friend.exercises, old.exercises, (e) => e.id), prs: mergeById(friend.prs, old.prs, (p) => p.exerciseId) });
+      const have = new Set((await db.friendWorkouts.bulkGet(workouts.map((w) => w.id))).filter(Boolean).map((w) => w!.id));
+      await db.friendWorkouts.bulkAdd(workouts.filter((w) => !have.has(w.id)));
+    } else {
+      // 新しいリンクに載っていない種目も、前に受け取った記録が使うので残す
+      await db.friends.put(old ? { ...friend, exercises: mergeById(old.exercises, friend.exercises, (e) => e.id), prs: mergeById(old.prs, friend.prs, (p) => p.exerciseId) } : friend);
+      await db.friendWorkouts.bulkPut(workouts);
+    }
   });
+}
+
+/** base に over を重ねる（同じキーは over が勝つ） */
+function mergeById<T>(base: T[], over: T[], key: (x: T) => string): T[] {
+  const m = new Map(base.map((x) => [key(x), x]));
+  for (const x of over) m.set(key(x), x);
+  return [...m.values()];
 }
 
 export async function deleteFriend(id: string): Promise<void> {

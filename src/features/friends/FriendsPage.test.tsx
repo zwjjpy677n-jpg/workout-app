@@ -120,3 +120,18 @@ test('押したその場で共有画面を出す（iPhone はタップの直後�
   fireEvent.click(b);
   expect(share).toHaveBeenCalledTimes(1);
 });
+
+test('削って共有するときは、ボタンの下に週数を出し、確認ダイアログは出さない（iPhone はタップ直後でないと共有できない）', async () => {
+  await saveProfileName('たろう');
+  const exs = await listExercises();
+  for (let d = 0; d < 56; d++) {
+    await saveWorkout(wk(Date.now() - d * 86400_000 - 3600_000, exs.slice(0, 12).map((e, k) => entry(e.id, Array.from({ length: 6 }, (_, s) => set({ weight: 20 + ((d * 7 + k * 3 + s) % 180), reps: 3 + ((d + s) % 10), rpe: 6 + (s % 4) })))), { id: crypto.randomUUID() }));
+  }
+  const confirm = vi.spyOn(window, 'confirm');
+  page();
+  expect(await screen.findByText(/^直近\d週ぶんを共有します$/)).toBeInTheDocument();
+  const b = screen.getByRole('button', { name: '自分の記録を共有' });
+  fireEvent.click(b);
+  expect(share).toHaveBeenCalledTimes(1);
+  expect(confirm).not.toHaveBeenCalled();
+});

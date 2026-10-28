@@ -42,10 +42,17 @@ export function useShareMine() {
     setNote(null);
     if (!link) return;
     if (link instanceof ShareError) return setNote({ kind: 'alert', text: ERRORS[link.code] ?? '共有できませんでした' });
-    if (link.trimmed && !window.confirm(`直近${link.weeks}週ぶんを共有します`)) return;
     void sendText(link.text, setNote);
   };
-  return { ready: link !== null, hasProfile: !!src, shareMine, note };
+  return {
+    loading: src === undefined,
+    ready: link !== null,
+    hasProfile: !!src,
+    /** 削って収めたときは、押す前に見せておく（押してから確認を出すと iPhone で共有画面が出なくなる） */
+    trimmedWeeks: link && !(link instanceof ShareError) && link.trimmed ? link.weeks : null,
+    shareMine,
+    note,
+  };
 }
 
 export async function sendText(text: string, setNote: (n: ShareNote) => void) {

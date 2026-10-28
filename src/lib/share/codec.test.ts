@@ -25,3 +25,10 @@ test('壊れた入力は invalid、版が新しすぎると newer', async () => 
   await expect(decodeShare('x1AAAA')).rejects.toMatchObject({ code: 'invalid' });
   await expect(decodeShare('r9AAAA')).rejects.toMatchObject({ code: 'newer' });
 });
+
+test('長すぎる貼り付けと、展開すると巨大になる中身は invalid', async () => {
+  await expect(decodeShare('r1' + 'A'.repeat(20_000))).rejects.toMatchObject({ code: 'invalid' });
+  const bomb = await encodeShare('r', { s: 'a'.repeat(5_000_000) });
+  expect(bomb.length).toBeLessThan(10_000);
+  await expect(decodeShare(bomb)).rejects.toMatchObject({ code: 'invalid' });
+});

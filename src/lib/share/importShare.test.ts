@@ -57,3 +57,17 @@ test('範囲外・型違い・巨大な配列は invalid', () => {
   ];
   for (const f of bad) expect(() => parseSharePayload(f(payload())), String(f)).toThrow(expect.objectContaining({ code: 'invalid' }));
 });
+
+test('長い種目名・メニュー名・目標の表記や多すぎるセットでも、作ったリンクは受け取れる', () => {
+  const long = ex('long-uuid-0001', { name: 'と'.repeat(60) });
+  const sets = Array.from({ length: 60 }, () => set({ weight: 50, reps: 5 }));
+  const wo = wk(NOW - 86400_000, [entry(long.id, sets)], { id: 'long-work-1', name: 'メ'.repeat(60) });
+  const menus = Array.from({ length: 35 }, (_, i) => routine(`メニュー${i}${'ー'.repeat(50)}`, [item(long.id, { reps: '8-12（最後はドロップセットで限界まで）' })]));
+  const p = JSON.parse(JSON.stringify(buildSharePayload({ ...src, exercises: [long], routines: menus, workouts: [wo] }, NOW))) as SharePayload;
+  const parsed = parseSharePayload(p);
+  expect(parsed.x[0][1]).toHaveLength(40);
+  expect(parsed.w[0][2]).toHaveLength(40);
+  expect(parsed.w[0][3][0][1]).toHaveLength(50);
+  expect(parsed.r).toHaveLength(30);
+  expect(parsed.r[0][2][0][2]).toHaveLength(20);
+});

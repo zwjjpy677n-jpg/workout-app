@@ -2,6 +2,9 @@
 export type ShareKind = 'r' | 'f' | 'm';
 
 const VERSION = 1;
+/** 貼り付けの中身と、展開したあとの大きさの上限（細工されたリンクで固まらないように） */
+const MAX_BODY = 10_000;
+const MAX_INFLATED = 2_000_000;
 const KINDS: ShareKind[] = ['r', 'f', 'm'];
 
 export class ShareError extends Error {
@@ -12,16 +15,22 @@ export class ShareError extends Error {
 
 export const canCompress = () => typeof CompressionStream === 'function' && typeof DecompressionStream === 'function';
 
-async function pipe(bytes: Uint8Array<ArrayBuffer>, stream: CompressionStream | DecompressionStream): Promise<Uint8Array> {
+async function pipe(bytes: Uint8Array<ArrayBuffer>, stream: CompressionStream | DecompressionStream, limit = Infinity): Promise<Uint8Array> {
   const writer = stream.writable.getWriter();
   void writer.write(bytes).catch(() => {});
   void writer.close().catch(() => {});
   const reader = stream.readable.getReader();
   const chunks: Uint8Array[] = [];
+  let total = 0;
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
     chunks.push(value);
+    total += value.length;
+    if (total > limit) {
+      void reader.cancel().catch(() => {});
+      throw new ShareError('invalid');
+    }
   }
   const out = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0));
   let i = 0;
@@ -59,14 +68,14 @@ export function shareData(text: string): string {
 
 export async function decodeShare(text: string): Promise<{ kind: ShareKind; data: unknown }> {
   const body = shareData(text);
-  if (!/^[a-z]\d[A-Za-z0-9_-]+$/.test(body)) throw new ShareError('invalid');
+  if (body.length > MAX_BODY || !/^[a-z]\d[A-Za-z0-9_-]+$/.test(body)) throw new ShareError('invalid');
   const kind = body[0] as ShareKind;
   if (!KINDS.includes(kind)) throw new ShareError('invalid');
   if (Number(body[1]) > VERSION) throw new ShareError('newer');
   if (Number(body[1]) < 1) throw new ShareError('invalid');
   if (!canCompress()) throw new ShareError('unsupported');
   try {
-    const bytes = await pipe(fromBase64Url(body.slice(2)), new DecompressionStream('deflate-raw'));
+    const bytes = await pipe(fromBase64Url(body.slice(2)), new DecompressionStream('deflate-raw'), MAX_INFLATED);
     return { kind, data: JSON.parse(new TextDecoder().decode(bytes)) as unknown };
   } catch {
     throw new ShareError('invalid');
