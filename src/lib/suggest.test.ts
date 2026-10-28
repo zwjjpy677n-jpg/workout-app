@@ -60,3 +60,9 @@ test('自重のアシスト（負の加重）を引き継ぐ', () => {
   expect(suggest({ target: t({ reps: '8' }), type: 'bodyweight', prev: { sets: [set({ weight: -20, reps: 8 }), set({ weight: -20, reps: 8 })], slowed: false }, deload: false }).weight).toBe(-20);
   expect(suggest({ target: t({ reps: '8' }), type: 'bodyweight', prev: { sets: [set({ weight: null, reps: 8 })], slowed: false }, deload: false }).weight).toBeNull();
 });
+
+test('重量種目を前回すべて自重でやったら、自重のまま', () => {
+  expect(suggest({ target: t({ reps: '10' }), type: 'weight', prev: { sets: ws([0, 10], [0, 10]), slowed: false }, deload: false })).toEqual({
+    sets: 3, weight: 0, reps: 10, durationSec: null, reason: '前回は自重。同じく自重で、回数と動きの質を上げる',
+  });
+});

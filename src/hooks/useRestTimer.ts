@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { beep, getSoundPrefs } from '../lib/sound';
 
 type State = { endAt: number; total: number; remaining: number; running: boolean; finished: boolean };
 
@@ -44,6 +45,15 @@ export function useRestTimer() {
     }, 1000);
     return () => clearInterval(id);
   }, [st.running]);
+
+  // 残り3・2・1秒で短い音、終わったら終了の音
+  useEffect(() => {
+    if (!getSoundPrefs().on) return;
+    if (st.running && st.remaining >= 1 && st.remaining <= 3) beep('tick');
+  }, [st.running, st.remaining]);
+  useEffect(() => {
+    if (st.finished && getSoundPrefs().on) beep('end');
+  }, [st.finished]);
 
   // 終了表示は一定時間で自動的に消す
   useEffect(() => {

@@ -43,6 +43,7 @@ test('formatSet', () => {
   const u = (o: Partial<WorkoutSet>) => ({ ...emptySet(), ...o });
   expect(formatSet('weight', u({ weight: 80, reps: 8, rpe: 8 }))).toBe('80kg × 8 @RPE8');
   expect(formatSet('weight', u({ weight: 0.1 + 0.2 + 82.2, reps: 5 }))).toBe('82.5kg × 5');
+  expect(formatSet('weight', u({ weight: 0, reps: 10 }))).toBe('自重 × 10');
   expect(formatSet('bodyweight', u({ weight: 10, reps: 12 }))).toBe('自重+10kg × 12');
   expect(formatSet('bodyweight', u({ weight: -15, reps: 6 }))).toBe('自重-15kg × 6');
   expect(formatSet('bodyweight', u({ weight: null, reps: 15 }))).toBe('自重 × 15');

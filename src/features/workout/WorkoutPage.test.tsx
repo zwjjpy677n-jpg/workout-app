@@ -343,30 +343,93 @@ test('終了するとレストタイマーも止まり、次のワークアウ�
   expect(localStorage.getItem('ironlog:rest')).toBeNull();
 });
 
-describe('自分で開始するレストタイマー', () => {
-  test('開いている種目のレスト秒数からカウントダウンを始める', async () => {
+describe('自分でセットするレストタイマー', () => {
+  const openSheet = async () => {
+    await userEvent.click(screen.getByRole('button', { name: 'レストタイマー' }));
+    return screen.getByRole('dialog', { name: 'レストタイマー' });
+  };
+
+  test('初期値は開いている種目のレスト秒数で、そのまま開始できる', async () => {
     renderRoute('/workout', '/workout', <WorkoutPage />);
     await rows();
-    expect(screen.queryByText('REST')).toBeNull();
-    await userEvent.click(screen.getByRole('button', { name: 'レストタイマーを開始' }));
-    expect(await screen.findByText('REST')).toBeInTheDocument();
-    expect(screen.getByText('03:00')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: '-15s' }));
-    expect(screen.getByText('02:45')).toBeInTheDocument();
+    const dlg = await openSheet();
+    expect(within(dlg).getByLabelText('分')).toHaveValue('3');
+    expect(within(dlg).getByLabelText('秒')).toHaveValue('0');
+    await userEvent.click(within(dlg).getByRole('button', { name: '開始' }));
+    expect(screen.queryByRole('dialog', { name: 'レストタイマー' })).toBeNull();
+    expect(await screen.findByText('03:00')).toBeInTheDocument();
   });
 
-  test('種目を閉じていれば 1:30 から', async () => {
+  test('プリセットを押すとすぐ開始', async () => {
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    await rows();
+    const dlg = await openSheet();
+    await userEvent.click(within(dlg).getByRole('button', { name: '1:30' }));
+    expect(screen.queryByRole('dialog', { name: 'レストタイマー' })).toBeNull();
+    expect(await screen.findByText('01:30')).toBeInTheDocument();
+  });
+
+  test('分と秒を自由に決めて開始', async () => {
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    await rows();
+    const dlg = await openSheet();
+    await userEvent.click(within(dlg).getByRole('button', { name: '分を減らす' }));
+    await userEvent.click(within(dlg).getByRole('button', { name: '秒を増やす' }));
+    await userEvent.click(within(dlg).getByRole('button', { name: '秒を増やす' }));
+    await userEvent.click(within(dlg).getByRole('button', { name: '秒を増やす' }));
+    await userEvent.click(within(dlg).getByRole('button', { name: '開始' }));
+    expect(await screen.findByText('02:15')).toBeInTheDocument();
+  });
+
+  test('0秒では開始できない', async () => {
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    await rows();
+    const dlg = await openSheet();
+    await userEvent.clear(within(dlg).getByLabelText('分'));
+    await userEvent.type(within(dlg).getByLabelText('分'), '0');
+    expect(within(dlg).getByRole('button', { name: '開始' })).toBeDisabled();
+  });
+
+  test('種目を閉じていれば初期値は 1:30', async () => {
     renderRoute('/workout', '/workout', <WorkoutPage />);
     await rows();
     await userEvent.click(screen.getByRole('button', { name: /ベンチプレス/, expanded: true }));
-    await userEvent.click(screen.getByRole('button', { name: 'レストタイマーを開始' }));
-    expect(await screen.findByText('01:30')).toBeInTheDocument();
+    const dlg = await openSheet();
+    expect(within(dlg).getByLabelText('分')).toHaveValue('1');
+    expect(within(dlg).getByLabelText('秒')).toHaveValue('30');
   });
 
   test('過去の記録の編集中はボタンを出さない', async () => {
     const past = (await listWorkouts()).find((w) => w.endedAt !== null)!;
     renderRoute(`/workout/${past.id}`, '/workout/:id', <WorkoutPage />);
     await rows();
-    expect(screen.queryByRole('button', { name: 'レストタイマーを開始' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'レストタイマー' })).toBeNull();
+  });
+});
+
+describe('重量の「自重」', () => {
+  test('自重を押すと重量欄が自重になり、0kgで保存。もう一度押すと戻る', async () => {
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    const [r1] = await rows();
+    const bw = within(r1).getByRole('button', { name: '自重' });
+    expect(bw).toHaveAttribute('aria-pressed', 'false');
+    await userEvent.click(bw);
+    expect(within(r1).getByRole('button', { name: '自重' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(r1).queryByLabelText('重量')).not.toBeInTheDocument();
+    await userEvent.type(within(r1).getByLabelText('回数'), '12');
+    await userEvent.click(within(r1).getByRole('button', { name: '完了' }));
+    await waitFor(async () => {
+      const w = (await listWorkouts()).find((x) => x.id === activeId)!;
+      expect(w.entries[0].sets[0]).toMatchObject({ weight: 0, reps: 12, done: true });
+    });
+    await userEvent.click(within(r1).getByRole('button', { name: '自重' }));
+    expect(within(r1).getByLabelText('重量')).toHaveValue('');
+  });
+
+  test('前回が自重なら前回列に「自重×回数」', async () => {
+    await saveWorkout(wk(new Date(2026, 9, 25, 18), [entry(benchId, [set({ weight: 0, reps: 15 })])]));
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    const [r1] = await rows();
+    expect(within(r1).getByText('前回 自重×15')).toBeInTheDocument();
   });
 });
