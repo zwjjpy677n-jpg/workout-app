@@ -33,6 +33,17 @@ test.each([
   ['weekday が範囲外', mutate((d) => (d.routines[0].weekday = 7))],
   ['program.startDate 形式', mutate((d) => (d.program.startDate = '2026/10/1'))],
   ['barKg が文字列', mutate((d) => (d.exercises[0].barKg = '20'))],
+  ['種目IDの重複', mutate((d) => d.exercises.push({ ...d.exercises[0] }))],
+  ['ルーティンが存在しない種目を参照', mutate((d) => (d.routines[0].items[0].exerciseId = 'ghost'))],
+  ['記録が存在しない種目を参照', mutate((d) => (d.workouts[0].entries[0].exerciseId = 'ghost'))],
+  ['記録中のワークアウトが2件', mutate((d) => d.workouts.push({ ...d.workouts[0], id: 'a1', endedAt: null }, { ...d.workouts[0], id: 'a2', endedAt: null }))],
+  ['ワークアウトIDの重複', mutate((d) => d.workouts.push({ ...d.workouts[0] }))],
+  ['重量が範囲外', mutate((d) => (d.workouts[0].entries[0].sets[0].weight = 5000))],
+  ['RPEが範囲外', mutate((d) => (d.workouts[0].entries[0].sets[0].rpe = 11))],
+  ['体重が範囲外', mutate((d) => (d.bodyweights[0].kg = 5))],
+  ['体重の日付が重複', mutate((d) => d.bodyweights.push({ ...d.bodyweights[0] }))],
+  ['コンディションが範囲外', mutate((d) => (d.workouts[0].condition.sleep = 9))],
+  ['セット数が範囲外', mutate((d) => (d.routines[0].items[0].sets = 0))],
   ['workoutsが配列でない', mutate((d) => (d.workouts = {}))],
   ['種目タイプ不正', mutate((d) => (d.exercises[0].type = 'cardio'))],
   ['部位不正', mutate((d) => (d.exercises[0].bodyPart = 'neck'))],
@@ -59,4 +70,22 @@ test('version 1 は v2 に変換して読み込む', () => {
   expect(d.routines[0]).toEqual({ id: 'r1', name: 'LEG', weekday: null, items: [defaultItem('sq')], createdAt: 0 });
   expect(d.exercises[0].barKg).toBe(20);
   expect(d.workouts[0].routineId).toBeNull();
+});
+
+test('記録中のワークアウト1件と範囲内の負の加重は受け付ける', () => {
+  const ok = mutate((d) => {
+    d.workouts.push({ ...d.workouts[0], id: 'a1', endedAt: null });
+    d.workouts[0].entries[0].sets[0].weight = -20;
+  });
+  expect(parseBackup(ok).workouts).toHaveLength(2);
+});
+
+test('v1 も参照チェックを通す', () => {
+  const v1 = {
+    app: 'ironlog', version: 1, exportedAt: 1,
+    exercises: [{ id: 'sq', name: 'スクワット', bodyPart: 'legs', type: 'weight', restSec: 90, archived: false, createdAt: 0 }],
+    routines: [{ id: 'r1', name: 'LEG', exerciseIds: ['ghost'], createdAt: 0 }],
+    workouts: [], bodyweights: [], settings: { barKg: 20, plates: [20] },
+  };
+  expect(() => parseBackup(JSON.stringify(v1))).toThrow('バックアップファイルの形式が正しくありません');
 });
