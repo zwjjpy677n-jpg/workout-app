@@ -8,6 +8,13 @@ import { DEFAULT_SETTINGS } from './seed';
 
 const uid = () => crypto.randomUUID();
 
+let lastStamp = 0;
+/** 作成順の並びが崩れないよう、同じミリ秒でも必ず増える作成時刻 */
+function stamp(): number {
+  lastStamp = Math.max(Date.now(), lastStamp + 1);
+  return lastStamp;
+}
+
 // --- 種目 ---
 export async function listExercises(opts: { includeArchived?: boolean } = {}): Promise<Exercise[]> {
   const all = await db.exercises.toArray();
@@ -15,7 +22,7 @@ export async function listExercises(opts: { includeArchived?: boolean } = {}): P
 }
 
 export async function addExercise(input: Omit<Exercise, 'id' | 'archived' | 'createdAt'>): Promise<Exercise> {
-  const e: Exercise = { ...input, id: uid(), archived: false, createdAt: Date.now() };
+  const e: Exercise = { ...input, id: uid(), archived: false, createdAt: stamp() };
   await db.exercises.add(e);
   return e;
 }
@@ -61,7 +68,7 @@ export async function saveRoutine(r: {
   items: RoutineItem[];
   createdAt?: number;
 }): Promise<Routine> {
-  const row: Routine = { id: r.id ?? uid(), name: r.name, weekday: r.weekday, items: r.items, createdAt: r.createdAt ?? Date.now() };
+  const row: Routine = { id: r.id ?? uid(), name: r.name, weekday: r.weekday, items: r.items, createdAt: r.createdAt ?? stamp() };
   await db.routines.put(row);
   return row;
 }

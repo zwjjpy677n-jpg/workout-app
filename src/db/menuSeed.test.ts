@@ -62,3 +62,17 @@ test('同名の自作種目があれば再利用する', async () => {
   await loadReferenceMenu();
   expect((await listExercises()).filter((e) => e.name === 'ハイプル')).toHaveLength(1);
 });
+
+test('同じ時刻に作っても曜日順に並ぶ', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(2026, 9, 28, 10));
+  try {
+    for (let k = 0; k < 5; k++) {
+      await resetDb();
+      await loadReferenceMenu();
+      expect((await listRoutines()).map((r) => r.weekday)).toEqual([1, 2, 3, 5]);
+    }
+  } finally {
+    vi.useRealTimers();
+  }
+});

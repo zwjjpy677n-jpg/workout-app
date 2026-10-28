@@ -1,4 +1,4 @@
-import { isDeload, programStatus, targetNumber, weekOf } from './program';
+import { isDeload, mainExerciseIds, programStatus, targetNumber, weekOf } from './program';
 
 test('targetNumber', () => {
   expect(targetNumber('5')).toBe(5);
@@ -26,4 +26,12 @@ test('programStatus', () => {
   expect(programStatus(p, '2026-10-04').label).toBe('開始前');
   expect(programStatus(p, '2026-12-01')).toMatchObject({ week: 9, inRange: false, deload: false, label: '8週間完了' });
   expect(programStatus(null, '2026-10-28')).toEqual({ active: false, week: 0, inRange: false, deload: false, label: '' });
+});
+
+test('mainExerciseIds は出現順・重複なし', () => {
+  const rs = [
+    { id: 'a', name: 'A', weekday: 1, createdAt: 0, items: [{ exerciseId: 'sq', sets: 3, reps: '5', main: true, inc: 2.5, note: '' }, { exerciseId: 'x', sets: 3, reps: '5', main: false, inc: 2.5, note: '' }] },
+    { id: 'b', name: 'B', weekday: 2, createdAt: 1, items: [{ exerciseId: 'bp', sets: 3, reps: '5', main: true, inc: 2.5, note: '' }, { exerciseId: 'sq', sets: 3, reps: '5', main: true, inc: 2.5, note: '' }] },
+  ];
+  expect(mainExerciseIds(rs)).toEqual(['sq', 'bp']);
 });

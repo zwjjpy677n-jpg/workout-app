@@ -1,5 +1,5 @@
 import { fromDateKey } from './dates';
-import type { Program } from './types';
+import type { Program, Routine } from './types';
 
 export const PROGRAM_WEEKS = 8;
 
@@ -28,4 +28,11 @@ export function programStatus(
   const deload = inRange && isDeload(week);
   const label = week < 1 ? '開始前' : !inRange ? '8週間完了' : deload ? '回復週：重さはそのまま、セット数を半分に' : '';
   return { active: true, week, inRange, deload, label };
+}
+
+/** ルーティンで「メイン」になっている種目（出現順・重複なし） */
+export function mainExerciseIds(routines: Routine[]): string[] {
+  const ids: string[] = [];
+  for (const r of routines) for (const i of r.items) if (i.main && !ids.includes(i.exerciseId)) ids.push(i.exerciseId);
+  return ids;
 }
