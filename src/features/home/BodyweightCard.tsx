@@ -5,6 +5,7 @@ import { NumberInput } from '../../components/NumberInput';
 import { Sheet } from '../../components/Sheet';
 import { setBodyweight } from '../../db/repository';
 import { useBodyweights } from '../../hooks/useData';
+import { useToday } from '../../hooks/useToday';
 import { formatKg } from '../../lib/calc';
 import { toDateKey } from '../../lib/dates';
 import s from './home.module.css';
@@ -13,9 +14,9 @@ export function BodyweightCard() {
   const logs = useBodyweights();
   const [open, setOpen] = useState(false);
   const [kg, setKg] = useState<number | null>(null);
+  const today = toDateKey(useToday());
   if (!logs) return null;
 
-  const today = toDateKey(Date.now());
   const cur = logs.find((l) => l.date === today);
   const prev = [...logs].reverse().find((l) => l.date < today);
   const diff = cur && prev ? Math.round((cur.kg - prev.kg) * 10) / 10 : null;
