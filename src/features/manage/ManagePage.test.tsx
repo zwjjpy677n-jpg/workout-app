@@ -6,7 +6,8 @@ import { exportAll, getProgram, getSettings, listExercises, listRoutines, saveRo
 import { db } from '../../db/db';
 import { defaultItem } from '../../lib/types';
 import { ensureSeeded } from '../../db/seed';
-import { ManagePage } from './ManagePage';
+import { ManagePage, ManageRoute } from './ManagePage';
+import { renderRoute } from '../../test/render';
 
 beforeEach(async () => {
   await resetDb();
@@ -299,4 +300,9 @@ test('体重履歴に体脂肪率を表示・編集できる', async () => {
   await userEvent.type(fat, '14.8');
   await userEvent.click(within(dlg).getByRole('button', { name: '保存' }));
   expect(await screen.findByText('14.8%')).toBeInTheDocument();
+});
+
+test('?tab=routines で開くとルーティンが最初から開いている', async () => {
+  renderRoute('/manage?tab=routines', '/manage', <ManageRoute />);
+  expect(await screen.findByRole('tab', { name: 'ルーティン', selected: true })).toBeInTheDocument();
 });

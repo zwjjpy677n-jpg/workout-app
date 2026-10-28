@@ -91,11 +91,17 @@ export function MenuEditorPage() {
             <button type="button" aria-label="外す" onClick={() => setItems((cur) => cur.filter((_, j) => j !== i))}>×</button>
           </div>
           <div className={s.menuGrid}>
-            <Stepper label="セット" unit="セット" value={it.sets} onChange={(v) => v != null && patch(i, { sets: v })} step={1} min={1} max={MENU.setsMax} inputMode="numeric" />
-            <div className={s.rest}>
+            <div className={s.small}>
+              <span>セット</span>
+              <Stepper label="セット" unit="セット" value={it.sets} onChange={(v) => v != null && patch(i, { sets: v })} step={1} min={1} max={MENU.setsMax} inputMode="numeric" />
+            </div>
+            <div className={s.small}>
+              <span>レスト</span>
+              <div className={s.rest}>
               <button type="button" aria-label="レストを減らす" onClick={() => patch(i, { restSec: Math.max(MENU.restMin, it.restSec - REST_STEP) })}>−</button>
               <output aria-label="レスト">{formatDuration(it.restSec)}</output>
               <button type="button" aria-label="レストを増やす" onClick={() => patch(i, { restSec: Math.min(MENU.restMax, it.restSec + REST_STEP) })}>＋</button>
+              </div>
             </div>
             <label className={s.small}><span>目標</span><input className={s.text} aria-label="目標" value={it.reps} maxLength={MENU.reps} onChange={(e) => patch(i, { reps: e.target.value })} /></label>
             <label className={s.small}><span>上げ幅kg</span><NumberInput aria-label="上げ幅" value={it.inc} onChange={(v) => patch(i, { inc: v })} min={MENU.incMin} max={MENU.incMax} inputMode="decimal" keepInvalid /></label>

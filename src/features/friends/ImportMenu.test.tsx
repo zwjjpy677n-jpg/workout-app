@@ -36,7 +36,7 @@ test('無い種目は「新しく追加」と出て、追加すると種目と�
   expect(within(rows[1]).getByText('新しく追加')).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '置き換える' })).toBeNull();
   await userEvent.click(screen.getByRole('button', { name: '追加する' }));
-  expect(await screen.findByTestId('location')).toHaveTextContent('/manage');
+  expect(await screen.findByTestId('location')).toHaveTextContent('/manage?tab=routines');
   expect((await listExercises()).map((e) => e.name).sort()).toEqual(['ディップス', 'ベンチプレス']);
   expect((await listRoutines())[0]).toMatchObject({ name: 'PUSH', weekday: 1 });
 });
