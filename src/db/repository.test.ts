@@ -4,7 +4,7 @@ import { resetDb } from './db';
 import {
   addExercise, deleteBodyweight, exportAll, finishWorkout, getActiveWorkout, getSettings, importAll, isExerciseUsed,
   listBodyweights, listExercises, listRoutines, listWorkouts, removeExercise, saveRoutine, saveSettings, saveWorkout,
-  setBodyweight, startWorkout, updateExercise, deleteRoutine, deleteWorkout, saveEditedWorkout, getProgram, saveProgram, startRoutineWorkout,
+  setBodyweight, startWorkout, updateExercise, deleteRoutine, deleteWorkout, saveEditedWorkout, getProgram, saveProgram, startRoutineWorkout, updateSettings,
 } from './repository';
 import { ensureSeeded, SEED_EXERCISES } from './seed';
 
@@ -193,4 +193,24 @@ describe('startRoutineWorkout', () => {
   test('存在しないルーティンはエラー', async () => {
     await expect(startRoutineWorkout('nope')).rejects.toThrow();
   });
+});
+
+test('シード直後に追加した種目は一覧の最後に並ぶ（作成時刻が重ならない）', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(2026, 9, 28, 10));
+  try {
+    await ensureSeeded();
+    await addExercise({ name: 'NEW', bodyPart: 'chest', type: 'weight', restSec: 90, barKg: null });
+    expect((await listExercises()).at(-1)?.name).toBe('NEW');
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test('updateSettings は同時に呼んでも両方の変更が残る', async () => {
+  await Promise.all([
+    updateSettings((s) => ({ ...s, plates: s.plates.filter((p) => p !== 1.25) })),
+    updateSettings((s) => ({ ...s, plates: s.plates.filter((p) => p !== 2.5) })),
+  ]);
+  expect((await getSettings()).plates).toEqual([25, 20, 15, 10, 5]);
 });

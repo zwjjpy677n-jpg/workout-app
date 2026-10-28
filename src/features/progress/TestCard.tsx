@@ -26,8 +26,8 @@ export function TestCard() {
   const { start, end } = program.tests;
   const today = logs.find((l) => l.date === toDateKey(Date.now()))?.kg ?? null;
   const rows = [
-    ...mains.map((e) => ({ name: e.name, a: start?.lifts[e.id], b: end?.lifts[e.id] })),
-    { name: '体重', a: start?.bodyweight, b: end?.bodyweight },
+    ...mains.map((e) => ({ key: e.id, name: e.name, a: start?.lifts[e.id], b: end?.lifts[e.id] })),
+    { key: '__bodyweight', name: '体重', a: start?.bodyweight, b: end?.bodyweight },
   ];
 
   return (
@@ -41,7 +41,7 @@ export function TestCard() {
           {rows.map((r) => {
             const d = delta(r.a, r.b);
             return (
-              <tr key={r.name}>
+              <tr key={r.key}>
                 <td>{r.name}</td>
                 <td>{kg(r.a)}</td>
                 <td>{kg(r.b)}</td>

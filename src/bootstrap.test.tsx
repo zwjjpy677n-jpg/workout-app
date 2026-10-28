@@ -39,3 +39,12 @@ test('bootstrap: 通常はアプリを表示し種目をシード', async () => 
   await act(() => bootstrap(root));
   expect(await screen.findByRole('link', { name: 'ホーム' })).toBeInTheDocument();
 });
+
+test('bootstrap: 初期データの準備に失敗したらエラー画面', async () => {
+  const { db } = await import('./db/db');
+  vi.spyOn(db, 'transaction').mockRejectedValueOnce(new Error('QuotaExceededError'));
+  const root = document.createElement('div');
+  document.body.appendChild(root);
+  await act(() => bootstrap(root));
+  expect(screen.getByText('データの準備に失敗しました。端末の空き容量を確認して、ページを再読み込みしてください。')).toBeInTheDocument();
+});

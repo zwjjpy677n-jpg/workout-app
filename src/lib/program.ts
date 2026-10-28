@@ -36,3 +36,8 @@ export function mainExerciseIds(routines: Routine[]): string[] {
   for (const r of routines) for (const i of r.items) if (i.main && !ids.includes(i.exerciseId)) ids.push(i.exerciseId);
   return ids;
 }
+
+/** 回復週ならセット数を半分（切り上げ、最低1） */
+export function deloadSets(sets: number, deload: boolean): number {
+  return deload ? Math.max(1, Math.ceil(sets / 2)) : sets;
+}

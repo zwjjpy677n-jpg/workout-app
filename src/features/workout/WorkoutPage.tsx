@@ -41,6 +41,7 @@ export function WorkoutPage() {
   const settings = useSettings();
   /** 開いている種目の index。undefined = まだ決めていない（最初の未完了を開く） */
   const [openIdx, setOpenIdx] = useState<number | null | undefined>(undefined);
+  const [saveFailed, setSaveFailed] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -62,7 +63,10 @@ export function WorkoutPage() {
 
   const update = (next: Workout) => {
     setW(next);
-    saveWorkout(next);
+    saveWorkout(next).then(
+      () => setSaveFailed(false),
+      () => setSaveFailed(true),
+    );
   };
   const setEntry = (i: number, entry: WorkoutEntry) => update({ ...w, entries: w.entries.map((e, j) => (j === i ? entry : e)) });
   const firstOpen = Math.max(0, w.entries.findIndex((e) => !entryComplete(e)));
@@ -83,12 +87,17 @@ export function WorkoutPage() {
       // セットの完了ボタンと同じく、空欄は前回の同番号セットで埋める
       if (!x.done && !x.warmup) sets = completeSet(ex.type, sets, k, placeholderFor(prevEntry, sets, k));
     });
+    const newlyDone = sets.some((x, k) => x.done && !e.sets[k].done);
+    // 何も完了できなかった（入力も前回値もない）ときは閉じずにそのまま
+    if (!newlyDone) return;
     const next = { ...e, sets };
     setEntry(i, next);
-    if (sets.some((x, k) => x.done && !e.sets[k].done) && !editMode) timer.start(ex.restSec);
+    if (!editMode) timer.start(ex.restSec);
     const entries = w!.entries.map((x, j) => (j === i ? next : x));
-    const after = entries.findIndex((x, j) => j > i && !entryComplete(x));
-    setOpenIdx(after >= 0 ? after : null);
+    // 後ろの未完了 → 無ければ前に戻って最初の未完了
+    const order = [...entries.keys()].filter((j) => j > i).concat([...entries.keys()].filter((j) => j < i));
+    const after = order.find((j) => !entryComplete(entries[j]));
+    setOpenIdx(after ?? null);
   }
   const hasCondition = w.condition.sleep != null || w.condition.fatigue != null || w.condition.motivation != null;
   const lastWeight = (ex: Exercise, sets: WorkoutSet[]) =>
@@ -99,9 +108,12 @@ export function WorkoutPage() {
     if (!w) return;
     if (!editMode && !window.confirm('ワークアウトを終了しますか？')) return;
     const r = editMode ? await saveEditedWorkout(w.id) : await finishWorkout(w.id);
+    // 終了したらレストも止める（次のワークアウトに持ち越さない）
+    if (!editMode && r === 'saved') timer.skip();
     if (r === 'saved') return navigate(calendarUrl);
     if (window.confirm('完了したセットがありません。このワークアウトを破棄しますか？')) {
       await deleteWorkout(w.id);
+      timer.skip();
       navigate(editMode ? calendarUrl : '/');
     }
   }
@@ -123,6 +135,9 @@ export function WorkoutPage() {
           <button type="button" className={s.finish} onClick={finish}>{editMode ? '保存' : '終了'}</button>
         </div>
       </header>
+      {saveFailed && (
+        <p role="alert" className={s.saveError}>保存できませんでした。端末の空き容量を確認してください。入力を続けると再度保存します。</p>
+      )}
 
       {w.entries.map((e, i) => {
         const ex = exMap.get(e.exerciseId);
@@ -140,7 +155,10 @@ export function WorkoutPage() {
             deload={deload}
             plates={settings.plates}
             onChange={(entry) => setEntry(i, entry)}
-            onRemove={() => update({ ...w, entries: w.entries.filter((_, j) => j !== i) })}
+            onRemove={() => {
+              update({ ...w, entries: w.entries.filter((_, j) => j !== i) });
+              setOpenIdx(open === i ? null : open != null && open > i ? open - 1 : open);
+            }}
             onSetDone={editMode ? undefined : () => timer.start(ex.restSec)}
             onCompleteAndNext={() => completeAndNext(i)}
             extraActions={

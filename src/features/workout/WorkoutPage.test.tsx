@@ -1,7 +1,8 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { resetDb } from '../../db/db';
-import { getActiveWorkout, getWorkout, listExercises, listWorkouts, saveRoutine, saveWorkout, startRoutineWorkout, startWorkout } from '../../db/repository';
+import { getActiveWorkout, getWorkout, listExercises, listWorkouts, saveProgram, saveRoutine, saveWorkout, startRoutineWorkout, startWorkout } from '../../db/repository';
+import { toDateKey } from '../../lib/dates';
 import { ensureSeeded } from '../../db/seed';
 import { entry, item, set, wk } from '../../test/factories';
 import { cleanup } from '@testing-library/react';
@@ -261,6 +262,43 @@ describe('ルーティンから始めた記録画面', () => {
     expect(screen.getByRole('button', { name: '最後の回でスピードが落ちた' })).toHaveAttribute('aria-pressed', 'true');
   });
 
+  test('最後の種目を完了すると、前に残っている未完了の種目に戻る', async () => {
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    await rows();
+    await userEvent.click(header('スクワット'));
+    const sq = await rows('スクワット');
+    for (const r of sq) {
+      await userEvent.type(within(r).getByLabelText('重量'), '60');
+    }
+    await userEvent.click(screen.getByRole('button', { name: 'この種目を完了して次へ' }));
+    expect(await screen.findByRole('button', { name: /ベンチプレス/, expanded: true })).toBeInTheDocument();
+  });
+
+  test('何も完了できなければ「次へ」でも開いたまま', async () => {
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    await rows();
+    await userEvent.click(header('スクワット'));
+    await userEvent.click(screen.getByRole('button', { name: 'この種目を完了して次へ' }));
+    expect(screen.getByRole('button', { name: /スクワット/, expanded: true })).toBeInTheDocument();
+  });
+
+  test('開いている種目を削除すると、どれも開かない', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    await rows();
+    await userEvent.click(within(screen.getByRole('region', { name: 'ベンチプレス' })).getByRole('button', { name: 'メニュー' }));
+    await userEvent.click(screen.getByRole('button', { name: '種目を削除' }));
+    expect(screen.queryByRole('region', { name: 'ベンチプレス' })).toBeNull();
+    expect(screen.queryByRole('button', { expanded: true })).toBeNull();
+  });
+
+  test('回復週はヘッダーのセット数も半分', async () => {
+    await saveProgram({ startDate: toDateKey(Date.now() - 21 * 86_400_000), tests: { start: null, end: null } });
+    renderRoute('/workout', '/workout', <WorkoutPage />);
+    const card = await screen.findByRole('region', { name: 'ベンチプレス' });
+    expect(await within(card).findByText('2セット×5 ・ レスト 3:00')).toBeInTheDocument();
+  });
+
   test('前回なしの重量種目は「今回の目標」と回数表記', async () => {
     renderRoute('/workout', '/workout', <WorkoutPage />);
     await rows();
@@ -279,4 +317,28 @@ test('「この種目を完了して次へ」も空欄を前回値で埋める�
     const w = (await listWorkouts()).find((x) => x.id === activeId)!;
     expect(w.entries[0].sets[0]).toMatchObject({ weight: 80, reps: 8, done: true });
   });
+});
+
+test('保存に失敗したら知らせ、次の保存が成功したら消す', async () => {
+  const { db } = await import('../../db/db');
+  renderRoute('/workout', '/workout', <WorkoutPage />);
+  const [r1] = await rows();
+  const put = vi.spyOn(db.workouts, 'put').mockRejectedValueOnce(new Error('QuotaExceededError'));
+  await userEvent.click(within(r1).getByRole('button', { name: '完了' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('保存できませんでした');
+  put.mockRestore();
+  await userEvent.type(within(r1).getByLabelText('RPE'), '8');
+  await waitFor(() => expect(screen.queryByText(/保存できませんでした/)).toBeNull());
+});
+
+test('終了するとレストタイマーも止まり、次のワークアウトに持ち越さない', async () => {
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
+  renderRoute('/workout', '/workout', <WorkoutPage />);
+  const [r1] = await rows();
+  await userEvent.click(within(r1).getByRole('button', { name: '完了' }));
+  expect(await screen.findByText('REST')).toBeInTheDocument();
+  expect(localStorage.getItem('ironlog:rest')).not.toBeNull();
+  await userEvent.click(screen.getByRole('button', { name: '終了' }));
+  await screen.findByTestId('location');
+  expect(localStorage.getItem('ironlog:rest')).toBeNull();
 });

@@ -1,7 +1,8 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { resetDb } from '../../db/db';
-import { getProgram, getSettings, listExercises, listRoutines, saveRoutine, setBodyweight, startWorkout } from '../../db/repository';
+import { exportAll, getProgram, getSettings, listExercises, listRoutines, saveRoutine, setBodyweight, startWorkout } from '../../db/repository';
+import { db } from '../../db/db';
 import { defaultItem } from '../../lib/types';
 import { ensureSeeded } from '../../db/seed';
 import { ManagePage } from './ManagePage';
@@ -163,5 +164,80 @@ describe('プログラム', () => {
     expect(await screen.findByText('8週間完了')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '次の8週間を始める' }));
     await waitFor(async () => expect(await getProgram()).toEqual({ startDate: '2026-10-28', tests: { start: null, end: null } }));
+  });
+});
+
+test('ルーティンの範囲外のセット数は保存せずに知らせる', async () => {
+  const bench = (await listExercises()).find((e) => e.name === 'ベンチプレス')!;
+  await saveRoutine({ name: 'PUSH', weekday: null, items: [defaultItem(bench.id)] });
+  render(<ManagePage />);
+  await tab('ルーティン');
+  await userEvent.click(await screen.findByText('PUSH'));
+  const dlg = screen.getByRole('dialog', { name: 'ルーティンを編集' });
+  expect(within(dlg).getAllByText('セット（1〜20）')[0]).toBeInTheDocument();
+  const sets = within(dlg).getByLabelText('ベンチプレス セット数');
+  await userEvent.clear(sets);
+  await userEvent.type(sets, '25');
+  await userEvent.click(within(dlg).getByRole('button', { name: '保存' }));
+  expect(within(dlg).getByText('ベンチプレスのセット数は1〜20、上げ幅は0.5〜20kgで入力してください')).toBeInTheDocument();
+  expect((await listRoutines())[0].items[0].sets).toBe(3);
+});
+
+test('読み込み中にDBエラーが起きたら日本語で知らせ、データは変わらない', async () => {
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
+  const text = JSON.stringify({ ...(await exportAll()), exercises: [] , routines: [], workouts: [] });
+  vi.spyOn(db, 'transaction').mockRejectedValueOnce(new Error('QuotaExceededError: The quota has been exceeded.'));
+  render(<ManagePage />);
+  await tab('バックアップ');
+  await userEvent.upload(screen.getByLabelText('インポート'), new File([text], 'b.json', { type: 'application/json' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('バックアップを読み込めませんでした。データは変更していません。');
+  expect(await listExercises()).toHaveLength(14);
+});
+
+describe('ルーティン編集の範囲チェック', () => {
+  async function openPush() {
+    const bench = (await listExercises()).find((e) => e.name === 'ベンチプレス')!;
+    await saveRoutine({ name: 'PUSH', weekday: null, items: [defaultItem(bench.id)] });
+    render(<ManagePage />);
+    await tab('ルーティン');
+    await userEvent.click(await screen.findByText('PUSH'));
+    return screen.getByRole('dialog', { name: 'ルーティンを編集' });
+  }
+
+  test('セット数が範囲外のまま上げ幅を直しても保存しない', async () => {
+    const dlg = await openPush();
+    const sets = within(dlg).getByLabelText('ベンチプレス セット数');
+    await userEvent.clear(sets);
+    await userEvent.type(sets, '25');
+    const inc = within(dlg).getByLabelText('ベンチプレス 上げ幅');
+    await userEvent.clear(inc);
+    await userEvent.type(inc, '5');
+    await userEvent.click(within(dlg).getByRole('button', { name: '保存' }));
+    expect(within(dlg).getByText(/セット数は1〜20/)).toBeInTheDocument();
+    expect((await listRoutines())[0].items[0]).toMatchObject({ sets: 3, inc: 2.5 });
+  });
+
+  test('空にした欄は空のまま赤く残り、保存できない理由と表示が一致する', async () => {
+    const dlg = await openPush();
+    const sets = within(dlg).getByLabelText('ベンチプレス セット数');
+    await userEvent.clear(sets);
+    await userEvent.tab();
+    expect(sets).toHaveValue('');
+    expect(sets).toHaveAttribute('aria-invalid', 'true');
+    await userEvent.type(sets, '4');
+    await userEvent.click(within(dlg).getByRole('button', { name: '保存' }));
+    await waitFor(async () => expect((await listRoutines())[0].items[0].sets).toBe(4));
+  });
+
+  test('範囲外のまま種目を外して付け直すと、初期値で保存できる', async () => {
+    const dlg = await openPush();
+    const sets = within(dlg).getByLabelText('ベンチプレス セット数');
+    await userEvent.clear(sets);
+    await userEvent.type(sets, '25');
+    await userEvent.click(within(dlg).getByRole('checkbox', { name: 'ベンチプレス' }));
+    await userEvent.click(within(dlg).getByRole('checkbox', { name: 'ベンチプレス' }));
+    await userEvent.click(within(dlg).getByRole('button', { name: '保存' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'ルーティンを編集' })).toBeNull());
+    expect((await listRoutines())[0].items[0].sets).toBe(3);
   });
 });

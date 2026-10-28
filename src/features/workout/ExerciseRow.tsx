@@ -4,6 +4,7 @@ import { Sheet } from '../../components/Sheet';
 import { formatDuration, formatSet, isWorking, topSet } from '../../lib/calc';
 import { formatMD } from '../../lib/dates';
 import { entryComplete } from '../../lib/routineEntries';
+import { deloadSets } from '../../lib/program';
 import type { Exercise, Workout, WorkoutEntry, WorkoutSet } from '../../lib/types';
 import { SetCard } from './SetCard';
 import { SuggestionBlock } from './SuggestionBlock';
@@ -56,7 +57,7 @@ export function ExerciseRow({ index, entry, exercise, prev, open, onToggle, pr, 
             {entry.target?.main && <span className={s.mainTag}>メイン</span>}
             {pr && <span className={s.pr}>PR</span>}
           </span>
-          <span className={s.sub} style={{ display: 'block' }}>{entry.target ? `${entry.target.sets}セット×${entry.target.reps} ・ ${rest}` : rest}</span>
+          <span className={s.sub} style={{ display: 'block' }}>{entry.target ? `${deloadSets(entry.target.sets, deload)}セット×${entry.target.reps} ・ ${rest}` : rest}</span>
           <span className={s.prev} style={{ display: 'block' }}>
             {prev && prevTop ? `前回 ${formatMD(prev.workout.startedAt)} ・ ${formatSet(exercise.type, prevTop)}` : '前回の記録なし'}
           </span>

@@ -33,3 +33,45 @@ test('0到達で停止しバイブ、skip で停止', () => {
   act(() => result.current.skip());
   expect(result.current.running).toBe(false);
 });
+
+describe('再読み込みと終了表示', () => {
+  beforeEach(() => localStorage.clear());
+
+  test('アンマウントしても残り時間が続く（再読み込み）', () => {
+    const a = renderHook(() => useRestTimer());
+    act(() => a.result.current.start(90));
+    a.unmount();
+    act(() => vi.advanceTimersByTime(10_000));
+    const b = renderHook(() => useRestTimer());
+    expect(b.result.current).toMatchObject({ running: true, remaining: 80, total: 90 });
+  });
+
+  test('スキップ後は再読み込みしても出てこない', () => {
+    const a = renderHook(() => useRestTimer());
+    act(() => a.result.current.start(90));
+    act(() => a.result.current.skip());
+    a.unmount();
+    expect(renderHook(() => useRestTimer()).result.current.running).toBe(false);
+  });
+
+  test('0になると finished が立ち、8秒で消える。dismiss でも消える', () => {
+    const { result } = renderHook(() => useRestTimer());
+    act(() => result.current.start(2));
+    act(() => vi.advanceTimersByTime(3000));
+    expect(result.current).toMatchObject({ running: false, finished: true });
+    act(() => vi.advanceTimersByTime(8000));
+    expect(result.current.finished).toBe(false);
+    act(() => result.current.start(1));
+    act(() => vi.advanceTimersByTime(2000));
+    expect(result.current.finished).toBe(true);
+    act(() => result.current.dismiss());
+    expect(result.current.finished).toBe(false);
+  });
+
+  test('スキップでは finished にならない', () => {
+    const { result } = renderHook(() => useRestTimer());
+    act(() => result.current.start(30));
+    act(() => result.current.skip());
+    expect(result.current.finished).toBe(false);
+  });
+});

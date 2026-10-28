@@ -5,15 +5,9 @@ import { buildRoutineEntries } from '../lib/routineEntries';
 import { emptyCondition, emptySet, type BodyweightLog, type Exercise, type Program, type Routine, type RoutineItem, type Settings, type Workout } from '../lib/types';
 import { db } from './db';
 import { DEFAULT_SETTINGS } from './seed';
+import { stamp } from './stamp';
 
 const uid = () => crypto.randomUUID();
-
-let lastStamp = 0;
-/** 作成順の並びが崩れないよう、同じミリ秒でも必ず増える作成時刻 */
-function stamp(): number {
-  lastStamp = Math.max(Date.now(), lastStamp + 1);
-  return lastStamp;
-}
 
 // --- 種目 ---
 export async function listExercises(opts: { includeArchived?: boolean } = {}): Promise<Exercise[]> {
@@ -181,6 +175,13 @@ export async function getSettings(): Promise<Settings> {
 
 export async function saveSettings(s: Settings): Promise<void> {
   await db.settings.put({ key: 'app', barKg: s.barKg, plates: s.plates });
+}
+
+/** 最新の設定を読んで書き換える（素早い連続操作でも変更を取りこぼさない） */
+export async function updateSettings(fn: (s: Settings) => Settings): Promise<void> {
+  await db.transaction('rw', db.settings, async () => {
+    await saveSettings(fn(await getSettings()));
+  });
 }
 
 // --- プログラム ---

@@ -88,6 +88,10 @@ export const REFERENCE_MENU: { name: string; weekday: number; items: MenuItem[] 
 
 /** 参考メニューの4ルーティンを追加する。種目は名前（alias）一致の非アーカイブ種目を再利用し、無ければ作る */
 export async function loadReferenceMenu(): Promise<Routine[]> {
+  return db.transaction('rw', [db.routines, db.exercises, db.workouts], () => loadReferenceMenuTx());
+}
+
+async function loadReferenceMenuTx(): Promise<Routine[]> {
   const exercises = await listExercises();
   const byName = new Map(exercises.map((e) => [e.name, e.id]));
   const routineNames = new Set((await listRoutines()).map((r) => r.name));
@@ -112,7 +116,10 @@ export async function loadReferenceMenu(): Promise<Routine[]> {
 
 /** 初回だけ参考メニューを入れる（ルーティンが1件も無い場合） */
 export async function ensureMenuSeeded(): Promise<void> {
-  if (await db.settings.get('menuSeeded')) return;
-  if ((await db.routines.count()) === 0) await loadReferenceMenu();
-  await db.settings.put({ key: 'menuSeeded', at: Date.now() });
+  // 1つのトランザクションで「確認→投入→記録」を行い、途中失敗や複数タブでの二重投入を防ぐ
+  await db.transaction('rw', [db.settings, db.routines, db.exercises, db.workouts], async () => {
+    if (await db.settings.get('menuSeeded')) return;
+    if ((await db.routines.count()) === 0) await loadReferenceMenu();
+    await db.settings.put({ key: 'menuSeeded', at: Date.now() });
+  });
 }

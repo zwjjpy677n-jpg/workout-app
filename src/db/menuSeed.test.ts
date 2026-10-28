@@ -76,3 +76,19 @@ test('同じ時刻に作っても曜日順に並ぶ', async () => {
     vi.useRealTimers();
   }
 });
+
+test('同時に2回呼ばれても（2つのタブ）二重に入らない', async () => {
+  await Promise.all([ensureMenuSeeded(), ensureMenuSeeded()]);
+  expect(await listRoutines()).toHaveLength(4);
+});
+
+test('途中で失敗したら何も残らず、次回やり直せる', async () => {
+  const { db } = await import('./db');
+  const spy = vi.spyOn(db.routines, 'put').mockImplementationOnce((async (r: unknown) => { await db.routines.add(r as never); throw new Error('boom'); }) as never);
+  await expect(ensureMenuSeeded()).rejects.toThrow('boom');
+  spy.mockRestore();
+  expect(await listRoutines()).toHaveLength(0);
+  expect(await db.settings.get('menuSeeded')).toBeUndefined();
+  await ensureMenuSeeded();
+  expect(await listRoutines()).toHaveLength(4);
+});

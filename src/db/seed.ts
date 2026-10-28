@@ -1,5 +1,6 @@
 import type { BodyPart, Exercise, ExerciseType, Settings } from '../lib/types';
 import { db } from './db';
+import { stamp } from './stamp';
 
 type Seed = { name: string; bodyPart: BodyPart; type: ExerciseType; restSec: number; barKg?: number };
 
@@ -25,8 +26,7 @@ export const DEFAULT_SETTINGS: Settings = { barKg: 20, plates: [25, 20, 15, 10, 
 export async function ensureSeeded(): Promise<void> {
   await db.transaction('rw', db.exercises, async () => {
     if ((await db.exercises.count()) > 0) return;
-    const now = Date.now();
-    const rows: Exercise[] = SEED_EXERCISES.map(({ barKg, ...s }, i) => ({ ...s, barKg: barKg ?? null, id: crypto.randomUUID(), archived: false, createdAt: now + i }));
+    const rows: Exercise[] = SEED_EXERCISES.map(({ barKg, ...s }) => ({ ...s, barKg: barKg ?? null, id: crypto.randomUUID(), archived: false, createdAt: stamp() }));
     await db.exercises.bulkAdd(rows);
   });
 }

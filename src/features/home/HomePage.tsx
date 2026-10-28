@@ -5,6 +5,7 @@ import { Stat } from '../../components/Stat';
 import { startRoutineWorkout, startWorkout } from '../../db/repository';
 import { useActiveWorkout, useExerciseMap, useProgram, useRoutines, useWorkouts } from '../../hooks/useData';
 import { programStatus } from '../../lib/program';
+import { useToday } from '../../hooks/useToday';
 import { ProgramHeader } from './ProgramHeader';
 import { TodayCard } from './TodayCard';
 import { volumeParts } from '../../lib/calc';
@@ -21,7 +22,7 @@ export function HomePage() {
   const workouts = useWorkouts();
   const exMap = useExerciseMap();
   const program = useProgram();
-  const now = Date.now();
+  const now = useToday();
   const status = programStatus(program ?? null, toDateKey(now));
 
   async function startFree() {
@@ -30,6 +31,10 @@ export function HomePage() {
   }
 
   async function startRoutine(id: string) {
+    if (active) {
+      if (window.confirm(`記録中のワークアウト「${active.name}」があります。先にそちらを終了してください。記録中のワークアウトを開きますか？`)) navigate('/workout');
+      return;
+    }
     await startRoutineWorkout(id);
     navigate('/workout');
   }

@@ -21,13 +21,19 @@ export function BackupPanel() {
 
   async function doImport(file: File | undefined) {
     if (!file) return;
+    let data;
     try {
-      const data = parseBackup(await file.text());
-      if (!window.confirm('現在のデータをすべて置き換えます。よろしいですか？')) return;
+      data = parseBackup(await file.text());
+    } catch (e) {
+      return setMsg({ ok: false, text: (e as Error).message });
+    }
+    if (!window.confirm('現在のデータをすべて置き換えます。よろしいですか？')) return;
+    try {
       await importAll(data);
       setMsg({ ok: true, text: `インポートしました（ワークアウト ${data.workouts.length}件）` });
-    } catch (e) {
-      setMsg({ ok: false, text: (e as Error).message });
+    } catch {
+      // 保存領域不足などのDBエラー。importAll は1トランザクションなので元のデータのまま
+      setMsg({ ok: false, text: 'バックアップを読み込めませんでした。データは変更していません。端末の空き容量を確認して、もう一度お試しください。' });
     }
   }
 
