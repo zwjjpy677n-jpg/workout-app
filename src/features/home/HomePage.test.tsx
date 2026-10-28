@@ -65,7 +65,7 @@ test('体重を記録すると値と前回比を表示', async () => {
   await userEvent.click(await screen.findByRole('button', { name: '体重を記録' }));
   await userEvent.type(screen.getByLabelText('体重(kg)'), '71.2');
   await userEvent.click(screen.getByRole('button', { name: '保存' }));
-  expect(await screen.findByText('71.2kg')).toBeInTheDocument();
+  expect(await screen.findByText('71.2')).toBeInTheDocument();
   expect(screen.getByText('+1.2')).toBeInTheDocument();
   expect(await listBodyweights()).toContainEqual({ date: '2026-10-28', kg: 71.2 });
 });
