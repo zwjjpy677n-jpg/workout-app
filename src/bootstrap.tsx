@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { checkStorage } from './db/checkStorage';
 import { ensureSeeded } from './db/seed';
+import { ensureMenuSeeded } from './db/menuSeed';
 
 export async function bootstrap(el: HTMLElement): Promise<void> {
   const root = createRoot(el);
@@ -16,6 +17,7 @@ export async function bootstrap(el: HTMLElement): Promise<void> {
     return;
   }
   await ensureSeeded();
+  await ensureMenuSeeded();
   root.render(
     <StrictMode>
       <App />

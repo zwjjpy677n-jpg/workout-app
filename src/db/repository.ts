@@ -1,4 +1,7 @@
 import type { BackupData } from '../lib/backup';
+import { toDateKey } from '../lib/dates';
+import { programStatus } from '../lib/program';
+import { buildRoutineEntries } from '../lib/routineEntries';
 import { emptyCondition, emptySet, type BodyweightLog, type Exercise, type Program, type Routine, type RoutineItem, type Settings, type Workout } from '../lib/types';
 import { db } from './db';
 import { DEFAULT_SETTINGS } from './seed';
@@ -85,6 +88,30 @@ export async function startWorkout(opts: { name: string; exerciseIds: string[] }
       condition: emptyCondition(),
       entries: opts.exerciseIds.map((exerciseId) => ({ exerciseId, sets: [emptySet()] })),
       routineId: null,
+    };
+    await db.workouts.add(w);
+    return w;
+  });
+}
+
+/** ルーティンからおすすめ入りのワークアウトを始める。進行中があればそれを返す */
+export async function startRoutineWorkout(routineId: string, now: number = Date.now()): Promise<Workout> {
+  return db.transaction('rw', [db.workouts, db.routines, db.exercises, db.settings], async () => {
+    const active = await getActiveWorkout();
+    if (active) return active;
+    const routine = await db.routines.get(routineId);
+    if (!routine) throw new Error('ルーティンが見つかりません');
+    const exercises = new Map((await db.exercises.toArray()).map((e) => [e.id, e]));
+    const deload = programStatus(await getProgram(), toDateKey(now)).deload;
+    const w: Workout = {
+      id: uid(),
+      name: routine.name,
+      startedAt: now,
+      endedAt: null,
+      note: '',
+      condition: emptyCondition(),
+      entries: buildRoutineEntries({ routine, exercises, history: await db.workouts.toArray(), deload, at: now }),
+      routineId: routine.id,
     };
     await db.workouts.add(w);
     return w;

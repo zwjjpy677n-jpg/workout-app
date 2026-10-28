@@ -1,9 +1,10 @@
 import { ex, item } from '../test/factories';
+import { toDateKey } from '../lib/dates';
 import { resetDb } from './db';
 import {
   addExercise, deleteBodyweight, exportAll, finishWorkout, getActiveWorkout, getSettings, importAll, isExerciseUsed,
   listBodyweights, listExercises, listRoutines, listWorkouts, removeExercise, saveRoutine, saveSettings, saveWorkout,
-  setBodyweight, startWorkout, updateExercise, deleteRoutine, deleteWorkout, saveEditedWorkout, getProgram, saveProgram,
+  setBodyweight, startWorkout, updateExercise, deleteRoutine, deleteWorkout, saveEditedWorkout, getProgram, saveProgram, startRoutineWorkout,
 } from './repository';
 import { ensureSeeded, SEED_EXERCISES } from './seed';
 
@@ -161,4 +162,35 @@ test('シード種目のバー重量', async () => {
   await ensureSeeded();
   const bar = Object.fromEntries((await listExercises()).map((e) => [e.name, e.barKg]));
   expect([bar['ベンチプレス'], bar['スクワット'], bar['デッドリフト'], bar['懸垂']]).toEqual([20, 20, 20, null]);
+});
+
+describe('startRoutineWorkout', () => {
+  const dayMs = 86_400_000;
+  async function setup() {
+    await ensureSeeded();
+    const squat = (await listExercises()).find((e) => e.name === 'スクワット')!;
+    const r = await saveRoutine({ name: 'LEG', weekday: 1, items: [item(squat.id, { sets: 4, reps: '5', main: true })] });
+    return { squat, r };
+  }
+
+  test('routineId と名前、目標入りのエントリー。進行中があればそれを返す', async () => {
+    const { squat, r } = await setup();
+    const w = await startRoutineWorkout(r.id);
+    expect(w).toMatchObject({ name: 'LEG', routineId: r.id, endedAt: null });
+    expect(w.entries[0]).toMatchObject({ exerciseId: squat.id, target: { sets: 4, reps: '5', main: true } });
+    expect(w.entries[0].sets).toHaveLength(4);
+    expect((await startRoutineWorkout(r.id)).id).toBe(w.id);
+    expect(await listWorkouts()).toHaveLength(1);
+  });
+
+  test('プログラム4週目は回復週でセット半分', async () => {
+    const { r } = await setup();
+    const now = Date.now();
+    await saveProgram({ startDate: toDateKey(now - 21 * dayMs), tests: { start: null, end: null } });
+    expect((await startRoutineWorkout(r.id, now)).entries[0].sets).toHaveLength(2);
+  });
+
+  test('存在しないルーティンはエラー', async () => {
+    await expect(startRoutineWorkout('nope')).rejects.toThrow();
+  });
 });
