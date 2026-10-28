@@ -1,6 +1,8 @@
 import Dexie, { type Table } from 'dexie';
 import { migrateExerciseV1, migrateRoutineV1, migrateWorkoutV1 } from '../lib/backup';
+import type { FeedbackIn, FeedbackOut } from '../lib/share/feedbackPayload';
 import type { Friend, FriendWorkout } from '../lib/share/importShare';
+import type { MenuLog } from '../lib/share/menuPayload';
 import type { BodyweightLog, Exercise, Program, Routine, Settings, Workout } from '../lib/types';
 
 export type SettingsRow =
@@ -38,6 +40,9 @@ export class IronLogDB extends Dexie {
   settings!: Table<SettingsRow, string>;
   friends!: Table<Friend, string>;
   friendWorkouts!: Table<FriendWorkout, string>;
+  feedbackIn!: Table<FeedbackIn, string>;
+  feedbackOut!: Table<FeedbackOut, string>;
+  menuLog!: Table<MenuLog, string>;
 
   constructor() {
     super('ironlog');
