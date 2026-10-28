@@ -13,7 +13,7 @@ export function BackupPanel() {
     const url = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ironlog-${toDateKey(Date.now())}.json`;
+    a.download = `grind-${toDateKey(Date.now())}.json`;
     a.click();
     URL.revokeObjectURL(url);
     setMsg({ ok: true, text: 'エクスポートしました' });

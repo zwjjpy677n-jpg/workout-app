@@ -11,6 +11,7 @@ import { TodayCard } from './TodayCard';
 import { volumeParts } from '../../lib/calc';
 import { formatMDW, toDateKey } from '../../lib/dates';
 import { completed, weekSummary, weeklySetsByBodyPart, workoutVolume } from '../../lib/summary';
+import { Brand } from '../../components/Brand';
 import { BodyPartBars } from './BodyPartBars';
 import { BodyweightCard } from './BodyweightCard';
 import s from './home.module.css';
@@ -49,7 +50,7 @@ export function HomePage() {
   return (
     <div className="page">
       <div className={s.top}>
-        <div className={s.brand}>IRON<span>LOG</span></div>
+        <Brand />
         <div className={s.date}>{formatMDW(now)}</div>
       </div>
 

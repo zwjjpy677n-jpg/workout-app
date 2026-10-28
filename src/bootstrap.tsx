@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
+import { Brand } from './components/Brand';
 import { checkStorage } from './db/checkStorage';
 import { ensureSeeded } from './db/seed';
 import { ensureMenuSeeded } from './db/menuSeed';
@@ -10,7 +11,9 @@ export async function bootstrap(el: HTMLElement): Promise<void> {
   const fail = (msg: string) =>
     root.render(
       <div className="page" style={{ textAlign: 'center', paddingTop: 120 }}>
-        <h1 className="page-title">IRON<span style={{ color: 'var(--red)' }}>LOG</span></h1>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+          <Brand size={32} />
+        </div>
         <p>{msg}</p>
       </div>,
     );
