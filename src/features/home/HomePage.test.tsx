@@ -5,6 +5,7 @@ import { getActiveWorkout, listBodyweights, listExercises, saveRoutine, saveWork
 import { ensureSeeded } from '../../db/seed';
 import { entry, set, wk } from '../../test/factories';
 import { renderRoute } from '../../test/render';
+import { defaultItem } from '../../lib/types';
 import { HomePage } from './HomePage';
 
 let bench = '';
@@ -34,7 +35,7 @@ test('進行中があれば RESUME WORKOUT', async () => {
 });
 
 test('ルーティンから開始するとその種目入り', async () => {
-  await saveRoutine({ name: 'PUSH', exerciseIds: [bench] });
+  await saveRoutine({ name: 'PUSH', weekday: null, items: [defaultItem(bench)] });
   home();
   await userEvent.click(await screen.findByRole('button', { name: /PUSH/ }));
   await screen.findByTestId('location');

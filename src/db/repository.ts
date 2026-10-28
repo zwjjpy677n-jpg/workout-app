@@ -1,5 +1,5 @@
 import type { BackupData } from '../lib/backup';
-import { emptyCondition, emptySet, type BodyweightLog, type Exercise, type Routine, type Settings, type Workout } from '../lib/types';
+import { emptyCondition, emptySet, type BodyweightLog, type Exercise, type Program, type Routine, type RoutineItem, type Settings, type Workout } from '../lib/types';
 import { db } from './db';
 import { DEFAULT_SETTINGS } from './seed';
 
@@ -35,7 +35,7 @@ export async function removeExercise(id: string): Promise<'deleted' | 'archived'
   return db.transaction('rw', db.exercises, db.workouts, db.routines, async () => {
     const routines = await db.routines.toArray();
     for (const r of routines) {
-      if (r.exerciseIds.includes(id)) await db.routines.update(r.id, { exerciseIds: r.exerciseIds.filter((x) => x !== id) });
+      if (r.items.some((i) => i.exerciseId === id)) await db.routines.update(r.id, { items: r.items.filter((i) => i.exerciseId !== id) });
     }
     if (await isExerciseUsed(id)) {
       await db.exercises.update(id, { archived: true });
@@ -51,8 +51,14 @@ export async function listRoutines(): Promise<Routine[]> {
   return (await db.routines.toArray()).sort((a, b) => a.createdAt - b.createdAt);
 }
 
-export async function saveRoutine(r: Omit<Routine, 'id' | 'createdAt'> & { id?: string; createdAt?: number }): Promise<Routine> {
-  const row: Routine = { id: r.id ?? uid(), name: r.name, exerciseIds: r.exerciseIds, createdAt: r.createdAt ?? Date.now() };
+export async function saveRoutine(r: {
+  id?: string;
+  name: string;
+  weekday: number | null;
+  items: RoutineItem[];
+  createdAt?: number;
+}): Promise<Routine> {
+  const row: Routine = { id: r.id ?? uid(), name: r.name, weekday: r.weekday, items: r.items, createdAt: r.createdAt ?? Date.now() };
   await db.routines.put(row);
   return row;
 }
@@ -78,6 +84,7 @@ export async function startWorkout(opts: { name: string; exerciseIds: string[] }
       note: '',
       condition: emptyCondition(),
       entries: opts.exerciseIds.map((exerciseId) => ({ exerciseId, sets: [emptySet()] })),
+      routineId: null,
     };
     await db.workouts.add(w);
     return w;
@@ -135,24 +142,36 @@ export async function listBodyweights(): Promise<BodyweightLog[]> {
 // --- 設定 ---
 export async function getSettings(): Promise<Settings> {
   const row = await db.settings.get('app');
-  return row ? { barKg: row.barKg, plates: row.plates } : { ...DEFAULT_SETTINGS, plates: [...DEFAULT_SETTINGS.plates] };
+  return row?.key === 'app' ? { barKg: row.barKg, plates: row.plates } : { ...DEFAULT_SETTINGS, plates: [...DEFAULT_SETTINGS.plates] };
 }
 
 export async function saveSettings(s: Settings): Promise<void> {
   await db.settings.put({ key: 'app', barKg: s.barKg, plates: s.plates });
 }
 
+// --- プログラム ---
+export async function getProgram(): Promise<Program | null> {
+  const row = await db.settings.get('program');
+  return row?.key === 'program' ? row.program : null;
+}
+
+export async function saveProgram(p: Program | null): Promise<void> {
+  if (p) await db.settings.put({ key: 'program', program: p });
+  else await db.settings.delete('program');
+}
+
 // --- バックアップ ---
 export async function exportAll(now: number = Date.now()): Promise<BackupData> {
   return {
     app: 'ironlog',
-    version: 1,
+    version: 2,
     exportedAt: now,
     exercises: await db.exercises.toArray(),
     routines: await db.routines.toArray(),
     workouts: await db.workouts.toArray(),
     bodyweights: await db.bodyweights.toArray(),
     settings: await getSettings(),
+    program: await getProgram(),
   };
 }
 
@@ -164,5 +183,7 @@ export async function importAll(data: BackupData): Promise<void> {
     await db.workouts.bulkAdd(data.workouts);
     await db.bodyweights.bulkAdd(data.bodyweights);
     await db.settings.put({ key: 'app', ...data.settings });
+    if (data.program) await db.settings.put({ key: 'program', program: data.program });
+    await db.settings.put({ key: 'menuSeeded', at: Date.now() });
   });
 }

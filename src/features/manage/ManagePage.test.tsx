@@ -50,7 +50,7 @@ test('ルーティンを作成できる', async () => {
   expect(await screen.findByText('2種目')).toBeInTheDocument();
   const [r] = await listRoutines();
   expect(r.name).toBe('PUSH');
-  expect(r.exerciseIds).toHaveLength(2);
+  expect(r.items).toHaveLength(2);
 });
 
 test('体重履歴を表示・削除', async () => {

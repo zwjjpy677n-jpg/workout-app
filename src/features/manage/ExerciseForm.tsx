@@ -22,7 +22,7 @@ export function ExerciseForm({ exercise, onClose }: { exercise: Exercise | null;
 
   async function save() {
     if (!name.trim()) return setError('名前を入力してください');
-    const data = { name: name.trim(), bodyPart, type, restSec: restSec ?? 90 };
+    const data = { name: name.trim(), bodyPart, type, restSec: restSec ?? 90, barKg: exercise?.barKg ?? null };
     try {
       if (exercise) await updateExercise(exercise.id, data);
       else await addExercise(data);

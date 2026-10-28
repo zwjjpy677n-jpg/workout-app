@@ -9,12 +9,27 @@ export interface Exercise {
   restSec: number;
   archived: boolean;
   createdAt: number;
+  /** この種目のバー重量。null = 設定のバー重量。プレート図はこの値が非nullの種目だけに出す */
+  barKg: number | null;
+}
+
+export interface RoutineItem {
+  exerciseId: string;
+  sets: number;
+  /** 目標の表記（"5", "左右8", "8〜10", "6〜8本", "左右30秒"） */
+  reps: string;
+  main: boolean;
+  /** 重量の上げ幅 kg */
+  inc: number;
+  note: string;
 }
 
 export interface Routine {
   id: string;
   name: string;
-  exerciseIds: string[];
+  /** 0=日 … 6=土。null = 曜日なし */
+  weekday: number | null;
+  items: RoutineItem[];
   createdAt: number;
 }
 
@@ -32,6 +47,10 @@ export interface WorkoutSet {
 export interface WorkoutEntry {
   exerciseId: string;
   sets: WorkoutSet[];
+  /** ルーティンから始めたときの目標。自由に追加した種目は undefined */
+  target?: EntryTarget;
+  /** メイン種目「最後の回でスピードが落ちた」 */
+  slowed?: boolean;
 }
 
 export interface Condition {
@@ -50,6 +69,7 @@ export interface Workout {
   note: string;
   condition: Condition;
   entries: WorkoutEntry[];
+  routineId: string | null;
 }
 
 export interface BodyweightLog {
@@ -75,6 +95,10 @@ export const EXERCISE_TYPE_LABEL: Record<ExerciseType, string> = {
 
 export function emptySet(): WorkoutSet {
   return { weight: null, reps: null, durationSec: null, rpe: null, warmup: false, note: '', done: false };
+}
+
+export function defaultItem(exerciseId: string): RoutineItem {
+  return { exerciseId, sets: 3, reps: '10', main: false, inc: 2.5, note: '' };
 }
 
 export function emptyCondition(): Condition {

@@ -3,14 +3,14 @@ import { Button } from '../../components/Button';
 import { Sheet } from '../../components/Sheet';
 import { deleteRoutine, saveRoutine } from '../../db/repository';
 import { useExerciseMap, useExercises } from '../../hooks/useData';
-import { BODY_PART_LABEL, BODY_PARTS, type Routine } from '../../lib/types';
+import { BODY_PART_LABEL, BODY_PARTS, defaultItem, type Routine } from '../../lib/types';
 import s from './manage.module.css';
 
 export function RoutineForm({ routine, onClose }: { routine: Routine | null; onClose(): void }) {
   const exercises = useExercises();
   const map = useExerciseMap();
   const [name, setName] = useState(routine?.name ?? '');
-  const [ids, setIds] = useState<string[]>(routine?.exerciseIds ?? []);
+  const [ids, setIds] = useState<string[]>(routine?.items.map((i) => i.exerciseId) ?? []);
   const [error, setError] = useState('');
 
   const toggle = (id: string) => setIds((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
@@ -26,7 +26,8 @@ export function RoutineForm({ routine, onClose }: { routine: Routine | null; onC
   async function save() {
     if (!name.trim()) return setError('名前を入力してください');
     if (ids.length === 0) return setError('種目を1つ以上選んでください');
-    await saveRoutine({ ...routine, name: name.trim(), exerciseIds: ids });
+    const prev = new Map(routine?.items.map((i) => [i.exerciseId, i]));
+    await saveRoutine({ ...routine, name: name.trim(), weekday: routine?.weekday ?? null, items: ids.map((id) => prev.get(id) ?? defaultItem(id)) });
     onClose();
   }
 

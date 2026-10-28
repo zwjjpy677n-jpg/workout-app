@@ -56,9 +56,9 @@ export function HomePage() {
           <div className="sec">Routines</div>
           <div className={s.routines}>
             {routines.map((r) => (
-              <button key={r.id} type="button" className={s.routine} onClick={() => start(r.name, r.exerciseIds)}>
+              <button key={r.id} type="button" className={s.routine} onClick={() => start(r.name, r.items.map((i) => i.exerciseId))}>
                 <b>{r.name}</b>
-                <span>{r.exerciseIds.length}種目</span>
+                <span>{r.items.length}種目</span>
               </button>
             ))}
           </div>

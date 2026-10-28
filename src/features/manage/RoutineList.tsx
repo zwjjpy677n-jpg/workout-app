@@ -17,7 +17,7 @@ export function RoutineList() {
           <button key={r.id} type="button" className={s.item} onClick={() => setEditing(r)}>
             <div>
               <div>{r.name}</div>
-              <div className={s.sub}>{r.exerciseIds.length}種目</div>
+              <div className={s.sub}>{r.items.length}種目</div>
             </div>
             <span className={s.chev}>›</span>
           </button>
