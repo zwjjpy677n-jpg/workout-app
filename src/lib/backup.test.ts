@@ -42,6 +42,8 @@ test.each([
   ['RPEが範囲外', mutate((d) => (d.workouts[0].entries[0].sets[0].rpe = 11))],
   ['体重が範囲外', mutate((d) => (d.bodyweights[0].kg = 5))],
   ['体重の日付が重複', mutate((d) => d.bodyweights.push({ ...d.bodyweights[0] }))],
+  ['体脂肪率が範囲外', mutate((d) => (d.bodyweights[0].fatPct = 80))],
+  ['体脂肪率が文字列', mutate((d) => (d.bodyweights[0].fatPct = '15'))],
   ['コンディションが範囲外', mutate((d) => (d.workouts[0].condition.sleep = 9))],
   ['セット数が範囲外', mutate((d) => (d.routines[0].items[0].sets = 0))],
   ['workoutsが配列でない', mutate((d) => (d.workouts = {}))],
@@ -88,4 +90,14 @@ test('v1 も参照チェックを通す', () => {
     workouts: [], bodyweights: [], settings: { barKg: 20, plates: [20] },
   };
   expect(() => parseBackup(JSON.stringify(v1))).toThrow('バックアップファイルの形式が正しくありません');
+});
+
+test('体脂肪率は無くても null でも範囲内でも受け付ける', () => {
+  for (const fat of [undefined, null, 15.3]) {
+    const text = mutate((d) => {
+      if (fat === undefined) delete d.bodyweights[0].fatPct;
+      else d.bodyweights[0].fatPct = fat;
+    });
+    expect(() => parseBackup(text)).not.toThrow();
+  }
 });

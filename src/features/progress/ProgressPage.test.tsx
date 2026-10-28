@@ -22,7 +22,8 @@ beforeEach(async () => {
   await saveWorkout(wk(new Date(2026, 9, 25), [entry(b, [set({ weight: 104.5, reps: 1 })])]));
   await saveWorkout(wk(new Date(2026, 9, 26), [entry(ids['スクワット'], [set({ weight: 120, reps: 5 })])]));
   await saveWorkout(wk(new Date(2026, 9, 27), [entry(ids['懸垂'], [set({ weight: 10, reps: 8 })])]));
-  await setBodyweight('2026-10-27', 71);
+  await setBodyweight('2026-10-27', 71, 15.5);
+  await setBodyweight('2026-10-20', 72, 16.5);
 });
 afterEach(() => vi.useRealTimers());
 
@@ -31,7 +32,7 @@ const page = () => renderRoute('/progress', '/progress', <ProgressPage />);
 test('対象は記録のある種目と体重だけ', async () => {
   page();
   const sel = await screen.findByLabelText('対象');
-  await waitFor(() => expect(within(sel).getAllByRole('option').map((o) => o.textContent)).toEqual(['ベンチプレス', '懸垂', 'スクワット', '体重']));
+  await waitFor(() => expect(within(sel).getAllByRole('option').map((o) => o.textContent)).toEqual(['ベンチプレス', '懸垂', 'スクワット', '体重', '体脂肪率']));
 });
 
 test('ベンチ・3M・推定1RMの現在値と増減', async () => {
@@ -48,7 +49,7 @@ test('ベンチ・3M・推定1RMの現在値と増減', async () => {
 test('指標ボタンは種目タイプで変わる', async () => {
   page();
   const sel = await screen.findByLabelText('対象');
-  await waitFor(() => expect(within(sel).getAllByRole('option')).toHaveLength(4));
+  await waitFor(() => expect(within(sel).getAllByRole('option')).toHaveLength(5));
   await userEvent.selectOptions(sel, ids['懸垂']);
   expect(screen.getByRole('button', { name: '最大加重' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '総回数' })).toBeInTheDocument();
@@ -58,7 +59,7 @@ test('指標ボタンは種目タイプで変わる', async () => {
 test('記録1件ならグラフの代わりにメッセージ', async () => {
   page();
   const sel = await screen.findByLabelText('対象');
-  await waitFor(() => expect(within(sel).getAllByRole('option')).toHaveLength(4));
+  await waitFor(() => expect(within(sel).getAllByRole('option')).toHaveLength(5));
   await userEvent.selectOptions(sel, ids['スクワット']);
   expect(screen.getByText('記録が増えるとグラフが表示されます')).toBeInTheDocument();
 });
@@ -71,4 +72,14 @@ test('%1RM表の行タップでプレート計算', async () => {
   await userEvent.click(row);
   expect(await screen.findByRole('dialog', { name: 'プレート計算' })).toBeInTheDocument();
   expect(await screen.findByText('25 + 5 + 1.25')).toBeInTheDocument();
+});
+
+test('体脂肪率の推移と増減', async () => {
+  page();
+  const sel = await screen.findByLabelText('対象');
+  await waitFor(() => expect(within(sel).getAllByRole('option')).toHaveLength(5));
+  await userEvent.selectOptions(sel, '__bodyfat');
+  expect(await screen.findByText('▼ 1%')).toBeInTheDocument();
+  expect(screen.getAllByText('体脂肪率').length).toBeGreaterThan(1);
+  expect(screen.getByText('▼ 1%').parentElement).toHaveTextContent('15.5%');
 });

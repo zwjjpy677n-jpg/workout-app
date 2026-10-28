@@ -25,7 +25,7 @@ export function DayDetail({ dateKey, workouts, bodyweights, exercises }: Props) 
     <section aria-label={title} className={s.detail}>
       <div className={s.wHead}>
         <span className={s.dTitle}>{title}</span>
-        {bw && <span className={s.meta}>体重 {formatKg(bw.kg)}kg</span>}
+        {bw && <span className={s.meta}>体重 {formatKg(bw.kg)}kg{bw.fatPct != null ? ` ・ 体脂肪 ${formatKg(bw.fatPct)}%` : ''}</span>}
       </div>
       {list.length === 0 && <p className={s.empty}>この日のトレーニングはありません</p>}
       {list.map((w) => (

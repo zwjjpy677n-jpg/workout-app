@@ -25,7 +25,7 @@ beforeEach(async () => {
   w22 = x.id;
   await saveWorkout(x);
   await saveWorkout(wk(new Date(2026, 9, 25, 9), [entry(ids['プランク'], [set({ durationSec: 60 })])]));
-  await setBodyweight('2026-10-22', 71.2);
+  await setBodyweight('2026-10-22', 71.2, 15.3);
 });
 afterEach(() => vi.useRealTimers());
 
@@ -54,7 +54,7 @@ test('日付タップで詳細（ワーキングのみ・体重・コンディ�
   const d = await screen.findByRole('region', { name: '10/22 THU' });
   expect(within(d).getByText('ベンチプレス')).toBeInTheDocument();
   expect(within(d).getByText('80kg × 8 / 8 / 7')).toBeInTheDocument();
-  expect(within(d).getByText('体重 71.2kg')).toBeInTheDocument();
+  expect(within(d).getByText('体重 71.2kg ・ 体脂肪 15.3%')).toBeInTheDocument();
   expect(within(d).getByText('睡眠 4 ・ やる気 5')).toBeInTheDocument();
   expect(within(d).getByText('調子良い')).toBeInTheDocument();
 });

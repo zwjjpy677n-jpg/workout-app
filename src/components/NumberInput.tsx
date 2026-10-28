@@ -13,11 +13,13 @@ type Props = {
   className?: string;
   /** blur しても範囲外・空の入力を元に戻さず、invalid 表示のまま残す */
   keepInvalid?: boolean;
+  /** 範囲外・非数かどうかが変わったら呼ばれる */
+  onInvalidChange?(invalid: boolean): void;
 } & Pick<InputHTMLAttributes<HTMLInputElement>, 'autoFocus' | 'onFocus'>;
 
 const show = (v: number | null) => (v == null ? '' : String(v));
 
-export function NumberInput({ value, onChange, min, max, placeholder, inputMode, className, keepInvalid, ...rest }: Props) {
+export function NumberInput({ value, onChange, min, max, placeholder, inputMode, className, keepInvalid, onInvalidChange, ...rest }: Props) {
   const [text, setText] = useState(show(value));
   const [invalid, setInvalid] = useState(false);
 
@@ -32,6 +34,7 @@ export function NumberInput({ value, onChange, min, max, placeholder, inputMode,
     // keepInvalid の欄では空も「未入力」として赤く残す（勝手に元の値へ戻さない）
     const ok = empty ? !keepInvalid : Number.isFinite(n) && n >= min && n <= max;
     setInvalid(!ok);
+    onInvalidChange?.(!ok);
     // 範囲外・非数は途中の値を残さず null にする（表示と保存値を食い違わせない）
     onChange(ok && !empty ? n : null);
   }
@@ -47,6 +50,7 @@ export function NumberInput({ value, onChange, min, max, placeholder, inputMode,
       aria-invalid={invalid || undefined}
       onBlur={() => {
         if (keepInvalid && invalid) return;
+        if (invalid) onInvalidChange?.(false);
         setInvalid(false);
         setText(show(value));
       }}

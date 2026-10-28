@@ -86,7 +86,7 @@ test('体重は1日1件で上書き', async () => {
   await setBodyweight('2026-10-28', 70);
   await setBodyweight('2026-10-28', 71.2);
   await setBodyweight('2026-10-01', 69);
-  expect(await listBodyweights()).toEqual([{ date: '2026-10-01', kg: 69 }, { date: '2026-10-28', kg: 71.2 }]);
+  expect(await listBodyweights()).toEqual([{ date: '2026-10-01', kg: 69, fatPct: null }, { date: '2026-10-28', kg: 71.2, fatPct: null }]);
   await deleteBodyweight('2026-10-01');
   expect(await listBodyweights()).toHaveLength(1);
 });
@@ -213,4 +213,13 @@ test('updateSettings は同時に呼んでも両方の変更が残る', async ()
     updateSettings((s) => ({ ...s, plates: s.plates.filter((p) => p !== 2.5) })),
   ]);
   expect((await getSettings()).plates).toEqual([25, 20, 15, 10, 5]);
+});
+
+test('体脂肪率は体重と一緒に保存でき、省略すると null', async () => {
+  await setBodyweight('2026-10-28', 71.2, 15.3);
+  await setBodyweight('2026-10-27', 71);
+  expect(await listBodyweights()).toEqual([
+    { date: '2026-10-27', kg: 71, fatPct: null },
+    { date: '2026-10-28', kg: 71.2, fatPct: 15.3 },
+  ]);
 });
