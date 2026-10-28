@@ -11,11 +11,14 @@ import { PercentSheet } from '../tools/PercentSheet';
 import { PlateSheet } from '../tools/PlateSheet';
 import { ConditionSheet } from './ConditionSheet';
 import { RestTimerBar } from './RestTimerBar';
-import { useExerciseMap, useWorkouts } from '../../hooks/useData';
+import { useExerciseMap, useProgram, useSettings, useWorkouts } from '../../hooks/useData';
+import { programStatus } from '../../lib/program';
+import { entryComplete } from '../../lib/routineEntries';
+import { completeSet } from './workoutOps';
 import { toDateKey } from '../../lib/dates';
 import { previousEntry } from '../../lib/summary';
-import { emptySet, type Exercise, type Workout, type WorkoutSet } from '../../lib/types';
-import { ExerciseCard } from './ExerciseCard';
+import { emptySet, type Exercise, type Workout, type WorkoutEntry, type WorkoutSet } from '../../lib/types';
+import { ExerciseRow } from './ExerciseRow';
 import { ExercisePicker } from './ExercisePicker';
 import s from './workout.module.css';
 
@@ -34,6 +37,10 @@ export function WorkoutPage() {
   const timer = useRestTimer();
   const all = useWorkouts();
   const exMap = useExerciseMap();
+  const program = useProgram();
+  const settings = useSettings();
+  /** 開いている種目の index。undefined = まだ決めていない（最初の未完了を開く） */
+  const [openIdx, setOpenIdx] = useState<number | null | undefined>(undefined);
 
   useEffect(() => {
     let alive = true;
@@ -51,13 +58,36 @@ export function WorkoutPage() {
   }, [editMode, id]);
 
   if (w === null) return <Navigate to={editMode ? '/calendar' : '/'} replace />;
-  if (!w || !exMap || !all) return null;
+  if (!w || !exMap || !all || program === undefined || !settings) return null;
 
   const update = (next: Workout) => {
     setW(next);
     saveWorkout(next);
   };
-  const setSets = (i: number, sets: WorkoutSet[]) => update({ ...w, entries: w.entries.map((e, j) => (j === i ? { ...e, sets } : e)) });
+  const setEntry = (i: number, entry: WorkoutEntry) => update({ ...w, entries: w.entries.map((e, j) => (j === i ? entry : e)) });
+  const firstOpen = Math.max(0, w.entries.findIndex((e) => !entryComplete(e)));
+  const open = openIdx === undefined ? (w.entries.length ? firstOpen : null) : openIdx;
+  const deload = programStatus(program, toDateKey(w.startedAt)).deload;
+
+  /** 入力のあるセットを完了にして、次の未完了の種目を開く（完了済みなら完了を取り消す） */
+  function completeAndNext(i: number) {
+    const e = w!.entries[i];
+    const ex = exMap!.get(e.exerciseId)!;
+    if (entryComplete(e)) {
+      setEntry(i, { ...e, sets: e.sets.map((x) => ({ ...x, done: false })) });
+      return;
+    }
+    let sets = e.sets;
+    sets.forEach((x, k) => {
+      if (!x.done && !x.warmup) sets = completeSet(ex.type, sets, k, null);
+    });
+    const next = { ...e, sets };
+    setEntry(i, next);
+    if (sets.some((x, k) => x.done && !e.sets[k].done) && !editMode) timer.start(ex.restSec);
+    const entries = w!.entries.map((x, j) => (j === i ? next : x));
+    const after = entries.findIndex((x, j) => j > i && !entryComplete(x));
+    setOpenIdx(after >= 0 ? after : null);
+  }
   const hasCondition = w.condition.sleep != null || w.condition.fatigue != null || w.condition.motivation != null;
   const lastWeight = (ex: Exercise, sets: WorkoutSet[]) =>
     [...sets].reverse().find((x) => x.weight != null)?.weight ?? topSet(ex.type, previousEntry(all, ex.id, w)?.entry.sets ?? [])?.weight ?? 20;
@@ -96,15 +126,21 @@ export function WorkoutPage() {
         const ex = exMap.get(e.exerciseId);
         if (!ex) return null;
         return (
-          <ExerciseCard
+          <ExerciseRow
             key={`${e.exerciseId}-${i}`}
+            index={i}
             entry={e}
             exercise={ex}
             prev={previousEntry(all, e.exerciseId, { startedAt: w.startedAt, id: w.id })}
+            open={open === i}
+            onToggle={() => setOpenIdx(open === i ? null : i)}
             pr={isPR(w, ex, all)}
-            onChange={(sets) => setSets(i, sets)}
+            deload={deload}
+            plates={settings.plates}
+            onChange={(entry) => setEntry(i, entry)}
             onRemove={() => update({ ...w, entries: w.entries.filter((_, j) => j !== i) })}
             onSetDone={editMode ? undefined : () => timer.start(ex.restSec)}
+            onCompleteAndNext={() => completeAndNext(i)}
             extraActions={
               ex.type === 'weight'
                 ? (close) => (
@@ -123,7 +159,10 @@ export function WorkoutPage() {
       <ExercisePicker
         open={picker}
         onClose={() => setPicker(false)}
-        onPick={(exerciseId) => update({ ...w, entries: [...w.entries, { exerciseId, sets: [emptySet()] }] })}
+        onPick={(exerciseId) => {
+          update({ ...w, entries: [...w.entries, { exerciseId, sets: [emptySet()] }] });
+          setOpenIdx(w.entries.length);
+        }}
       />
       <ConditionSheet open={sheet === 'condition'} value={w.condition} onChange={(condition) => update({ ...w, condition })} onClose={() => setSheet(null)} />
       <Sheet open={sheet === 'memo'} title="ワークアウトメモ" onClose={() => setSheet(null)}>

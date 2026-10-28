@@ -41,3 +41,47 @@
 .pickList button { min-height: 48px; padding: 0 12px; text-align: left; border-radius: 10px; background: var(--bg); }
 .actions { display: flex; flex-direction: column; gap: 8px; }
 .textarea { width: 100%; min-height: 110px; padding: 12px; border-radius: 10px; border: 0; outline: 0; background: var(--surface2); resize: vertical; }
+/* --- 開閉式の種目行 --- */
+.row { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; }
+.row.open { border-color: #4a4a55; }
+.rowHead { display: flex; align-items: flex-start; gap: 12px; width: 100%; padding: 12px; text-align: left; }
+.badge { flex: none; width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; background: var(--surface2); color: var(--muted); font-family: var(--font-num); font-weight: 700; font-size: 18px; }
+.badge.ok { background: var(--red); color: #fff; }
+.badge.ok svg { width: 16px; height: 16px; stroke: #fff; stroke-width: 3; fill: none; }
+.headText { flex: 1; min-width: 0; }
+.mainTag { font-size: 10px; font-weight: 700; background: var(--text); color: var(--bg); border-radius: 4px; padding: 1px 6px; margin-left: 6px; vertical-align: 2px; }
+.sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.panel { padding: 0 12px 14px; }
+.panelTop { display: flex; justify-content: flex-end; margin: -4px 0 4px; }
+.sugg { position: relative; background: #050506; border-radius: 12px; padding: 12px 14px 14px 18px; overflow: hidden; }
+.sugg::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--red); }
+.suggLabel { font-size: 11px; color: var(--muted); letter-spacing: .05em; }
+.suggBig { font-family: var(--font-num); font-weight: 700; font-size: 60px; line-height: .95; margin-top: 2px; }
+.suggBig small { font-size: 20px; color: var(--muted); margin-left: 3px; }
+.suggBig em { font-style: normal; font-size: 26px; color: var(--muted); margin-left: 10px; }
+.suggGoal { font-family: var(--font-num); font-weight: 700; font-size: 40px; line-height: 1.05; margin-top: 2px; }
+.reason { font-size: 12.5px; color: #c9c9cf; margin-top: 6px; }
+.info { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 10px 0 2px; font-size: 12px; color: var(--muted); }
+.info b { font-family: var(--font-num); font-size: 15px; color: var(--text); margin-left: 4px; font-weight: 500; }
+.targetNote { font-size: 12px; color: #c9c9cf; background: var(--bg); border-radius: 8px; padding: 8px 10px; margin-top: 8px; }
+.sets { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.setCard { border: 1.5px solid var(--line); border-radius: 12px; padding: 8px 10px 10px; background: var(--bg); }
+.setCard.isDone { border-color: var(--red); }
+.setTop { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.setNo2 { min-height: 32px; padding: 0 6px; border-radius: 8px; font-family: var(--font-num); font-weight: 700; font-size: 18px; color: var(--text); }
+.setNo2 small { font-family: var(--font-body); font-weight: 500; font-size: 11px; color: var(--muted); margin-left: 2px; }
+.setNo2.warm { color: #f5b041; background: rgba(245, 176, 65, .12); }
+.setPrev { flex: 1; font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.iconBtn { width: 32px; height: 32px; border-radius: 8px; color: var(--muted); font-size: 15px; }
+.iconBtn.has { color: var(--text); }
+.doneBtn { min-height: 34px; padding: 0 14px; border-radius: 99px; border: 1.5px solid var(--line); font-weight: 700; font-size: 13px; color: var(--muted); }
+.doneBtn[aria-pressed='true'] { background: var(--red); border-color: var(--red); color: #fff; }
+.inputs { display: grid; grid-template-columns: 1fr 1fr 64px; gap: 8px; }
+.inputs.single { grid-template-columns: 1fr 64px; }
+.rpe { display: flex; flex-direction: column; justify-content: center; }
+.rpe span { font-size: 10px; color: var(--muted); text-align: center; letter-spacing: .05em; }
+.rpe input { min-height: 34px; font-size: 15px; }
+.btnRow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.btnRow button { min-height: 40px; padding: 0 14px; border-radius: 10px; background: var(--surface2); font-size: 13px; }
+.btnRow button[aria-pressed='true'] { background: #5a1d1d; color: #ffb3ae; }
+.btnRow .next { background: var(--text); color: var(--bg); font-weight: 700; flex: 1; }

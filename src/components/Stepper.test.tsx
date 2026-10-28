@@ -52,3 +52,11 @@ test('直接入力', async () => {
   expect(spy).toHaveBeenLastCalledWith(85);
   expect(screen.getByText('kg')).toBeInTheDocument();
 });
+
+test('値が空ならプレースホルダーを基準に増減', async () => {
+  const spy = vi.fn();
+  render(<Stepper value={null} placeholder={80} onChange={spy} step={2.5} min={0} max={1000} unit="kg" inputMode="decimal" label="P" />);
+  expect(screen.getByLabelText('P')).toHaveAttribute('placeholder', '80');
+  await userEvent.click(screen.getByRole('button', { name: 'Pを増やす' }));
+  expect(spy).toHaveBeenLastCalledWith(82.5);
+});
