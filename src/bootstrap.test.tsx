@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { act } from 'react';
 import { checkStorage } from './db/checkStorage';
 import { bootstrap } from './bootstrap';
@@ -47,4 +47,12 @@ test('bootstrap: 初期データの準備に失敗したらエラー画面', asy
   document.body.appendChild(root);
   await act(() => bootstrap(root));
   expect(screen.getByText('データの準備に失敗しました。端末の空き容量を確認して、ページを再読み込みしてください。')).toBeInTheDocument();
+});
+
+test('エラー画面にもアプリ名 GRIND', async () => {
+  vi.stubGlobal('indexedDB', undefined);
+  const root = document.createElement('div');
+  document.body.appendChild(root);
+  await act(() => bootstrap(root));
+  expect(within(root).getByLabelText('GRIND')).toBeInTheDocument();
 });

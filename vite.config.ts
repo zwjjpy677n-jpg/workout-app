@@ -11,8 +11,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon-192.png', 'icon-512.png'],
       manifest: {
-        name: 'IRON LOG',
-        short_name: 'IRON LOG',
+        name: 'GRIND',
+        short_name: 'GRIND',
         description: 'アスリート向け筋トレ記録',
         lang: 'ja',
         start_url: './',

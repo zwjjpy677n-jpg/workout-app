@@ -195,3 +195,9 @@ describe('記録中にルーティンをタップ', () => {
     expect((await getActiveWorkout())?.name).toBe('自由');
   });
 });
+
+test('アプリ名 GRIND を表示', async () => {
+  home();
+  expect(await screen.findByLabelText('GRIND')).toBeInTheDocument();
+  expect(screen.queryByText(/IRON/)).toBeNull();
+});
