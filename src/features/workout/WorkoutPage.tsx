@@ -11,6 +11,7 @@ import { PercentSheet } from '../tools/PercentSheet';
 import { PlateSheet } from '../tools/PlateSheet';
 import { ConditionSheet } from './ConditionSheet';
 import { RestTimerBar } from './RestTimerBar';
+import { RestTimerSheet } from './RestTimerSheet';
 import { useExerciseMap, useProgram, useSettings, useWorkouts } from '../../hooks/useData';
 import { programStatus } from '../../lib/program';
 import { entryComplete } from '../../lib/routineEntries';
@@ -32,7 +33,7 @@ export function WorkoutPage() {
   const navigate = useNavigate();
   const [w, setW] = useState<Workout | null | undefined>(undefined);
   const [picker, setPicker] = useState(false);
-  const [sheet, setSheet] = useState<'condition' | 'memo' | null>(null);
+  const [sheet, setSheet] = useState<'condition' | 'memo' | 'rest' | null>(null);
   const [tool, setTool] = useState<{ kind: 'percent' | 'plate'; exercise: Exercise; kg: number } | null>(null);
   const timer = useRestTimer();
   const all = useWorkouts();
@@ -73,11 +74,9 @@ export function WorkoutPage() {
   const open = openIdx === undefined ? (w.entries.length ? firstOpen : null) : openIdx;
   const deload = programStatus(program, toDateKey(w.startedAt)).deload;
 
-  /** 開いている種目のレスト秒数から、自分でレストのカウントダウンを始める（種目を閉じていれば 90 秒） */
-  function startManualRest() {
-    const e = open != null ? w!.entries[open] : undefined;
-    timer.start((e && exMap!.get(e.exerciseId)?.restSec) || 90);
-  }
+  /** 自分でセットするレストタイマーの初期値: 開いている種目のレスト秒数（種目を閉じていれば 90 秒） */
+  const openEntry = open != null ? w.entries[open] : undefined;
+  const manualRestSec = (openEntry && exMap.get(openEntry.exerciseId)?.restSec) || 90;
 
   /** 入力のあるセットを完了にして、次の未完了の種目を開く（完了済みなら完了を取り消す） */
   function completeAndNext(i: number) {
@@ -133,7 +132,7 @@ export function WorkoutPage() {
         </div>
         <div className={s.headBtns}>
           {!editMode && (
-            <button type="button" aria-label="レストタイマーを開始" className={`${s.icon} ${timer.running ? s.has : ''}`} onClick={startManualRest}>
+            <button type="button" aria-label="レストタイマー" className={`${s.icon} ${timer.running ? s.has : ''}`} onClick={() => setSheet('rest')}>
               <svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2.5 2.5M9.5 2h5M12 2v3" /></svg>
             </button>
           )}
@@ -210,6 +209,7 @@ export function WorkoutPage() {
       )}
       <PlateSheet open={tool?.kind === 'plate'} initialKg={tool?.kg ?? 20} onClose={() => setTool(null)} />
       {!editMode && <RestTimerBar timer={timer} />}
+      <RestTimerSheet open={sheet === 'rest'} initialSec={manualRestSec} onStart={timer.start} onClose={() => setSheet(null)} />
     </div>
   );
 }
