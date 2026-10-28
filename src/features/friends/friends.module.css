@@ -29,3 +29,10 @@
 .menu { margin-bottom: 8px; }
 .remove { margin-top: 28px; }
 .recent { list-style: none; padding: 0; margin: 14px 0 0; display: flex; flex-direction: column; gap: 2px; }
+.weekRow, .dayRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.entryRight { display: inline-flex; align-items: center; gap: 2px; }
+.bubble { min-width: 36px; min-height: 36px; font-size: 15px; opacity: .75; flex: none; }
+.comments { display: flex; flex-direction: column; gap: 4px; margin: 4px 0 6px; }
+.comment { text-align: left; font-size: 12.5px; line-height: 1.5; padding: 6px 10px; border-radius: 10px; background: var(--surface2); color: var(--text); }
+.comment:disabled { color: var(--muted); opacity: 1; }
+.sendFb { margin: 10px 0 4px; }

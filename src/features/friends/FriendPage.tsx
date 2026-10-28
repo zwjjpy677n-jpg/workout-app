@@ -7,6 +7,7 @@ import { formatMD } from '../../lib/dates';
 import { FriendExercises } from './FriendExercises';
 import { FriendMenus } from './FriendMenus';
 import { FriendWeeks } from './FriendWeeks';
+import { SendFeedback } from './SendFeedback';
 import s from './friends.module.css';
 
 const TABS = [
@@ -37,6 +38,7 @@ export function FriendPage() {
       <button type="button" className={s.back} onClick={() => navigate('/friends')}>‹ 友達</button>
       <h1 className={s.friendName}>{friend.name}</h1>
       <p className={s.sub}>受け取り {formatMD(friend.receivedAt)} ・ 記録 {workouts.length}回分</p>
+      <SendFeedback friendId={friend.id} />
       <div className={s.seg} role="tablist">
         {TABS.map((t) => (
           <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} onClick={() => setTab(t.key)}>
@@ -44,7 +46,7 @@ export function FriendPage() {
           </button>
         ))}
       </div>
-      {tab === 'weeks' && <FriendWeeks workouts={workouts} exercises={exMap} />}
+      {tab === 'weeks' && <FriendWeeks friendId={friend.id} workouts={workouts} exercises={exMap} />}
       {tab === 'exercises' && <FriendExercises friend={friend} workouts={workouts} />}
       {tab === 'menus' && <FriendMenus friend={friend} />}
       <Button block variant="danger" className={s.remove} onClick={remove}>この友達を削除</Button>

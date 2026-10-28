@@ -44,19 +44,22 @@ export function useShareMine() {
   };
 }
 
-export async function sendText(text: string, setNote: (n: ShareNote) => void) {
+/** 共有画面で送る（無ければコピー）。タップの onClick の中で await より前に呼ぶこと */
+export async function sendText(text: string, setNote: (n: ShareNote) => void): Promise<'shared' | 'copied' | 'cancelled' | 'failed'> {
   if (navigator.share) {
     try {
       await navigator.share({ text });
-      return;
+      return 'shared';
     } catch (e) {
-      if (e instanceof DOMException && e.name === 'AbortError') return;
+      if (e instanceof DOMException && e.name === 'AbortError') return 'cancelled';
     }
   }
   try {
     await navigator.clipboard.writeText(text);
     setNote({ kind: 'status', text: 'コピーしました。LINE に貼り付けて送ってください' });
+    return 'copied';
   } catch {
     setNote({ kind: 'alert', text: '共有できませんでした' });
+    return 'failed';
   }
 }
