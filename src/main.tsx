@@ -11,4 +11,15 @@ import './styles/global.css';
 
 // 選んだ色を最初の描画より前に反映する（赤が一瞬見えないように）
 applyAppearance(getAppearance());
-bootstrap(document.getElementById('root')!);
+
+async function start() {
+  // 開発用: ?fake-online を付けると、サーバーの代わりにメモリ上の偽サーバーを使う（本番のビルドには入らない）
+  if (import.meta.env.DEV && new URLSearchParams(location.search).has('fake-online')) {
+    const [{ setApiForTest }, { createFakeApi }] = await Promise.all([import('./lib/online/api'), import('./lib/online/fakeApi')]);
+    const api = createFakeApi();
+    setApiForTest(api);
+    (window as unknown as { __fakeOnline: unknown }).__fakeOnline = api;
+  }
+  bootstrap(document.getElementById('root')!);
+}
+void start();
