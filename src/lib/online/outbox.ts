@@ -13,16 +13,24 @@ let seq = 0;
 /** 同じミリ秒でも順番が入れ替わらないように、小さな連番を足す */
 const stampAt = () => Date.now() + (seq = (seq + 1) % 1000) / 1000;
 
+/** 一度サーバーへ送った記録の印（sync の 'sent:<記録の id>'） */
+const sentKey = (workoutId: string) => `sent:${workoutId}`;
+
+/**
+ * 記録の送り予定を入れる。新しい記録はログイン中かつ自動共有オンのときだけ。
+ * すでに送った（または送る予定の）記録の直し・削除は、自動共有オフ・ログアウト中でも入れる（友達の端末に古い分が残らないように）
+ */
 export async function queueWorkout(workoutId: string, op: 'upsert' | 'delete'): Promise<void> {
-  if (!getSession() || !getAutoShare()) return;
+  const known = (await db.sync.get(sentKey(workoutId))) !== undefined || (await db.outbox.get(`w:${workoutId}`)) !== undefined;
+  if (!known && (!getSession() || !getAutoShare())) return;
   await db.outbox.put({ id: `w:${workoutId}`, kind: 'workout', workoutId, op, at: stampAt() });
-  void flushOutbox();
+  if (getSession()) flushOutbox().catch(() => {});
 }
 
 export async function queueMenu(to: string, menuKind: 'built' | 'mine', body: MenuPayload): Promise<string> {
   const id = `m:${crypto.randomUUID()}`;
   await db.outbox.put({ id, kind: 'menu', to, menuKind, body, at: stampAt() });
-  void flushOutbox();
+  flushOutbox().catch(() => {});
   return id;
 }
 
@@ -54,8 +62,9 @@ async function run(): Promise<'done' | 'offline' | 'skipped'> {
     if (!items.length) return 'done';
     for (const item of items) {
       tried.add(`${item.id}@${item.at}`);
+      let done: 'upsert' | 'delete' | 'menu';
       try {
-        await send(api, item);
+        done = await send(api, item);
       } catch (e) {
         if (e instanceof OnlineError && e.code === 'offline') return 'offline';
         if (e instanceof OnlineError && e.code === 'auth') {
@@ -65,18 +74,30 @@ async function run(): Promise<'done' | 'offline' | 'skipped'> {
         // 相手が見つからない等、直らない失敗で全体を止めない。この項目は残して次へ
         continue;
       }
+      if (item.kind === 'workout') {
+        if (done === 'upsert') await db.sync.put({ key: sentKey(item.workoutId), value: 1 });
+        else await db.sync.delete(sentKey(item.workoutId));
+      }
       // 送っている間に上書きされていたら残す（次の周回で送る）
       await db.outbox.where('id').equals(item.id).and((x) => x.at === item.at).delete();
     }
   }
 }
 
-async function send(api: NonNullable<ReturnType<typeof getApi>>, item: OutboxItem): Promise<void> {
-  if (item.kind === 'menu') return api.sendMenu(item.to, item.menuKind, item.body);
+/** 送って、実際にした操作を返す（記録が端末に無ければ upsert でも削除を送る） */
+async function send(api: NonNullable<ReturnType<typeof getApi>>, item: OutboxItem): Promise<'upsert' | 'delete' | 'menu'> {
+  if (item.kind === 'menu') {
+    await api.sendMenu(item.to, item.menuKind, item.body);
+    return 'menu';
+  }
   if (item.op === 'upsert') {
     const w = await db.workouts.get(item.workoutId);
     const shared = w ? toSharedWorkout(w, new Map((await db.exercises.toArray()).map((e) => [e.id, e]))) : null;
-    if (shared) return api.upsertWorkout(shared);
+    if (shared) {
+      await api.upsertWorkout(shared);
+      return 'upsert';
+    }
   }
-  return api.deleteWorkout(item.workoutId);
+  await api.deleteWorkout(item.workoutId);
+  return 'delete';
 }

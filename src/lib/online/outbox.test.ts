@@ -123,3 +123,49 @@ test('メニューも送られ、同時に flush しても二重送信しない'
   api.as('b');
   expect(await api.pullMenus('')).toHaveLength(1);
 });
+
+const shareOnce = async () => {
+  const w = await seedWorkout({ ended: false });
+  await finishWorkout(w.id);
+  await flushOutbox();
+  expect(await friendPull()).toHaveLength(1);
+  return w;
+};
+
+test('自動共有をオフにしてから消しても、友達のほうでも消える', async () => {
+  const w = await shareOnce();
+  setAutoShare(false);
+  await deleteWorkout(w.id);
+  await flushOutbox();
+  const rows = await friendPull();
+  expect(rows[0].deleted).toBe(true);
+  expect(await db.outbox.count()).toBe(0);
+});
+
+test('一度送った記録は、自動共有オフでも直した分が届く', async () => {
+  const w = await shareOnce();
+  setAutoShare(false);
+  await db.workouts.update(w.id, { name: '直した' });
+  await saveEditedWorkout(w.id);
+  await flushOutbox();
+  expect((await friendPull())[0].name).toBe('直した');
+});
+
+test('ログアウト中に消した分も残り、ログインしたら送られる', async () => {
+  const w = await shareOnce();
+  setSession(null);
+  await deleteWorkout(w.id);
+  expect(await db.outbox.count()).toBe(1);
+  setSession({ userId: 'a' });
+  await flushOutbox();
+  expect((await friendPull())[0].deleted).toBe(true);
+});
+
+test('新しい記録は、自動共有オフなら送らない', async () => {
+  setAutoShare(false);
+  const w = await seedWorkout({ ended: false });
+  await finishWorkout(w.id);
+  await flushOutbox();
+  expect(await db.outbox.count()).toBe(0);
+  expect(await friendPull()).toHaveLength(0);
+});
