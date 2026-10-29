@@ -6,6 +6,7 @@ import { ProgressPage } from './features/progress/ProgressPage';
 import { ManageRoute } from './features/manage/ManagePage';
 import { FriendsPage } from './features/friends/FriendsPage';
 import { ImportPage } from './features/friends/ImportPage';
+import { JoinPage } from './features/friends/JoinPage';
 import { FriendPage } from './features/friends/FriendPage';
 import { FriendExercisePage } from './features/friends/FriendExercisePage';
 import { MenuEditorPage } from './features/friends/MenuEditorPage';
@@ -31,6 +32,7 @@ export function AppRoutes() {
         <Route path="/manage" element={<ManageRoute />} />
         <Route path="/friends" element={<FriendsPage />} />
         <Route path="/friends/add" element={<ImportPage />} />
+        <Route path="/join" element={<JoinPage />} />
         <Route path="/friends/:id" element={<FriendPage />} />
         <Route path="/friends/:id/exercise/:x8" element={<FriendExercisePage />} />
         <Route path="/friends/:id/menu/new" element={<MenuEditorPage />} />
