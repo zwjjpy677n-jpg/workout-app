@@ -19,9 +19,11 @@ export async function queueWorkout(workoutId: string, op: 'upsert' | 'delete'): 
   void flushOutbox();
 }
 
-export async function queueMenu(to: string, menuKind: 'built' | 'mine', body: MenuPayload): Promise<void> {
-  await db.outbox.put({ id: `m:${crypto.randomUUID()}`, kind: 'menu', to, menuKind, body, at: stampAt() });
+export async function queueMenu(to: string, menuKind: 'built' | 'mine', body: MenuPayload): Promise<string> {
+  const id = `m:${crypto.randomUUID()}`;
+  await db.outbox.put({ id, kind: 'menu', to, menuKind, body, at: stampAt() });
   void flushOutbox();
+  return id;
 }
 
 /** 直近 days 日に始めた、終わった記録をまとめて入れる。入れた件数を返す（送りは flushOutbox） */

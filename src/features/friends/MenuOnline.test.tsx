@@ -109,7 +109,7 @@ test('自分のメニューを選んでアプリで送ると、相手の友達�
   await switchToB();
   const f = await db.friends.get('a');
   expect(f?.routines.map((r) => r.name)).toEqual(['PULL']);
-  expect(f?.routines[0].items[0]).toMatchObject({ sets: 3, reps: '8', main: true });
+  expect(f?.routines[0].items[0]).toMatchObject({ sets: 3, reps: '8', main: true, restSec: 120 });
 });
 
 test('リンクの友達には「アプリで送る」が出ない', async () => {
@@ -137,4 +137,41 @@ test('オフラインで送ると「今はつながりません。あとで自�
   expect(await flushOutbox()).toBe('done');
   await switchToB();
   expect((await db.friends.get('a'))?.routines.map((r) => r.name)).toEqual(['PULL']);
+});
+
+test('届いたメニューの「追加する」を2回続けて押しても、ルーティンは1つだけ', async () => {
+  await buildAndSend('アプリで送る');
+  await screen.findByTestId('location');
+  await switchToB();
+  friendsPage();
+  const add = await screen.findByRole('button', { name: '追加する' });
+  await userEvent.dblClick(add);
+  await waitFor(() => expect(db.menuInbox.count()).resolves.toBe(0));
+  expect(await listRoutines()).toHaveLength(1);
+});
+
+test('送れなかった（ログインが切れている等）ときは「送りました」と言わない', async () => {
+  const bench = (await db.exercises.toArray())[0];
+  await saveRoutine({ name: 'PULL', weekday: null, items: [{ exerciseId: bench.id, sets: 3, reps: '8', main: false, inc: 2.5, note: '', restSec: 120 }] });
+  friendsPage();
+  await userEvent.click(await screen.findByRole('button', { name: /共有するメニューを選ぶ/ }));
+  await userEvent.click(await screen.findByRole('checkbox', { name: /PULL/ }));
+  await userEvent.click(screen.getByRole('button', { name: '決定' }));
+  setSession(null);
+  await userEvent.click(screen.getByRole('button', { name: 'メニューをアプリで送る' }));
+  expect(await screen.findByText('送れませんでした。あとでもう一度送ります')).toBeInTheDocument();
+  expect(screen.queryByText('送りました')).toBeNull();
+});
+
+test('アプリで送るを2回続けて押しても、メニューは1回だけ送る', async () => {
+  const bench = (await db.exercises.toArray())[0];
+  await saveRoutine({ name: 'PULL', weekday: null, items: [{ exerciseId: bench.id, sets: 3, reps: '8', main: false, inc: 2.5, note: '', restSec: 120 }] });
+  friendsPage();
+  await userEvent.click(await screen.findByRole('button', { name: /共有するメニューを選ぶ/ }));
+  await userEvent.click(await screen.findByRole('checkbox', { name: /PULL/ }));
+  await userEvent.click(screen.getByRole('button', { name: '決定' }));
+  await userEvent.dblClick(screen.getByRole('button', { name: 'メニューをアプリで送る' }));
+  await screen.findByText('送りました');
+  api.as('b');
+  expect(await api.pullMenus('')).toHaveLength(1);
 });

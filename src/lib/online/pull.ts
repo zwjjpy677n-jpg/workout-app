@@ -67,7 +67,7 @@ function toRoutine(friend: Friend, p: MenuPayload, now: number): Routine {
       friend.exercises.push(ex);
       byName.set(name, ex);
     }
-    return { exerciseId: ex.id, sets, reps, main: main === 1, inc, note };
+    return { exerciseId: ex.id, sets, reps, main: main === 1, inc, note, restSec };
   });
   return { id: `${friend.id}:menu:${p.name}`, name: p.name, weekday: p.weekday < 0 ? null : p.weekday, createdAt: now, items };
 }

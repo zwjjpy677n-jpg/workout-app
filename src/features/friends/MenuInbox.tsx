@@ -1,4 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useRef, useState } from 'react';
 import { Button } from '../../components/Button';
 import { db } from '../../db/db';
 import { importMenu, previewMenu } from '../../db/menus';
@@ -27,12 +28,27 @@ function Received({ item, preview }: { item: MenuInboxItem; preview: Awaited<Ret
   // 受け取った履歴の相手は、サーバー上の送り主にする
   const p = { ...item.body, id: item.from, n: item.fromName };
   const discard = () => db.menuInbox.delete(item.id);
+  const busy = useRef(false);
+  const [failed, setFailed] = useState(false);
+  const save = async (mode: 'replace' | 'add') => {
+    if (busy.current) return;
+    busy.current = true;
+    setFailed(false);
+    try {
+      await importMenu(p, mode, Date.now());
+      await discard();
+    } catch {
+      setFailed(true);
+    } finally {
+      busy.current = false;
+    }
+  };
   return (
     <MenuCard
       st={{ kind: 'menu', p, preview }}
-      failed={null}
+      failed={failed && <p role="alert" className={s.error}>保存できませんでした。もう一度お試しください</p>}
       cancel={<Button block onClick={discard}>削除</Button>}
-      onSave={(mode) => void importMenu(p, mode, Date.now()).then(discard)}
+      onSave={(mode) => void save(mode)}
     />
   );
 }

@@ -11,7 +11,7 @@ import { ShareError } from '../../lib/share/codec';
 import { queueMenu } from '../../lib/online/outbox';
 import { buildMenuLink, buildMenuPayload, MENU, type MenuDraftItem } from '../../lib/share/menuPayload';
 import { BODY_PART_LABEL, BODY_PARTS, EXERCISE_TYPE_LABEL, WEEKDAY_LABEL, type BodyPart, type ExerciseType } from '../../lib/types';
-import { flushNote, SENT_NOTE, senderIdentity } from './appSend';
+import { flushNote, OFFLINE_NOTE, senderIdentity } from './appSend';
 import { NameSheet } from './NameSheet';
 import { usePreparedLink } from './usePreparedLink';
 import { sendText, type ShareNote } from './useShareMine';
@@ -80,13 +80,14 @@ export function MenuEditorPage() {
     setNote(null);
     try {
       const payload = buildMenuPayload(await senderIdentity(), onlineId, draft, Date.now());
-      await queueMenu(onlineId, 'built', payload);
+      const qid = await queueMenu(onlineId, 'built', payload);
       await logSentMenu(friend, payload, Date.now());
-      const text = await flushNote();
+      const { ok, text } = await flushNote([qid]);
       // 送れたら送信履歴へ。つながらなかったときは、あとで自動で送ることを見せてから移る
-      if (text === SENT_NOTE) navigate(`/friends/${id}?tab=menus`);
+      if (ok) navigate(`/friends/${id}?tab=menus`);
       else {
-        setNote({ kind: 'status', text });
+        setNote({ kind: text === OFFLINE_NOTE ? 'status' : 'alert', text });
+        setSending(false);
         setTimeout(() => navigate(`/friends/${id}?tab=menus`), 1500);
       }
     } catch {

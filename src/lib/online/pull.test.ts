@@ -101,6 +101,7 @@ test('自分のメニュー（mine）は友達のメニュー一覧へ、同じ�
   let f = (await db.friends.get('a'))!;
   expect(f.routines).toHaveLength(1);
   expect(f.routines[0]).toMatchObject({ id: 'a:menu:胸', name: '胸', weekday: 1, createdAt: 5000 });
+  expect(f.routines[0].items[0].restSec).toBe(90);
   expect(f.routines[0].items[0]).toMatchObject({ sets: 3, reps: '5', main: true, inc: 2.5, note: 'メモ', exerciseId: 'a:n:ベンチプレス' });
   expect(f.exercises.some((e) => e.id === 'a:n:ベンチプレス')).toBe(true);
   await asA(() => api.sendMenu('b', 'mine', menu('胸', { weekday: -1, items: [['ベンチプレス', 0, 0, 90, 4, '5', 1, 2.5, '']] })));

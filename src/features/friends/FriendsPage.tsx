@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/Button';
 import { Sheet } from '../../components/Sheet';
@@ -31,15 +31,23 @@ export function FriendsPage() {
   const [appNote, setAppNote] = useState<string | null>(null);
   const online = (friends ?? []).filter((f) => f.online);
 
+  const sending = useRef(false);
   const sendToApp = async (userId: string) => {
     setSheet(null);
+    if (sending.current || !routines || !exercises) return;
+    sending.current = true;
     setAppNote(null);
-    if (!routines || !exercises) return;
-    const from = await senderIdentity();
-    const payloads = routines.filter((r) => menuIds.includes(r.id)).map((r) => routineToMenuPayload(r, exercises, from, userId, Date.now()));
-    for (const p of payloads) if (p) await queueMenu(userId, 'mine', p);
-    if (payloads.some(Boolean)) setAppNote(await flushNote());
-    else setAppNote('送れるメニューがありません');
+    try {
+      const from = await senderIdentity();
+      const payloads = routines.filter((r) => menuIds.includes(r.id)).map((r) => routineToMenuPayload(r, exercises, from, userId, Date.now()));
+      const ids: string[] = [];
+      for (const p of payloads) if (p) ids.push(await queueMenu(userId, 'mine', p));
+      setAppNote(ids.length ? (await flushNote(ids)).text : '送れるメニューがありません');
+    } catch {
+      setAppNote('送れませんでした。もう一度お試しください');
+    } finally {
+      sending.current = false;
+    }
   };
 
   const onShare = () => (hasProfile ? shareMine() : setSheet('name'));
