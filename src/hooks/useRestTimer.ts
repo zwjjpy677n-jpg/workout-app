@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { notifyEnd } from '../lib/haptics';
+import { cancelRestEnd, scheduleRestEnd } from '../lib/restNotify';
 import { beep, getSoundPrefs } from '../lib/sound';
 
 type State = { endAt: number; total: number; remaining: number; running: boolean; finished: boolean };
@@ -38,13 +40,22 @@ export function useRestTimer() {
       setSt((cur) => {
         const remaining = secsLeft(cur.endAt);
         if (remaining > 0) return { ...cur, remaining };
-        navigator.vibrate?.(300);
+        notifyEnd();
         persist(null);
         return { ...cur, remaining: 0, running: false, finished: true };
       });
     }, 1000);
     return () => clearInterval(id);
   }, [st.running]);
+
+  // アプリの通知: 動いている間は終了時刻に予約し、止まったら（スキップ・終了・画面で鳴った）取り消す
+  const last = useRef<{ running: boolean; endAt: number } | null>(null);
+  useEffect(() => {
+    const prev = last.current;
+    last.current = { running: st.running, endAt: st.endAt };
+    if (st.running) void scheduleRestEnd(st.endAt);
+    else if (prev) void cancelRestEnd();
+  }, [st.running, st.endAt]);
 
   // 残り3・2・1秒で短い音、終わったら終了の音
   useEffect(() => {

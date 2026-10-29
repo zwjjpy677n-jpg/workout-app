@@ -4,6 +4,7 @@ import { getProfile } from '../../db/friends';
 import { listExercises, listRoutines, listWorkouts } from '../../db/repository';
 import { ShareError } from '../../lib/share/codec';
 import { buildShareLink } from '../../lib/share/sharePayload';
+import { copyText, shareSheet } from '../../lib/device';
 import { usePreparedLink } from './usePreparedLink';
 
 export type ShareNote = { kind: 'status' | 'alert'; text: string } | null;
@@ -18,13 +19,18 @@ const ERRORS: Record<string, string> = {
  * 自分の記録のリンクを前もって作っておき、タップしたらすぐ共有画面を出す。
  * iPhone の Safari はタップの直後でないと共有画面を出せないので、押してから作るのでは間に合わない
  */
-export function useShareMine() {
+export function useShareMine(menuIds: string[] = []) {
+  const key = menuIds.join(',');
   const src = useLiveQuery(async () => {
     const profile = await getProfile();
     if (!profile) return null;
-    return { profile, exercises: await listExercises({ includeArchived: true }), routines: await listRoutines(), workouts: await listWorkouts() };
-  });
-  const link = usePreparedLink<Link>(src ? () => buildShareLink(src, Date.now()) : null, [src]);
+    const picked = new Set(menuIds);
+    const routines = (await listRoutines()).filter((r) => picked.has(r.id));
+    return { key, profile, exercises: await listExercises({ includeArchived: true }), workouts: await listWorkouts(), routines };
+  }, [key]);
+  const built = usePreparedLink<Link & { key: string }>(src ? async () => ({ ...(await buildShareLink(src, Date.now())), key: src.key }) : null, [src]);
+  // 選んだメニューに合わせて作り直している途中は、前のリンク（違うメニュー）を送らない
+  const link = built && !(built instanceof ShareError) && built.key !== key ? null : built;
   const [note, setNote] = useState<ShareNote>(null);
 
   const shareMine = () => {
@@ -61,16 +67,14 @@ export async function sendText(text: string, setNote: (n: ShareNote) => void): P
 }
 
 async function send(text: string, setNote: (n: ShareNote) => void): Promise<'shared' | 'copied' | 'cancelled' | 'failed'> {
-  if (navigator.share) {
-    try {
-      await navigator.share({ text });
-      return 'shared';
-    } catch (e) {
-      if (e instanceof DOMException && (e.name === 'AbortError' || e.name === 'InvalidStateError')) return 'cancelled';
-    }
+  try {
+    const r = await shareSheet({ text });
+    if (r !== 'unavailable') return r;
+  } catch {
+    // 共有できなかったときはコピーに切り替える
   }
   try {
-    await navigator.clipboard.writeText(text);
+    await copyText(text);
     setNote({ kind: 'status', text: 'コピーしました。LINE に貼り付けて送ってください' });
     return 'copied';
   } catch {

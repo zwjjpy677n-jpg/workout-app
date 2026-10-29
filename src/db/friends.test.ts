@@ -1,4 +1,4 @@
-import { entry, ex, set, wk } from '../test/factories';
+import { entry, ex, item, routine, set, wk } from '../test/factories';
 import { buildSharePayload, type SharePayload } from '../lib/share/sharePayload';
 import type { Workout } from '../lib/types';
 import { db, resetDb } from './db';
@@ -10,7 +10,7 @@ const DAY = 86400_000;
 const bench = ex('bench-uuid-0001', { name: 'ベンチプレス' });
 const w = (id: string, daysAgo: number, weight: number) => wk(NOW - daysAgo * DAY, [entry(bench.id, [set({ weight, reps: 5 })])], { id });
 const share = (workouts: Workout[], o: { id?: string; name?: string; at?: number } = {}): SharePayload =>
-  buildSharePayload({ profile: { id: o.id ?? 'friend000001', name: o.name ?? 'たろう' }, exercises: [bench], routines: [], workouts }, o.at ?? NOW);
+  buildSharePayload({ profile: { id: o.id ?? 'friend000001', name: o.name ?? 'たろう' }, exercises: [bench], workouts }, o.at ?? NOW);
 
 beforeEach(() => resetDb());
 
@@ -106,7 +106,7 @@ test('バックアップにプロフィールは入り友達は入らない。�
 
 test('新しいリンクに載っていない種目も、前に受け取った記録のために残る', async () => {
   const dl = ex('dl-uuid-00000001', { name: 'デッドリフト' });
-  const p1 = buildSharePayload({ profile: { id: 'friend000001', name: 'たろう' }, exercises: [bench, dl], routines: [], workouts: [wk(NOW - 60 * DAY, [entry(dl.id, [set({ weight: 150, reps: 3 })])], { id: 'dddddddd-1' })] }, NOW - 59 * DAY);
+  const p1 = buildSharePayload({ profile: { id: 'friend000001', name: 'たろう' }, exercises: [bench, dl], workouts: [wk(NOW - 60 * DAY, [entry(dl.id, [set({ weight: 150, reps: 3 })])], { id: 'dddddddd-1' })] }, NOW - 59 * DAY);
   await saveImportedShare(p1, NOW - 59 * DAY);
   await saveImportedShare(share([w('aaaaaaaa-1', 1, 80)]), NOW);
   const f = await getFriend('friend000001');
@@ -117,10 +117,35 @@ test('新しいリンクに載っていない種目も、前に受け取った�
 test('古いリンクは、まだ無い記録と種目だけ足し、保存済みの記録は上書きしない', async () => {
   const dl = ex('dl-uuid-00000001', { name: 'デッドリフト' });
   await saveImportedShare(share([w('bbbbbbbb-1', 2, 90)], { at: NOW }), NOW);
-  const old = buildSharePayload({ profile: { id: 'friend000001', name: 'たろう' }, exercises: [bench, dl], routines: [], workouts: [w('bbbbbbbb-1', 2, 70), wk(NOW - 9 * DAY, [entry(dl.id, [set({ weight: 150, reps: 3 })])], { id: 'dddddddd-1' })] }, NOW - DAY);
+  const old = buildSharePayload({ profile: { id: 'friend000001', name: 'たろう' }, exercises: [bench, dl], workouts: [w('bbbbbbbb-1', 2, 70), wk(NOW - 9 * DAY, [entry(dl.id, [set({ weight: 150, reps: 3 })])], { id: 'dddddddd-1' })] }, NOW - DAY);
   await saveImportedShare(old, NOW + 1);
   const ws = await listFriendWorkouts('friend000001');
   expect(ws.find((x) => x.id === 'friend000001:bbbbbbbb')?.entries[0].sets[0].weight).toBe(90);
   expect(ws).toHaveLength(2);
   expect((await getFriend('friend000001'))?.exercises.map((e) => e.name).sort()).toEqual(['デッドリフト', 'ベンチプレス']);
+});
+
+test('メニュー付きのリンクのあと記録だけのリンクが来ても、メニューは残る。別のメニューが来たら足される', async () => {
+  const withMenu = (name: string, at: number) =>
+    buildSharePayload({ profile: { id: 'friend000001', name: 'たろう' }, exercises: [bench], workouts: [], routines: [routine(name, [item(bench.id)])] }, at);
+  await saveImportedShare(withMenu('PUSH', NOW), NOW);
+  await saveImportedShare(share([w('aaaaaaaa-1', 1, 80)], { at: NOW + DAY }), NOW + DAY);
+  expect((await getFriend('friend000001'))?.routines.map((r) => r.name)).toEqual(['PUSH']);
+  await saveImportedShare(withMenu('PULL', NOW + 2 * DAY), NOW + 2 * DAY);
+  expect((await getFriend('friend000001'))?.routines.map((r) => r.name)).toEqual(['PUSH', 'PULL']);
+});
+
+test('メニューは上書きせず貯める: 同じ名前の新しい版は前の版を履歴へ、新しい名前は追加、届かなかったメニューも残る', async () => {
+  const menuLink = (rs: ReturnType<typeof routine>[], at: number) =>
+    buildSharePayload({ profile: { id: 'friend000001', name: 'たろう' }, exercises: [bench], workouts: [], routines: rs }, at);
+  await saveImportedShare(menuLink([routine('PUSH', [item(bench.id, { sets: 3 })]), routine('LEG', [item(bench.id, { sets: 4 })])], NOW), NOW);
+  await saveImportedShare(menuLink([routine('PUSH', [item(bench.id, { sets: 5 })]), routine('PULL', [item(bench.id, { sets: 2 })])], NOW + DAY), NOW + DAY);
+  let f = await getFriend('friend000001');
+  expect(f?.routines.map((r) => [r.name, r.items[0].sets, r.createdAt]).sort()).toEqual([['LEG', 4, NOW], ['PULL', 2, NOW + DAY], ['PUSH', 5, NOW + DAY]]);
+  expect(f?.menuHistory?.map((r) => [r.name, r.items[0].sets, r.createdAt])).toEqual([['PUSH', 3, NOW]]);
+  // 同じ中身をもう一度受け取っても履歴は増えない
+  await saveImportedShare(menuLink([routine('PUSH', [item(bench.id, { sets: 5 })])], NOW + 2 * DAY), NOW + 2 * DAY);
+  f = await getFriend('friend000001');
+  expect(f?.menuHistory).toHaveLength(1);
+  expect(f?.routines).toHaveLength(3);
 });

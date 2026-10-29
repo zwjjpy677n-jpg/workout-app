@@ -8,6 +8,9 @@ import { entry, item, set, wk } from '../../test/factories';
 import { cleanup } from '@testing-library/react';
 import { renderRoute } from '../../test/render';
 import { WorkoutPage } from './WorkoutPage';
+import { tap } from '../../lib/haptics';
+
+vi.mock('../../lib/haptics', () => ({ tap: vi.fn(), notifyEnd: vi.fn() }));
 
 let benchId = '';
 let activeId = '';
@@ -466,4 +469,12 @@ describe('メニューのレスト', () => {
     await userEvent.click(within(r1).getByRole('button', { name: '完了' }));
     expect(await screen.findByText('00:45')).toBeInTheDocument();
   });
+});
+
+test('セットを完了にすると軽く振動する（アプリ）', async () => {
+  vi.mocked(tap).mockClear();
+  renderRoute('/workout', '/workout', <WorkoutPage />);
+  const [r1] = await rows();
+  await userEvent.click(within(r1).getByRole('button', { name: '完了' }));
+  expect(tap).toHaveBeenCalledTimes(1);
 });

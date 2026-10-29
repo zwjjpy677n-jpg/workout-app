@@ -3,19 +3,20 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { resetDb } from '../../db/db';
 import { getProfile, saveImportedShare, saveProfileName } from '../../db/friends';
-import { listExercises, saveWorkout } from '../../db/repository';
+import { listExercises, saveRoutine, saveWorkout } from '../../db/repository';
 import { ensureSeeded } from '../../db/seed';
 import { TabBar } from '../../components/TabBar';
-import { encodeShare } from '../../lib/share/codec';
+import { decodeShare, encodeShare } from '../../lib/share/codec';
+import { parseSharePayload } from '../../lib/share/importShare';
 import { buildSharePayload } from '../../lib/share/sharePayload';
-import { entry, ex, set, wk } from '../../test/factories';
+import { entry, ex, item, set, wk } from '../../test/factories';
 import { renderRoute, ROUTER_FUTURE } from '../../test/render';
 import { FriendsPage } from './FriendsPage';
 
 const page = () => renderRoute('/friends', '/friends', <FriendsPage />);
 /** リンクの準備ができてから押す */
 const clickShare = async () => {
-  const b = await screen.findByRole('button', { name: '自分の記録を共有' });
+  const b = await screen.findByRole('button', { name: /^自分の記録(とメニュー)?を共有$/ });
   await waitFor(() => expect(b).toBeEnabled());
   await userEvent.click(b);
 };
@@ -98,7 +99,7 @@ test('友達がいないときの案内と、一覧の名前・最後のトレ�
   expect(await screen.findByText('まだ友達がいません。友達に GRIND の記録を送ってもらって、ここに貼り付けてください')).toBeInTheDocument();
   const b = ex('fb-uuid-00001', { name: 'スクワット' });
   const at = new Date(2026, 9, 27, 18).getTime();
-  await saveImportedShare(buildSharePayload({ profile: { id: 'friend000001', name: 'じろう' }, exercises: [b], routines: [], workouts: [wk(at, [entry(b.id, [set({ weight: 100, reps: 5 })])])] }, at + 3600_000), new Date(2026, 9, 28, 9).getTime());
+  await saveImportedShare(buildSharePayload({ profile: { id: 'friend000001', name: 'じろう' }, exercises: [b], workouts: [wk(at, [entry(b.id, [set({ weight: 100, reps: 5 })])])] }, at + 3600_000), new Date(2026, 9, 28, 9).getTime());
   const item = await screen.findByRole('button', { name: /じろう/ });
   expect(item).toHaveTextContent('最後のトレーニング 10/27');
   expect(item).toHaveTextContent('受け取り 10/28');
@@ -134,4 +135,49 @@ test('削って共有するときは、ボタンの下に週数を出し、確�
   fireEvent.click(b);
   expect(share).toHaveBeenCalledTimes(1);
   expect(confirm).not.toHaveBeenCalled();
+});
+
+test('最初はメニューを送らず、選んだメニューだけ一緒に共有する', async () => {
+  await saveProfileName('たろう');
+  const exs = await listExercises();
+  await saveRoutine({ name: 'PUSH', weekday: 1, items: [item(exs[0].id)] });
+  await saveRoutine({ name: 'PULL', weekday: 2, items: [item(exs[1].id)] });
+  page();
+  const sent = async () => {
+    await clickShare();
+    await waitFor(() => expect(share).toHaveBeenCalled());
+    const text = (share.mock.calls.at(-1)![0] as { text: string }).text;
+    return parseSharePayload((await decodeShare(text)).data).r.map((r) => r[0]);
+  };
+  expect(await screen.findByRole('button', { name: '共有するメニューを選ぶ（0件）' })).toBeInTheDocument();
+  expect(await sent()).toEqual([]);
+  await userEvent.click(screen.getByRole('button', { name: '共有するメニューを選ぶ（0件）' }));
+  const dlg = screen.getByRole('dialog', { name: '共有するメニュー' });
+  await userEvent.click(within(dlg).getByRole('checkbox', { name: /PULL/ }));
+  await userEvent.click(within(dlg).getByRole('button', { name: '決定' }));
+  expect(screen.getByRole('button', { name: '共有するメニューを選ぶ（1件）' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '自分の記録とメニューを共有' })).toBeInTheDocument();
+  await waitFor(async () => expect(await sent()).toEqual(['PULL']));
+});
+
+test('メニューを選んだ直後に押しても、選ぶ前のリンク（メニュー無し）を送らない', async () => {
+  await saveProfileName('たろう');
+  const exs = await listExercises();
+  await saveRoutine({ name: 'PULL', weekday: 2, items: [item(exs[1].id)] });
+  page();
+  const b0 = await screen.findByRole('button', { name: '自分の記録を共有' });
+  await waitFor(() => expect(b0).toBeEnabled());
+  await userEvent.click(screen.getByRole('button', { name: '共有するメニューを選ぶ（0件）' }));
+  const dlg = screen.getByRole('dialog', { name: '共有するメニュー' });
+  await userEvent.click(within(dlg).getByRole('checkbox', { name: /PULL/ }));
+  await userEvent.click(within(dlg).getByRole('button', { name: '決定' }));
+  fireEvent.click(screen.getByRole('button', { name: '自分の記録とメニューを共有' }));
+  const b = screen.getByRole('button', { name: '自分の記録とメニューを共有' });
+  await waitFor(() => expect(b).toBeEnabled());
+  fireEvent.click(b);
+  await waitFor(() => expect(share).toHaveBeenCalled());
+  for (const [arg] of share.mock.calls) {
+    const r = parseSharePayload((await decodeShare((arg as { text: string }).text)).data).r.map((x) => x[0]);
+    expect(r).toEqual(['PULL']);
+  }
 });

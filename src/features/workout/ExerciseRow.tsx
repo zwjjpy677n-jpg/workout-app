@@ -7,6 +7,7 @@ import { entryComplete } from '../../lib/routineEntries';
 import { deloadSets } from '../../lib/program';
 import type { Exercise, Workout, WorkoutEntry, WorkoutSet } from '../../lib/types';
 import { SetCard } from './SetCard';
+import { tap } from '../../lib/haptics';
 import { restOf } from '../../lib/rest';
 import { SuggestionBlock } from './SuggestionBlock';
 import { addSet, completeSet, placeholderFor, removeSet, toggleWarmup, updateSet, workingNumber } from './workoutOps';
@@ -43,7 +44,10 @@ export function ExerciseRow({ index, entry, exercise, prev, open, onToggle, pr, 
     const next = completeSet(exercise.type, sets, i, placeholderFor(prev?.entry ?? null, sets, i));
     if (next === sets) return;
     setSets(next);
-    if (next[i].done) onSetDone?.();
+    if (next[i].done) {
+      tap();
+      onSetDone?.();
+    }
   }
 
   return (

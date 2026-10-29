@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '../../components/Button';
 import { exportAll, importAll } from '../../db/repository';
 import { parseBackup } from '../../lib/backup';
+import { saveFile } from '../../lib/device';
 import { toDateKey } from '../../lib/dates';
 import s from './manage.module.css';
 
@@ -9,14 +10,13 @@ export function BackupPanel() {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   async function doExport() {
-    const data = await exportAll();
-    const url = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `grind-${toDateKey(Date.now())}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    setMsg({ ok: true, text: 'エクスポートしました' });
+    setMsg(null);
+    try {
+      const r = await saveFile(`grind-${toDateKey(Date.now())}.json`, JSON.stringify(await exportAll()));
+      if (r === 'saved') setMsg({ ok: true, text: 'エクスポートしました' });
+    } catch {
+      setMsg({ ok: false, text: '書き出せませんでした' });
+    }
   }
 
   async function doImport(file: File | undefined) {
@@ -39,7 +39,7 @@ export function BackupPanel() {
 
   return (
     <>
-      <p className={s.note}>データはこの端末のブラウザ内にだけ保存されています。機種変更やブラウザのデータ削除に備えて、定期的にエクスポートしてください。</p>
+      <p className={s.note}>データはこの端末の中にだけ保存されています。機種変更やアプリ・ブラウザのデータ削除に備えて、定期的にエクスポートしてください。</p>
       <Button block onClick={doExport}>エクスポート（JSON）</Button>
       <label className={s.field} style={{ marginTop: 12 }}>
         <span>インポート（現在のデータは置き換えられます）</span>

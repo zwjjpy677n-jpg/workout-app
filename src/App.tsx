@@ -9,6 +9,7 @@ import { ImportPage } from './features/friends/ImportPage';
 import { FriendPage } from './features/friends/FriendPage';
 import { FriendExercisePage } from './features/friends/FriendExercisePage';
 import { MenuEditorPage } from './features/friends/MenuEditorPage';
+import { FriendMenuPage } from './features/friends/FriendMenuPage';
 import { WorkoutPage } from './features/workout/WorkoutPage';
 
 function TabLayout() {
@@ -33,6 +34,7 @@ export function AppRoutes() {
         <Route path="/friends/:id" element={<FriendPage />} />
         <Route path="/friends/:id/exercise/:x8" element={<FriendExercisePage />} />
         <Route path="/friends/:id/menu/new" element={<MenuEditorPage />} />
+        <Route path="/friends/:id/menus/:name" element={<FriendMenuPage />} />
       </Route>
       <Route path="/workout" element={<WorkoutPage />} />
       <Route path="/workout/:id" element={<WorkoutPage />} />

@@ -1,3 +1,5 @@
+import { isNativeApp, PUBLIC_URL } from '../platform';
+
 // 共有リンクの中身: 種類1文字 + 版1文字 + base64url(deflate-raw(JSON))。URL の # 以降に入れるのでサーバーには送られない
 export type ShareKind = 'r' | 'f' | 'm';
 
@@ -82,4 +84,5 @@ export async function decodeShare(text: string): Promise<{ kind: ShareKind; data
   }
 }
 
-export const shareUrl = (data: string) => `${location.origin}${location.pathname}#/friends/add?d=${data}`;
+/** 友達に送るリンク。アプリの中の URL（capacitor://localhost）は友達が開けないので、アプリでは公開サイトの URL にする */
+export const shareUrl = (data: string) => `${isNativeApp() ? PUBLIC_URL : `${location.origin}${location.pathname}`}#/friends/add?d=${data}`;

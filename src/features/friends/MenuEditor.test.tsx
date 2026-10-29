@@ -20,7 +20,7 @@ beforeEach(async () => {
   await addExercise({ name: 'ベンチプレス', bodyPart: 'chest', type: 'weight', restSec: 180, barKg: 20 });
   await addExercise({ name: 'スクワット', bodyPart: 'legs', type: 'weight', restSec: 180, barKg: 20 });
   const workouts = [wk(new Date(2026, 9, 27, 18), [entry(sq.id, [set({ weight: 100, reps: 5 })])], { id: 'aaaaaaaa-1' })];
-  await saveImportedShare(buildSharePayload({ profile: { id: 'friend000001', name: 'じろう' }, exercises: [sq], routines: [], workouts }, NOW), NOW);
+  await saveImportedShare(buildSharePayload({ profile: { id: 'friend000001', name: 'じろう' }, exercises: [sq], workouts }, NOW), NOW);
   share.mockReset().mockResolvedValue(undefined);
   Object.defineProperty(navigator, 'share', { value: share, configurable: true });
 });

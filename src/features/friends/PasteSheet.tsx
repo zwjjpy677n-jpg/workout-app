@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/Button';
 import { Sheet } from '../../components/Sheet';
+import { canReadClipboard, readClipboard } from '../../lib/device';
 import { decodeShare, shareData, ShareError } from '../../lib/share/codec';
 import s from './friends.module.css';
 
@@ -28,8 +29,8 @@ export function PasteSheet({ open, onClose }: { open: boolean; onClose(): void }
     <Sheet open={open} title="リンクを貼り付けて追加" onClose={onClose}>
       <p className={s.hint}>LINE でリンクを長押し → コピーして、ここに貼り付けてください</p>
       <textarea aria-label="リンク" className={s.area} value={text} onChange={(e) => setText(e.target.value)} rows={4} />
-      {navigator.clipboard?.readText && (
-        <Button block onClick={async () => setText(await navigator.clipboard.readText().catch(() => text))}>
+      {canReadClipboard() && (
+        <Button block onClick={async () => setText(await readClipboard().catch(() => text))}>
           クリップボードから貼り付け
         </Button>
       )}

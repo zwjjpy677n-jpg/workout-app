@@ -11,7 +11,7 @@ import { ImportPage } from './ImportPage';
 const sq = ex('sq-uuid-000001', { name: 'スクワット', bodyPart: 'legs' });
 const w = (id: string, d: Date) => wk(d, [entry(sq.id, [set({ weight: 100, reps: 5 })])], { id });
 const payload = (workouts: ReturnType<typeof w>[], id = 'friend000001') =>
-  buildSharePayload({ profile: { id, name: 'じろう' }, exercises: [sq], routines: [routine('LEG', [item(sq.id)])], workouts }, new Date(2026, 9, 28, 20).getTime());
+  buildSharePayload({ profile: { id, name: 'じろう' }, exercises: [sq], workouts }, new Date(2026, 9, 28, 20).getTime());
 const open = async (data: string) => renderRoute(`/friends/add?d=${data}`, '/friends/add', <ImportPage />);
 
 beforeEach(() => resetDb());
@@ -19,7 +19,8 @@ beforeEach(() => resetDb());
 test('初めての友達: 件数と期間を出し、保存すると詳細へ', async () => {
   await open(await encodeShare('r', payload([w('aaaaaaaa-1', new Date(2026, 8, 3, 18)), w('bbbbbbbb-1', new Date(2026, 9, 27, 18))])));
   expect(await screen.findByText('じろうさんの記録（2回分・9/3〜10/27）')).toBeInTheDocument();
-  expect(screen.getByText('種目 1 ・ メニュー 1')).toBeInTheDocument();
+  expect(screen.getByText('種目 1')).toBeInTheDocument();
+  expect(screen.queryByText(/メニュー/)).toBeNull();
   expect(screen.getByText('ホーム画面に追加した GRIND で使うには、このリンクをコピーして『友達』タブに貼り付けてください')).toBeInTheDocument();
   await userEvent.click(screen.getByRole('button', { name: '保存' }));
   expect(await screen.findByTestId('location')).toHaveTextContent('/friends/friend000001');
@@ -55,4 +56,10 @@ test('やめるで友達タブへ', async () => {
   await open(await encodeShare('r', payload([])));
   await userEvent.click(await screen.findByRole('button', { name: 'やめる' }));
   expect(await screen.findByTestId('location')).toHaveTextContent('/friends');
+});
+
+test('メニュー付きのリンクなら「メニュー N」を出す', async () => {
+  const p = buildSharePayload({ profile: { id: 'friend000001', name: 'じろう' }, exercises: [sq], workouts: [], routines: [routine('LEG', [item(sq.id)])] }, new Date(2026, 9, 28, 20).getTime());
+  await open(await encodeShare('r', p));
+  expect(await screen.findByText('種目 1 ・ メニュー 1')).toBeInTheDocument();
 });
