@@ -121,6 +121,7 @@ test('招待リンクを共有する', async () => {
   api.as('a');
   await api.saveMyName('あ');
   setSession({ userId: 'a' });
+  localStorage.setItem('ironlog:sharedHistoryAsked:a', '1');
   page();
   const b = await screen.findByRole('button', { name: '友達を招待' });
   await waitFor(() => expect(b).toBeEnabled());
@@ -199,4 +200,43 @@ test('オンラインの友達には「この友達を削除」を出さない',
   unmount();
   renderRoute('/friends/link000001', '/friends/:id', <FriendPage />);
   expect(await screen.findByRole('button', { name: 'この友達を削除' })).toBeInTheDocument();
+});
+
+test('名前を決める前にやめたら、開き直しても名前から（招待は作らない）', async () => {
+  const spy = vi.spyOn(api, 'createInvite');
+  const first = page();
+  await login();
+  await screen.findByLabelText('表示名');
+  first.unmount();
+  page();
+  expect(await screen.findByLabelText('表示名')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '友達を招待' })).toBeNull();
+  expect(spy).not.toHaveBeenCalled();
+});
+
+test('確認に答える前にやめたら、開き直したときまた聞く（それまで招待は作らない）', async () => {
+  const spy = vi.spyOn(api, 'createInvite');
+  const first = page();
+  await login();
+  await userEvent.type(await screen.findByLabelText('表示名'), 'たろう');
+  await userEvent.click(screen.getByRole('button', { name: '保存' }));
+  await screen.findByText('直近8週間の記録を共有しますか？');
+  first.unmount();
+  page();
+  expect(await screen.findByText('直近8週間の記録を共有しますか？')).toBeInTheDocument();
+  expect(spy).not.toHaveBeenCalled();
+});
+
+test('「はい」の送信が失敗したら、つながらない表示を出し、確認は済みにしない', async () => {
+  api.as('a');
+  await api.saveMyName('あ');
+  setSession({ userId: 'a' });
+  const outbox = await import('../../lib/online/outbox');
+  const spy = vi.spyOn(outbox, 'queueRecentWorkouts').mockRejectedValueOnce(new Error('db'));
+  page();
+  await userEvent.click(await screen.findByRole('button', { name: 'はい' }));
+  expect(await screen.findByRole('status')).toHaveTextContent('今はつながりません。あとで自動で送ります');
+  expect(screen.getByText('直近8週間の記録を共有しますか？')).toBeInTheDocument();
+  expect(localStorage.getItem('ironlog:sharedHistoryAsked:a')).toBeNull();
+  spy.mockRestore();
 });

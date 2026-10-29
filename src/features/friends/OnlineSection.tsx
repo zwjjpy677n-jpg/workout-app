@@ -3,7 +3,7 @@ import { Button } from '../../components/Button';
 import { getApi } from '../../lib/online/api';
 import { signIn, syncNow } from '../../lib/online/auth';
 import { flushOutbox, queueRecentWorkouts } from '../../lib/online/outbox';
-import { getSession } from '../../lib/online/prefs';
+import { getSession, setSession } from '../../lib/online/prefs';
 import { markFriendsSeen } from '../../lib/online/pull';
 import { OnlineError, type OnlineUser } from '../../lib/online/types';
 import { PUBLIC_URL } from '../../lib/platform';
@@ -32,7 +32,6 @@ export function LoginForm({ onDone }: { onDone(user: OnlineUser): void }) {
   const [step, setStep] = useState<'email' | 'code' | 'name'>('email');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
-  const [name, setName] = useState('');
   const [user, setUser] = useState<OnlineUser | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -96,22 +95,32 @@ export function LoginForm({ onDone }: { onDone(user: OnlineUser): void }) {
       </div>
     );
   }
+  return <NameStep onSaved={() => onDone(user!)} />;
+}
+
+/** 表示名を決めて保存する。名前が無いうちは招待などを出さない */
+export function NameStep({ onSaved }: { onSaved(): void }) {
+  const [name, setName] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const v = name.trim();
+  const save = async () => {
+    setError(null);
+    setBusy(true);
+    try {
+      await getApi()!.saveMyName(v);
+      onSaved();
+    } catch (e) {
+      setError(e instanceof OnlineError && e.code === 'offline' ? OFFLINE_TEXT : '名前を保存できませんでした');
+    } finally {
+      setBusy(false);
+    }
+  };
   return (
     <div>
       <p className={s.hint}>友達に表示する名前を決めてください</p>
       <input className={s.text} aria-label="表示名" placeholder="表示名（1〜20文字）" value={name} onChange={(e) => setName(e.target.value)} />
-      <Button
-        block
-        variant="primary"
-        disabled={busy || v.length < 1 || v.length > 20}
-        onClick={() =>
-          run(async () => {
-            await getApi()!.saveMyName(v);
-            onDone(user!);
-          }, (e) => (isOffline(e) ? OFFLINE_TEXT : '名前を保存できませんでした'))
-        }
-      >
+      <Button block variant="primary" disabled={busy || v.length < 1 || v.length > 20} onClick={save}>
         保存
       </Button>
       {error && <p role="alert" className={s.error}>{error}</p>}
@@ -126,11 +135,40 @@ export function LoginForm({ onDone }: { onDone(user: OnlineUser): void }) {
 export function OnlineSection() {
   const api = getApi();
   const [userId, setUserId] = useState<string | null>(() => getSession()?.userId ?? null);
-  const [ask, setAsk] = useState(false);
-  const [offline, setOffline] = useState(false);
+  // 名前が決まっているか（null は確かめ中）。名前が無いうちは招待も記録の共有も出さない
+  const [hasName, setHasName] = useState<boolean | null>(null);
+  const [, bump] = useState(0);
+  const [syncOffline, setOffline] = useState(false);
+  // 確認の送信に失敗した印（同期の結果で消えないよう別に持つ）
+  const [sendFailed, setSendFailed] = useState(false);
+  const offline = syncOffline || sendFailed;
   const [note, setNote] = useState<ShareNote>(null);
   const [link, setLink] = useState<string | null>(null);
   const [linkFailed, setLinkFailed] = useState(false);
+
+  const lostLogin = () => {
+    setSession(null);
+    setUserId(null);
+    setHasName(null);
+  };
+  const ask = !!userId && hasName === true && !wasAsked(userId);
+
+  // ログイン済みで開いたら、名前があるか確かめる（途中でやめた登録の続き）
+  useEffect(() => {
+    if (!api || !userId) return;
+    let alive = true;
+    api.getMyName().then(
+      (n) => alive && setHasName(!!n),
+      (e: unknown) => {
+        if (!alive) return;
+        if (e instanceof OnlineError && e.code === 'auth') return lostLogin();
+        setOffline(true);
+      },
+    );
+    return () => {
+      alive = false;
+    };
+  }, [api, userId]);
 
   // 開いたら同期して、見たことにする
   useEffect(() => {
@@ -147,7 +185,8 @@ export function OnlineSection() {
     };
   }, [api, userId]);
 
-  // iPhone は共有をタップの直後に呼ぶ必要があるので、招待リンクは前もって作っておく
+  // iPhone は共有をタップの直後に呼ぶ必要があるので、招待リンクは前もって作っておく。
+  // 名前が決まり、記録の共有の確認が済んでから作る
   const made = useRef(0);
   const prepare = () => {
     const n = ++made.current;
@@ -158,22 +197,33 @@ export function OnlineSection() {
       .then((c) => n === made.current && setLink(`キントレ部で友達になろう！ このリンクを開いてね\n${PUBLIC_URL}#/join?c=${c}`))
       .catch(() => n === made.current && setLinkFailed(true));
   };
+  const inviteReady = !!userId && hasName === true && !ask;
   useEffect(() => {
-    if (api && userId) prepare();
-  }, [api, userId]);
+    if (api && inviteReady) prepare();
+  }, [api, inviteReady]);
 
   if (!api) return null;
 
-  const done = (u: OnlineUser) => {
-    setUserId(u.userId);
-    if (!wasAsked(u.userId)) setAsk(true);
-  };
   const answer = async (yes: boolean) => {
-    if (userId) markAsked(userId);
-    setAsk(false);
+    setSendFailed(false);
     if (yes) {
-      await queueRecentWorkouts(Date.now());
-      setOffline((await flushOutbox()) === 'offline');
+      try {
+        await queueRecentWorkouts(Date.now());
+      } catch (e) {
+        if (e instanceof OnlineError && e.code === 'auth') return lostLogin();
+        setSendFailed(true);
+        return; // 確認は済みにしない（次に開いたときまた聞く）
+      }
+    }
+    if (userId) markAsked(userId);
+    bump((n) => n + 1);
+    if (yes) {
+      try {
+        setSendFailed((await flushOutbox()) === 'offline');
+      } catch (e) {
+        if (e instanceof OnlineError && e.code === 'auth') return lostLogin();
+        setSendFailed(true); // 送り待ちに残っているので、あとで自動で送り直す
+      }
     }
   };
 
@@ -181,7 +231,16 @@ export function OnlineSection() {
     <section className={s.online}>
       <h2 className={s.onlineTitle}>オンラインでつながる</h2>
       {!userId ? (
-        <LoginForm onDone={done} />
+        <LoginForm
+          onDone={(u) => {
+            setUserId(u.userId);
+            setHasName(true);
+          }}
+        />
+      ) : hasName === null ? (
+        offline && <p role="status" className={s.hint}>{OFFLINE_TEXT}</p>
+      ) : hasName === false ? (
+        <NameStep onSaved={() => setHasName(true)} />
       ) : ask ? (
         <div>
           <p className={s.hint}>直近8週間の記録を共有しますか？</p>
@@ -189,6 +248,7 @@ export function OnlineSection() {
             <Button block variant="primary" onClick={() => answer(true)}>はい</Button>
             <Button block onClick={() => answer(false)}>いいえ</Button>
           </div>
+          {offline && <p role="status" className={s.hint}>{OFFLINE_TEXT}</p>}
         </div>
       ) : (
         <div>
