@@ -113,7 +113,7 @@ export function ImportPage() {
         </Card>
       )}
       {st.kind === 'menu' && <MenuCard st={st} failed={failed} cancel={cancel} onSave={(mode) => save(() => importMenu(st.p, mode, Date.now()), '/manage?tab=routines')} />}
-      <p className={s.hint}>ホーム画面に追加した GRIND で使うには、このリンクをコピーして『友達』タブに貼り付けてください</p>
+      <p className={s.hint}>ホーム画面に追加した キントレ部 で使うには、このリンクをコピーして『友達』タブに貼り付けてください</p>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'io.github.zwjjpy677njpg.grind',
-  appName: 'GRIND',
+  appName: 'キントレ部',
   webDir: 'dist',
   ios: {
     backgroundColor: '#0B0B0D',

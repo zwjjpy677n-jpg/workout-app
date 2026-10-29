@@ -72,7 +72,7 @@ test('長すぎると古い週から削り、リンクは7,500文字以内', asy
   const link = r.text.split('\n').pop()!;
   expect(link).toMatch(/#\/friends\/add\?d=r1/);
   expect(link.length).toBeLessThanOrEqual(7500);
-  expect(r.text).toContain('GRIND の『友達』タブに貼り付けてね');
+  expect(r.text).toContain('キントレ部 の『友達』タブに貼り付けてね');
 });
 
 test('1週間でも収まらないと too-large', async () => {

@@ -19,7 +19,7 @@
 .friendName { font-size: 24px; font-weight: 700; margin: 2px 0 2px; }
 .seg { display: flex; gap: 4px; background: var(--surface); border-radius: 12px; padding: 4px; margin: 14px 0 16px; }
 .seg button { flex: 1; min-height: 38px; border-radius: 9px; font-size: 13px; color: var(--muted); }
-.seg button[aria-selected='true'] { background: var(--red); color: #fff; font-weight: 700; }
+.seg button[aria-selected='true'] { background: var(--red); color: var(--on-accent); font-weight: 700; }
 .week { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
 .weekHead { font-family: var(--font-num); font-size: 13px; letter-spacing: .04em; color: var(--muted); font-weight: 700; }
 .day { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
@@ -42,7 +42,7 @@
 .unread { width: 8px; height: 8px; border-radius: 50%; background: var(--red); display: inline-block; }
 .weekdays { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 14px; }
 .weekdays button { min-width: 40px; min-height: 36px; border-radius: 99px; background: var(--surface2); font-size: 13px; color: var(--muted); }
-.weekdays button[aria-pressed='true'] { background: var(--red); color: #fff; font-weight: 700; }
+.weekdays button[aria-pressed='true'] { background: var(--red); color: var(--on-accent); font-weight: 700; }
 .menuItem { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 8px; }
 .menuItemHead { display: flex; align-items: center; gap: 4px; }
 .menuItemHead b { flex: 1; font-size: 15px; }
@@ -64,4 +64,4 @@
 .olderMenu { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
 .olderMenu summary { font-size: 13px; color: var(--muted); cursor: pointer; }
 .menuLink { display: block; margin-left: auto; margin-top: 8px; min-height: 40px; padding: 0 4px; font-size: 13px; font-weight: 700; color: var(--red); }
-.pick[aria-pressed='true'] { background: var(--red); color: #fff; font-weight: 700; }
+.pick[aria-pressed='true'] { background: var(--red); color: var(--on-accent); font-weight: 700; }

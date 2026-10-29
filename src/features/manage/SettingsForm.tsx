@@ -1,4 +1,5 @@
 import { NumberInput } from '../../components/NumberInput';
+import { AppearanceSection } from './AppearanceSection';
 import { updateSettings } from '../../db/repository';
 import { DEFAULT_SETTINGS } from '../../db/seed';
 import { useState } from 'react';
@@ -26,6 +27,7 @@ export function SettingsForm() {
 
   return (
     <>
+      <AppearanceSection />
       <div className={s.field}>
         <span>レスト終了の通知（この端末だけの設定）</span>
         <label className={s.check}>

@@ -12,6 +12,7 @@
     "build:ios": "npm run build && npx cap sync ios"
   },
   "dependencies": {
+    "@capacitor-community/app-icon": "^7.0.0",
     "@capacitor/clipboard": "^8.0.1",
     "@capacitor/core": "^8.6.0",
     "@capacitor/filesystem": "^8.1.5",

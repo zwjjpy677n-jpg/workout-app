@@ -34,7 +34,7 @@ export function FriendsPage() {
 
       <Inbox />
 
-      {friends && friends.length === 0 && <p className={s.empty}>まだ友達がいません。友達に GRIND の記録を送ってもらって、ここに貼り付けてください</p>}
+      {friends && friends.length === 0 && <p className={s.empty}>まだ友達がいません。友達に キントレ部 の記録を送ってもらって、ここに貼り付けてください</p>}
       <div className={s.list}>
         {friends?.map((f) => (
           <button key={f.id} type="button" className={s.item} onClick={() => navigate(`/friends/${f.id}`)}>

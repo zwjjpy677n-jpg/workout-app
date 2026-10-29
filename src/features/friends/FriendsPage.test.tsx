@@ -46,7 +46,7 @@ test('初回は名前を聞いてから共有画面を出す', async () => {
   await userEvent.click(go);
   await waitFor(() => expect(share).toHaveBeenCalledTimes(1));
   const { text } = share.mock.calls[0][0] as { text: string };
-  expect(text).toContain('GRIND の記録です');
+  expect(text).toContain('キントレ部 の記録です');
   expect(text).toMatch(/#\/friends\/add\?d=r1/);
   expect((await getProfile())?.name).toBe('たろう');
 });
@@ -89,14 +89,14 @@ test('貼り付けて読み込むと確認画面へ移る、壊れたリンク�
   await userEvent.click(within(dlg).getByRole('button', { name: '読み込む' }));
   expect(await within(dlg).findByText('読み込めないリンクです')).toBeInTheDocument();
   await userEvent.clear(within(dlg).getByRole('textbox', { name: 'リンク' }));
-  await userEvent.type(within(dlg).getByRole('textbox', { name: 'リンク' }), `GRIND の記録です\nhttps://x/#/friends/add?d=${data}`);
+  await userEvent.type(within(dlg).getByRole('textbox', { name: 'リンク' }), `キントレ部 の記録です\nhttps://x/#/friends/add?d=${data}`);
   await userEvent.click(within(dlg).getByRole('button', { name: '読み込む' }));
   expect(await screen.findByTestId('location')).toHaveTextContent(`/friends/add?d=${data}`);
 });
 
 test('友達がいないときの案内と、一覧の名前・最後のトレーニング・受け取り日', async () => {
   page();
-  expect(await screen.findByText('まだ友達がいません。友達に GRIND の記録を送ってもらって、ここに貼り付けてください')).toBeInTheDocument();
+  expect(await screen.findByText('まだ友達がいません。友達に キントレ部 の記録を送ってもらって、ここに貼り付けてください')).toBeInTheDocument();
   const b = ex('fb-uuid-00001', { name: 'スクワット' });
   const at = new Date(2026, 9, 27, 18).getTime();
   await saveImportedShare(buildSharePayload({ profile: { id: 'friend000001', name: 'じろう' }, exercises: [b], workouts: [wk(at, [entry(b.id, [set({ weight: 100, reps: 5 })])])] }, at + 3600_000), new Date(2026, 9, 28, 9).getTime());
