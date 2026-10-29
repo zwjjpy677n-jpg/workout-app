@@ -1,4 +1,6 @@
 import type { MenuPayload } from '../share/menuPayload';
+import { isOnlineConfigured, ONLINE } from './config';
+import { createSupabaseApi } from './supabaseApi';
 import type { FriendRow, MenuMessage, OnlineUser, SharedWorkout, SharedWorkoutRow } from './types';
 
 /** サーバーとの唯一の窓口。失敗は OnlineError で投げる */
@@ -25,5 +27,12 @@ export const setApiForTest = (api: OnlineApi | null) => {
   testApi = api;
 };
 
-// 本物（Supabase）の実装は Task 10 でここに足す。それまでは差し替えたものだけ返す
-export const getApi = (): OnlineApi | null => testApi ?? null;
+let real: OnlineApi | null = null;
+
+/** 差し替えたものがあればそれ。無ければ、サーバーの設定がある版でだけ Supabase の窓口を 1 回だけ作って使い回す */
+export const getApi = (): OnlineApi | null => {
+  if (testApi) return testApi;
+  if (!isOnlineConfigured()) return null;
+  real ??= createSupabaseApi(ONLINE);
+  return real;
+};

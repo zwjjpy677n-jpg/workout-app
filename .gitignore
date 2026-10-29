@@ -3,3 +3,5 @@ dist
 dev-dist
 .superpowers
 *.tsbuildinfo
+.env.local
+.env.*.local

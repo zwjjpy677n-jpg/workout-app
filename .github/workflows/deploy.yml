@@ -26,6 +26,10 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+        env:
+          # リポジトリの Variables（Settings → Secrets and variables → Actions → Variables）。無ければ空でビルドされ、オンライン機能は出ない
+          VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
       - name: Upload Pages artifact
         if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3

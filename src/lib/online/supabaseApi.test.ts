@@ -1,0 +1,249 @@
+import { createClient } from '@supabase/supabase-js';
+import type { MenuPayload } from '../share/menuPayload';
+import { createSupabaseApi } from './supabaseApi';
+import { OnlineError, type SharedWorkout } from './types';
+
+type Res = { data?: unknown; error?: unknown; status?: number };
+type Call = [string, ...unknown[]];
+
+let calls: Call[] = [];
+let results: Res[] = [];
+let session: { user: { id: string; email?: string } } | null = { user: { id: 'me', email: 'me@example.com' } };
+
+const next = () => {
+  const r = results.shift() ?? {};
+  return { data: r.data ?? null, error: r.error ?? null, status: r.status ?? 200 };
+};
+
+const builder = () => {
+  const b: Record<string, unknown> = {};
+  for (const m of ['select', 'insert', 'upsert', 'update', 'delete', 'eq', 'neq', 'gt', 'in', 'or', 'order', 'maybeSingle', 'single']) {
+    b[m] = (...args: unknown[]) => {
+      calls.push([m, ...args]);
+      return b;
+    };
+  }
+  b.then = (ok: (v: unknown) => unknown, ng: (e: unknown) => unknown) => Promise.resolve(next()).then(ok, ng);
+  return b;
+};
+
+const auth = {
+  getSession: vi.fn(async () => ({ data: { session }, error: null })),
+  signInWithOtp: vi.fn(async (_: unknown) => ({ data: {}, error: null as unknown })),
+  verifyOtp: vi.fn(async (_: unknown) => ({ data: { user: null as unknown, session: null }, error: null as unknown })),
+  signOut: vi.fn(async (_?: unknown) => ({ error: null as unknown })),
+};
+
+const client = {
+  from: (t: string) => {
+    calls.push(['from', t]);
+    return builder();
+  },
+  rpc: (fn: string, args: unknown) => {
+    calls.push(['rpc', fn, args]);
+    return builder();
+  },
+  auth,
+};
+
+vi.mock('@supabase/supabase-js', () => ({ createClient: vi.fn(() => client) }));
+
+const api = () => createSupabaseApi({ url: 'https://x.supabase.co', anonKey: 'anon' });
+const code = async (p: Promise<unknown>) => {
+  try {
+    await p;
+  } catch (e) {
+    expect(e).toBeInstanceOf(OnlineError);
+    return (e as OnlineError).code;
+  }
+  throw new Error('投げなかった');
+};
+
+const W: SharedWorkout = { id: 'w1', name: '胸の日', startedAt: Date.UTC(2026, 9, 1, 10), endedAt: Date.UTC(2026, 9, 1, 11), body: { e: [] } };
+
+beforeEach(() => {
+  calls = [];
+  results = [];
+  session = { user: { id: 'me', email: 'me@example.com' } };
+  vi.clearAllMocks();
+});
+
+test('ログインはメールの URL を見ず、端末に残す設定で作る', () => {
+  api();
+  expect(createClient).toHaveBeenCalledWith('https://x.supabase.co', 'anon', {
+    auth: expect.objectContaining({ persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }),
+  });
+});
+
+test('通信の失敗は offline', async () => {
+  for (const message of ['TypeError: Failed to fetch', 'TypeError: NetworkError when attempting to fetch resource.', 'TypeError: Load failed']) {
+    results = [{ error: { message, details: '', hint: '', code: '' }, status: 0 }];
+    expect(await code(api().upsertWorkout(W))).toBe('offline');
+  }
+  auth.signInWithOtp.mockResolvedValueOnce({ data: {}, error: { name: 'AuthRetryableFetchError', message: 'Failed to fetch', status: 0 } });
+  expect(await code(api().sendCode('a@example.com'))).toBe('offline');
+  auth.signInWithOtp.mockRejectedValueOnce(new TypeError('Load failed'));
+  expect(await code(api().sendCode('a@example.com'))).toBe('offline');
+});
+
+test('JWT の期限切れや 401 は auth', async () => {
+  results = [{ error: { message: 'JWT expired', code: 'PGRST301' }, status: 401 }];
+  expect(await code(api().pullWorkouts(''))).toBe('auth');
+  results = [{ error: { message: 'invalid JWT', code: '' }, status: 400 }];
+  expect(await code(api().pullMenus(''))).toBe('auth');
+});
+
+test('ログインしていなければ auth で、サーバーには聞かない', async () => {
+  session = null;
+  expect(await code(api().upsertWorkout(W))).toBe('auth');
+  expect(calls).toEqual([]);
+  expect(await api().currentUser()).toBeNull();
+});
+
+test('ほかの失敗は unknown', async () => {
+  results = [{ error: { message: 'boom', code: 'XX000' }, status: 500 }];
+  expect(await code(api().getMyName())).toBe('unknown');
+});
+
+test('OTP の間違いは code', async () => {
+  auth.verifyOtp.mockResolvedValueOnce({
+    data: { user: null, session: null },
+    error: { name: 'AuthApiError', status: 403, code: 'otp_expired', message: 'Token has expired or is invalid' },
+  });
+  expect(await code(api().verifyCode('a@example.com', '000000'))).toBe('code');
+  auth.verifyOtp.mockResolvedValueOnce({ data: { user: null, session: null }, error: { name: 'AuthRetryableFetchError', status: 0, message: 'Failed to fetch' } });
+  expect(await code(api().verifyCode('a@example.com', '000000'))).toBe('offline');
+});
+
+test('verifyCode は email の OTP で確かめ、ユーザーを返す', async () => {
+  auth.verifyOtp.mockResolvedValueOnce({ data: { user: { id: 'u1', email: 'a@example.com' }, session: null }, error: null });
+  expect(await api().verifyCode(' a@example.com ', '123456')).toEqual({ userId: 'u1', email: 'a@example.com' });
+  expect(auth.verifyOtp).toHaveBeenCalledWith({ email: 'a@example.com', token: '123456', type: 'email' });
+});
+
+test('sendCode はメールにコードを送る', async () => {
+  await api().sendCode('a@example.com');
+  expect(auth.signInWithOtp).toHaveBeenCalledWith({ email: 'a@example.com', options: { shouldCreateUser: true } });
+});
+
+test('currentUser は端末のログインから返す', async () => {
+  expect(await api().currentUser()).toEqual({ userId: 'me', email: 'me@example.com' });
+});
+
+test('accept_invite の expired は expired', async () => {
+  for (const c of ['expired', 'invalid', 'used', 'self'] as const) {
+    results = [{ error: { message: c, code: 'P0001' }, status: 400 }];
+    expect(await code(api().acceptInvite('abc'))).toBe(c);
+  }
+});
+
+test('acceptInvite は招待した人を友達として返す', async () => {
+  results = [{ data: { kind: 'friend', user_id: 'u2', name: 'たろう' } }];
+  expect(await api().acceptInvite('abc')).toEqual({ userId: 'u2', name: 'たろう' });
+  expect(calls).toContainEqual(['rpc', 'accept_invite', { code: 'abc' }]);
+});
+
+test('createInvite は友達の招待コードを作る', async () => {
+  results = [{ data: 'CODE' }];
+  expect(await api().createInvite()).toBe('CODE');
+  expect(calls).toContainEqual(['rpc', 'create_invite', { kind: 'friend' }]);
+});
+
+test('名前は profiles の自分の行に読み書きする', async () => {
+  results = [{ data: { name: 'じろう' } }, {}];
+  const a = api();
+  expect(await a.getMyName()).toBe('じろう');
+  expect(calls).toContainEqual(['eq', 'id', 'me']);
+  await a.saveMyName('さぶろう');
+  expect(calls).toContainEqual(['upsert', { id: 'me', name: 'さぶろう' }]);
+});
+
+test('upsertWorkout は shared_workouts に user_id 付きで upsert する', async () => {
+  await api().upsertWorkout(W);
+  expect(calls[0]).toEqual(['from', 'shared_workouts']);
+  expect(calls).toContainEqual([
+    'upsert',
+    { user_id: 'me', id: 'w1', name: '胸の日', started_at: '2026-10-01T10:00:00.000Z', ended_at: '2026-10-01T11:00:00.000Z', body: { e: [] }, deleted: false },
+    { onConflict: 'user_id,id' },
+  ]);
+});
+
+test('deleteWorkout は自分の記録に削除の印をつける', async () => {
+  await api().deleteWorkout('w1');
+  expect(calls).toEqual([
+    ['from', 'shared_workouts'],
+    ['update', { deleted: true }],
+    ['eq', 'user_id', 'me'],
+    ['eq', 'id', 'w1'],
+  ]);
+});
+
+test('pullWorkouts は自分の分を除き、since より新しいものを古い順に取る', async () => {
+  results = [
+    {
+      data: [
+        { user_id: 'u2', id: 'w9', name: '脚', started_at: '2026-10-01T10:00:00+00:00', ended_at: '2026-10-01T11:00:00+00:00', body: { e: [] }, updated_at: '2026-10-02T00:00:00.123456+00:00', deleted: false },
+      ],
+    },
+  ];
+  const rows = await api().pullWorkouts('2026-10-01T00:00:00+00:00');
+  expect(rows).toEqual([
+    { userId: 'u2', id: 'w9', name: '脚', startedAt: Date.UTC(2026, 9, 1, 10), endedAt: Date.UTC(2026, 9, 1, 11), body: { e: [] }, updatedAt: '2026-10-02T00:00:00.123456+00:00', deleted: false },
+  ]);
+  expect(calls).toContainEqual(['from', 'shared_workouts']);
+  expect(calls).toContainEqual(['neq', 'user_id', 'me']);
+  expect(calls).toContainEqual(['gt', 'updated_at', '2026-10-01T00:00:00+00:00']);
+  expect(calls).toContainEqual(['order', 'updated_at', { ascending: true }]);
+});
+
+test('pullWorkouts の since が空なら全部取る', async () => {
+  results = [{ data: [] }];
+  expect(await api().pullWorkouts('')).toEqual([]);
+  expect(calls.some((c) => c[0] === 'gt')).toBe(false);
+});
+
+test('pullMenus は自分あての分だけ取る', async () => {
+  const body = { name: 'm' } as unknown as MenuPayload;
+  results = [{ data: [{ id: 'x', sender: 'u2', recipient: 'me', kind: 'built', body, created_at: '2026-10-02T00:00:00+00:00' }] }];
+  expect(await api().pullMenus('2026-10-01T00:00:00+00:00')).toEqual([
+    { id: 'x', sender: 'u2', recipient: 'me', kind: 'built', body, createdAt: '2026-10-02T00:00:00+00:00' },
+  ]);
+  expect(calls).toContainEqual(['from', 'menu_messages']);
+  expect(calls).toContainEqual(['eq', 'recipient', 'me']);
+  expect(calls).toContainEqual(['gt', 'created_at', '2026-10-01T00:00:00+00:00']);
+  expect(calls).toContainEqual(['order', 'created_at', { ascending: true }]);
+});
+
+test('sendMenu は自分を送り主にして入れる。友達でなければ invalid', async () => {
+  const body = { name: 'm' } as unknown as MenuPayload;
+  await api().sendMenu('u2', 'mine', body);
+  expect(calls).toContainEqual(['insert', { sender: 'me', recipient: 'u2', kind: 'mine', body }]);
+  results = [{ error: { message: 'new row violates row-level security policy for table "menu_messages"', code: '42501' }, status: 403 }];
+  expect(await code(api().sendMenu('u3', 'mine', body))).toBe('invalid');
+});
+
+test('listFriends は自分の友達関係の相手の名前を返す（読めない相手は出さない）', async () => {
+  results = [
+    { data: [{ user_a: 'a1', user_b: 'me' }, { user_a: 'me', user_b: 'z9' }, { user_a: 'b2', user_b: 'me' }] },
+    { data: [{ id: 'a1', name: 'あ' }, { id: 'z9', name: 'ぜ' }] },
+  ];
+  expect(await api().listFriends()).toEqual([
+    { userId: 'a1', name: 'あ' },
+    { userId: 'z9', name: 'ぜ' },
+  ]);
+  expect(calls).toContainEqual(['from', 'friendships']);
+  expect(calls).toContainEqual(['or', 'user_a.eq.me,user_b.eq.me']);
+  expect(calls).toContainEqual(['from', 'profiles']);
+  expect(calls).toContainEqual(['in', 'id', ['a1', 'z9', 'b2']]);
+});
+
+test('友達がいなければ profiles は読まない', async () => {
+  results = [{ data: [] }];
+  expect(await api().listFriends()).toEqual([]);
+  expect(calls.filter((c) => c[0] === 'from')).toEqual([['from', 'friendships']]);
+});
+
+test('signOut は端末のログインを外す', async () => {
+  await api().signOut();
+  expect(auth.signOut).toHaveBeenCalled();
+});
