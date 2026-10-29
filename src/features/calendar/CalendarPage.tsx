@@ -50,7 +50,7 @@ export function CalendarPage() {
       </div>
       <MonthGrid year={ym.y} month0={ym.m} byDay={sum.byDay} selected={selected} onSelect={setSelected} onSwipe={shift} />
       <div className={s.legend} aria-hidden="true">
-        少 <i style={{ background: 'rgba(225,6,0,.22)' }} /><i style={{ background: 'rgba(225,6,0,.45)' }} /><i style={{ background: 'rgba(225,6,0,.8)' }} /> 多
+        少 <i style={{ background: 'color-mix(in srgb, var(--red) 22%, transparent)' }} /><i style={{ background: 'color-mix(in srgb, var(--red) 45%, transparent)' }} /><i style={{ background: 'color-mix(in srgb, var(--red) 80%, transparent)' }} /> 多
       </div>
       {workouts && bodyweights && exMap && <DayDetail dateKey={selected} workouts={workouts} bodyweights={bodyweights} exercises={exMap} />}
     </div>

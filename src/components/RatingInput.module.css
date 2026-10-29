@@ -2,4 +2,4 @@
 .label { font-size: 14px; }
 .btns { display: flex; gap: 6px; }
 .b { width: 44px; height: 44px; border-radius: 10px; background: var(--surface2); font-family: var(--font-num); font-size: 16px; }
-.on { background: var(--red); color: #fff; }
+.on { background: var(--red); color: var(--on-accent); }

@@ -1,6 +1,6 @@
 .seg { display: flex; gap: 4px; background: var(--surface); border-radius: 12px; padding: 4px; margin-bottom: 16px; overflow-x: auto; }
 .seg button { flex: 1 0 auto; min-height: 38px; padding: 0 10px; border-radius: 9px; font-size: 12px; color: var(--muted); white-space: nowrap; }
-.seg button[aria-selected='true'] { background: var(--red); color: #fff; font-weight: 700; }
+.seg button[aria-selected='true'] { background: var(--red); color: var(--on-accent); font-weight: 700; }
 .list { display: flex; flex-direction: column; gap: 6px; }
 .group h3 { font-family: var(--font-num); font-size: 11px; letter-spacing: .12em; color: var(--muted); margin: 18px 0 8px; }
 .item { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 52px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; text-align: left; }
@@ -18,7 +18,7 @@
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border-radius: 99px; background: var(--surface2); font-family: var(--font-num); font-size: 14px; }
 .chip input { position: absolute; opacity: 0; pointer-events: none; }
-.chip:has(input:checked) { background: var(--red); color: #fff; }
+.chip:has(input:checked) { background: var(--red); color: var(--on-accent); }
 .order { display: flex; align-items: center; gap: 6px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
 .order span { flex: 1; }
 .order button { width: 36px; height: 36px; border-radius: 8px; background: var(--surface2); color: var(--muted); }

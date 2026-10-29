@@ -7,9 +7,9 @@
 .w { font-size: 10px; color: var(--muted); padding-bottom: 4px; }
 .d { position: relative; aspect-ratio: 1; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-family: var(--font-num); font-size: 14px; }
 .out { color: #3a3a42; }
-.d[data-level='1'] { background: rgba(225, 6, 0, .22); }
-.d[data-level='2'] { background: rgba(225, 6, 0, .45); }
-.d[data-level='3'] { background: rgba(225, 6, 0, .8); }
+.d[data-level='1'] { background: color-mix(in srgb, var(--red) 22%, transparent); }
+.d[data-level='2'] { background: color-mix(in srgb, var(--red) 45%, transparent); }
+.d[data-level='3'] { background: color-mix(in srgb, var(--red) 80%, transparent); }
 .sel { box-shadow: inset 0 0 0 2px #fff; }
 .isToday::after { content: ''; position: absolute; bottom: 5px; width: 4px; height: 4px; border-radius: 50%; background: #fff; }
 .legend { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 8px; font-size: 10px; color: var(--muted); }
