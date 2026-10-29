@@ -169,3 +169,19 @@ test('新しい記録は、自動共有オフなら送らない', async () => {
   expect(await db.outbox.count()).toBe(0);
   expect(await friendPull()).toHaveLength(0);
 });
+
+test('裏で送るのに失敗しても、受け取られない例外にならない', async () => {
+  const unhandled: unknown[] = [];
+  const on = (e: unknown) => unhandled.push(e);
+  process.on('unhandledRejection', on);
+  const spy = vi.spyOn(db.outbox, 'toArray').mockRejectedValueOnce(new Error('db broken'));
+  try {
+    await queueMenu('b', 'built', { id: 'x', n: 'あ', to: 'b', at: 1, mid: 'm', name: 'PUSH', weekday: 1, items: [] });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(spy).toHaveBeenCalled();
+    expect(unhandled).toEqual([]);
+  } finally {
+    spy.mockRestore();
+    process.off('unhandledRejection', on);
+  }
+});

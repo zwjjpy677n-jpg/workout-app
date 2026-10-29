@@ -174,12 +174,16 @@ export function OnlineSection() {
   useEffect(() => {
     if (!api || !userId) return;
     let alive = true;
-    void syncNow().then(async (r) => {
-      if (!alive) return;
-      setOffline(r === 'offline');
-      if (getSession() === null) return setUserId(null);
-      await markFriendsSeen(Date.now());
-    });
+    syncNow()
+      .then(async (r) => {
+        if (!alive) return;
+        setOffline(r === 'offline');
+        if (getSession() === null) return setUserId(null);
+        await markFriendsSeen(Date.now());
+      })
+      .catch(() => {
+        /* 既読にできなくても次に開いたときにやり直す */
+      });
     return () => {
       alive = false;
     };
