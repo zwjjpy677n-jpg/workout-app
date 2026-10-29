@@ -1,4 +1,5 @@
 import { NumberInput } from '../../components/NumberInput';
+import { AccountSection } from './AccountSection';
 import { AppearanceSection } from './AppearanceSection';
 import { updateSettings } from '../../db/repository';
 import { DEFAULT_SETTINGS } from '../../db/seed';
@@ -28,6 +29,7 @@ export function SettingsForm() {
   return (
     <>
       <AppearanceSection />
+      <AccountSection />
       <div className={s.field}>
         <span>レスト終了の通知（この端末だけの設定）</span>
         <label className={s.check}>

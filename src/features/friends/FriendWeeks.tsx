@@ -5,6 +5,7 @@ import { volumeParts } from '../../lib/calc';
 import { formatMD, formatMDW, toDateKey } from '../../lib/dates';
 import type { FeedbackOut } from '../../lib/share/feedbackPayload';
 import { friendWeeks } from '../../lib/share/friendWeeks';
+import { workoutMinutes as minutes } from '../../lib/online/sharedWorkout';
 import type { FriendWorkout } from '../../lib/share/importShare';
 import type { Exercise } from '../../lib/types';
 import { summarizeSets } from '../calendar/summarizeSets';
@@ -45,7 +46,7 @@ export function FriendWeeks({ friendId, workouts, exercises }: Props) {
               return (
                 <Card key={w.id}>
                   <div className={s.dayRow}>
-                    <div className={s.day}>{`${formatMDW(w.startedAt)} ${w.name}`}</div>
+                    <div className={s.day}>{`${formatMDW(w.startedAt)} ${w.name}${minutes(w) === null ? '' : ` ・ ${minutes(w)}分`}`}</div>
                     {bubble('この日にコメント', dayAt)}
                   </div>
                   {w.entries.map((e, i) => {

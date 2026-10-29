@@ -1,6 +1,7 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { resetDb } from '../../db/db';
+import { db, resetDb } from '../../db/db';
+import { emptyCondition } from '../../lib/types';
 import { getFriend, listFriendWorkouts, saveImportedShare } from '../../db/friends';
 import { buildSharePayload } from '../../lib/share/sharePayload';
 import { entry, ex, item, routine, set, wk } from '../../test/factories';
@@ -84,4 +85,16 @@ test('メニュータブ: メニューを押すとそのメニューの記録と
   await userEvent.click(await screen.findByRole('tab', { name: 'メニュー' }));
   await userEvent.click(await screen.findByRole('button', { name: 'LEG（月）の記録とグラフ' }));
   expect(await screen.findByTestId('location')).toHaveTextContent('/friends/friend000001/menus/LEG');
+});
+
+test('オンラインの友達の記録に「62分」が出る、リンクの友達の記録には出ない', async () => {
+  const start = new Date(2026, 9, 27, 18).getTime();
+  await db.friendWorkouts.put({
+    id: 'friend000001:online01', friendId: 'friend000001', name: 'ONLINE', startedAt: start + 3600_000, endedAt: start + 3600_000 + 62 * 60_000,
+    note: '', condition: emptyCondition(), routineId: null, entries: [entry(sq.id, [set({ weight: 100, reps: 5 })])],
+  });
+  open();
+  expect(await screen.findByText('10/27 TUE ONLINE ・ 62分')).toBeInTheDocument();
+  expect(screen.getByText('10/27 TUE LEG')).toBeInTheDocument();
+  expect(screen.queryByText(/LEG ・/)).toBeNull();
 });
