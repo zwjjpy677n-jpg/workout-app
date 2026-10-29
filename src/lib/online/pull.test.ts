@@ -210,3 +210,28 @@ test('listFriends から消えた友達も端末には残る', async () => {
   expect(await db.friends.get('a')).toBeDefined();
   expect(await db.friendWorkouts.count()).toBe(1);
 });
+
+test('あとから友達になった人の、カーソルより古い記録も全部入る', async () => {
+  api.as('c');
+  await api.saveMyName('う');
+  await api.upsertWorkout(shared('c-old')); // a の記録より前に書かれた
+  api.as('b');
+  await asA(() => api.upsertWorkout(shared('w1')));
+  await pullAll(5000);
+  const cursor = (await db.sync.get('workoutsSince'))!.value as string;
+  expect(cursor).not.toBe('');
+  // c と友達になる
+  api.as('c');
+  const code = await api.createInvite();
+  api.as('b');
+  await api.acceptInvite(code);
+  await pullAll(6000);
+  expect((await db.friendWorkouts.toArray()).map((w) => w.id).sort()).toEqual(['a:w1', 'c:c-old']);
+  expect((await db.friends.get('c'))?.prs).toHaveLength(1);
+  // カーソルは戻らない
+  expect((await db.sync.get('workoutsSince'))!.value >= cursor).toBe(true);
+  // 2 回目からは c の分を丸ごと取り直さない
+  const spy = vi.spyOn(api, 'pullWorkouts');
+  await pullAll(7000);
+  expect(spy.mock.calls.every((c) => c[1] === undefined)).toBe(true);
+});

@@ -202,6 +202,16 @@ test('pullWorkouts の since が空なら全部取る', async () => {
   expect(calls.some((c) => c[0] === 'gt')).toBe(false);
 });
 
+test('pullWorkouts に userId を渡すと、その人の分だけ取る', async () => {
+  results = [{ data: [] }];
+  await api().pullWorkouts('', 'u3');
+  expect(calls).toContainEqual(['eq', 'user_id', 'u3']);
+  calls = [];
+  results = [{ data: [] }];
+  await api().pullWorkouts('');
+  expect(calls.some((c) => c[0] === 'eq')).toBe(false);
+});
+
 test('pullMenus は自分あての分だけ取る', async () => {
   const body = { name: 'm' } as unknown as MenuPayload;
   results = [{ data: [{ id: 'x', sender: 'u2', recipient: 'me', kind: 'built', body, created_at: '2026-10-02T00:00:00+00:00' }] }];

@@ -98,9 +98,11 @@ export function createFakeApi(): FakeApi {
       const cur = workouts.get(`${u.userId}|${id}`);
       if (cur) workouts.set(`${u.userId}|${id}`, { ...cur, deleted: true, updatedAt: stamp() });
     },
-    async pullWorkouts(since: string) {
+    async pullWorkouts(since: string, userId?: string) {
       const u = user();
-      return [...workouts.values()].filter((r) => r.userId !== u.userId && connected(u.userId, r.userId) && r.updatedAt > since);
+      return [...workouts.values()].filter(
+        (r) => r.userId !== u.userId && connected(u.userId, r.userId) && r.updatedAt > since && (userId === undefined || r.userId === userId),
+      );
     },
     async sendMenu(to: string, kind: 'built' | 'mine', body: MenuPayload) {
       const u = user();

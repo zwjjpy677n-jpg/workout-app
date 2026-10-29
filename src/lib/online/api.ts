@@ -16,7 +16,8 @@ export interface OnlineApi {
   listFriends(): Promise<FriendRow[]>;
   upsertWorkout(w: SharedWorkout): Promise<void>;
   deleteWorkout(id: string): Promise<void>;
-  pullWorkouts(since: string): Promise<SharedWorkoutRow[]>;
+  /** userId を渡すとその人の分だけ（あとから友達になった人の分を丸ごと取るとき） */
+  pullWorkouts(since: string, userId?: string): Promise<SharedWorkoutRow[]>;
   sendMenu(to: string, kind: 'built' | 'mine', body: MenuPayload): Promise<void>;
   pullMenus(since: string): Promise<MenuMessage[]>;
 }

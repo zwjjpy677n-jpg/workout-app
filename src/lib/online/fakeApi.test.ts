@@ -24,6 +24,24 @@ async function befriend(api: Awaited<ReturnType<typeof setup>>, a = 'A', b = 'B'
 const code = async (p: Promise<unknown>) => p.then(() => 'ok', (e) => (e instanceof OnlineError ? e.code : 'other'));
 
 describe('fakeApi', () => {
+  it('pullWorkouts は userId を渡すとその人の分だけ返す', async () => {
+    const api = await setup();
+    api.as('C');
+    await api.saveMyName('シー');
+    await befriend(api);
+    await befriend(api, 'C', 'B');
+    api.as('A');
+    await api.upsertWorkout(w('wa'));
+    api.as('C');
+    await api.upsertWorkout(w('wc'));
+    api.as('B');
+    expect((await api.pullWorkouts('')).map((r) => r.id).sort()).toEqual(['wa', 'wc']);
+    expect((await api.pullWorkouts('', 'C')).map((r) => r.id)).toEqual(['wc']);
+    // つながっていない人を指定しても見えない
+    api.as('A');
+    expect(await api.pullWorkouts('', 'C')).toEqual([]);
+  });
+
   it('招待で友達になると、お互いの記録が見える', async () => {
     const api = await setup();
     api.as('C');

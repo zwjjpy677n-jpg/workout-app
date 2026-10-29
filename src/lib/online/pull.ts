@@ -55,6 +55,23 @@ function cleanMenu(m: MenuMessage): MenuMessage | null {
   }
 }
 
+/** 記録を丸ごと取り終えた友達の id。sync に JSON の配列で持つ */
+const PULLED_KEY = 'pulledFriends';
+
+async function pulledFriends(): Promise<Set<string>> {
+  const v = (await db.sync.get(PULLED_KEY))?.value;
+  if (typeof v === 'string') {
+    try {
+      const a: unknown = JSON.parse(v);
+      if (Array.isArray(a)) return new Set(a.filter((x): x is string => typeof x === 'string'));
+    } catch {
+      /* 壊れていたら下へ */
+    }
+  }
+  // 記録が無い（前の版から来た）ときは、端末にいるオンラインの友達を取り終えたものとみなす
+  return new Set((await db.friends.toArray()).filter((f) => f.online).map((f) => f.id));
+}
+
 const maxOf = (xs: string[], init: string) => xs.reduce((a, b) => (b > a ? b : a), init);
 
 /** 'mine' のメニューを友達のルーティンにする。種目は同じ名前の友達の種目を使い回し、無ければ作る */
@@ -79,20 +96,35 @@ export async function pullAll(now: number): Promise<'done' | 'offline' | 'skippe
   const cursor = async (key: string) => String((await db.sync.get(key))?.value ?? '');
   const wSince = await cursor('workoutsSince');
   const mSince = await cursor('menusSince');
+  const pulled = await pulledFriends();
 
   let list, rawRows, rawMenus;
+  const extra: SharedWorkoutRow[] = [];
   try {
     list = await api.listFriends();
     rawRows = await api.pullWorkouts(wSince);
+    // 共通のカーソルより前に書かれた記録は差分に載らないので、初めて見る友達の分は丸ごと取る
+    // （カーソルが空なら上で全部取れている）
+    const fresh = wSince ? list.map((f) => f.userId).filter((uid) => !pulled.has(uid)) : [];
+    for (const uid of fresh) extra.push(...(await api.pullWorkouts('', uid)));
     rawMenus = await api.pullMenus(mSince);
   } catch (e) {
     if (e instanceof OnlineError && e.code === 'offline') return 'offline';
     throw e;
   }
 
+  // カーソルは共通の差分の分だけで進める（丸ごと取った分で進めると、その間に書かれたほかの人の分を飛ばしうる）
   const nextW = maxOf(rawRows.map((r) => r.updatedAt).filter((s) => typeof s === 'string'), wSince);
   const nextM = maxOf(rawMenus.map((m) => m.createdAt).filter((s) => typeof s === 'string'), mSince);
-  const rows = rawRows.map(cleanRow).filter((r): r is SharedWorkoutRow => r !== null);
+  // 両方に載った行は新しいほうを使う
+  const byKey = new Map<string, SharedWorkoutRow>();
+  for (const r of [...rawRows, ...extra].map(cleanRow)) {
+    if (!r) continue;
+    const k = `${r.userId}|${r.id}`;
+    const cur = byKey.get(k);
+    if (!cur || r.updatedAt >= cur.updatedAt) byKey.set(k, r);
+  }
+  const rows = [...byKey.values()];
   const menus = rawMenus.map(cleanMenu).filter((m): m is MenuMessage => m !== null);
   const names = new Map(list.map((f) => [f.userId, f.name]));
 
@@ -126,6 +158,7 @@ export async function pullAll(now: number): Promise<'done' | 'offline' | 'skippe
     await db.sync.bulkPut([
       { key: 'workoutsSince', value: nextW },
       { key: 'menusSince', value: nextM },
+      { key: PULLED_KEY, value: JSON.stringify([...new Set([...pulled, ...names.keys()])]) },
     ]);
   });
   return 'done';

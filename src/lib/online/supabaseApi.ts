@@ -159,9 +159,10 @@ export function createSupabaseApi(cfg: { url: string; anonKey: string }): Online
       await run(sb.from('shared_workouts').update({ deleted: true }).eq('user_id', uid).eq('id', id));
     },
 
-    async pullWorkouts(since) {
+    async pullWorkouts(since, userId) {
       const uid = await me();
       let q = sb.from('shared_workouts').select('user_id,id,name,started_at,ended_at,body,updated_at,deleted').neq('user_id', uid);
+      if (userId) q = q.eq('user_id', userId);
       if (since) q = q.gt('updated_at', since);
       const rows = ((await run(q.order('updated_at', { ascending: true }))) ?? []) as WorkoutDbRow[];
       return rows.map(
