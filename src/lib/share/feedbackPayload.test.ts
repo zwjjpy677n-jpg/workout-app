@@ -13,7 +13,7 @@ test('往復: 記録・種目・週へのコメントが短いIDで入る', asyn
     c({ week: '2026-10-26', text: '今週もおつかれ', at: NOW - 1000 }),
   ];
   const r = await buildFeedbackLink(me, 'friend000001', list, NOW);
-  expect(r.text.split('\n')[0]).toBe('GRIND のフィードバックです（3件）。GRIND の『友達』タブに貼り付けてね');
+  expect(r.text.split('\n')[0]).toBe('キントレ部 のフィードバックです（3件）。キントレ部 の『友達』タブに貼り付けてね');
   expect(r.sent).toEqual(list.map((x) => x.id));
   expect(r.rest).toBe(0);
   const p = await read(r.text);

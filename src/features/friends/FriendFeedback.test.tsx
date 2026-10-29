@@ -78,7 +78,7 @@ test('送るとタップ中に共有画面が出て、送信済みになる', as
   await write('この日にコメント', 'いい日');
   fireEvent.click(await sendButton(1));
   expect(share).toHaveBeenCalledTimes(1);
-  expect((share.mock.calls[0][0] as { text: string }).text).toMatch(/GRIND のフィードバックです（1件）[\s\S]*#\/friends\/add\?d=f1/);
+  expect((share.mock.calls[0][0] as { text: string }).text).toMatch(/キントレ部 のフィードバックです（1件）[\s\S]*#\/friends\/add\?d=f1/);
   expect(await screen.findByRole('button', { name: 'あなた: いい日（送信済み）' })).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: /フィードバックを送る/ })).toBeNull();
 });

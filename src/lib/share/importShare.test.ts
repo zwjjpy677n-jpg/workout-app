@@ -7,7 +7,7 @@ const bench = ex('bench-uuid-0001', { name: 'ベンチプレス' });
 const plank = ex('plank-uuid-0002', { name: 'プランク', type: 'time', bodyPart: 'core' });
 const w1 = wk(NOW - 86400_000, [entry(bench.id, [set({ weight: 80, reps: 8, rpe: 8 }), set({ weight: 82.5, reps: 5 })]), entry(plank.id, [set({ durationSec: 60 })])], { id: 'work-uuid-1111', name: 'PUSH' });
 const src = { profile: { id: 'abcdefghijkl', name: 'たろう' }, exercises: [bench, plank], workouts: [w1] };
-// 今の GRIND はメニューを送らないが、古い版から届いたリンクのメニューも読めること
+// 今の キントレ部 はメニューを送らないが、古い版から届いたリンクのメニューも読めること
 const payload = (): SharePayload => ({ ...(JSON.parse(JSON.stringify(buildSharePayload(src, NOW))) as SharePayload), r: [['PUSH', 1, [[0, 3, '5', 1]]]] });
 
 test('作った payload を変換すると本番セット・種目・メニュー・自己ベストが戻る', () => {

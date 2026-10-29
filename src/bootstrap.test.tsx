@@ -49,10 +49,10 @@ test('bootstrap: 初期データの準備に失敗したらエラー画面', asy
   expect(screen.getByText('データの準備に失敗しました。端末の空き容量を確認して、ページを再読み込みしてください。')).toBeInTheDocument();
 });
 
-test('エラー画面にもアプリ名 GRIND', async () => {
+test('エラー画面にもアプリ名 キントレ部', async () => {
   vi.stubGlobal('indexedDB', undefined);
   const root = document.createElement('div');
   document.body.appendChild(root);
   await act(() => bootstrap(root));
-  expect(within(root).getByLabelText('GRIND')).toBeInTheDocument();
+  expect(within(root).getByLabelText('キントレ部')).toBeInTheDocument();
 });

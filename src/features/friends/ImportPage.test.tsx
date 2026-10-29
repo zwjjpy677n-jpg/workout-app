@@ -21,7 +21,7 @@ test('初めての友達: 件数と期間を出し、保存すると詳細へ', 
   expect(await screen.findByText('じろうさんの記録（2回分・9/3〜10/27）')).toBeInTheDocument();
   expect(screen.getByText('種目 1')).toBeInTheDocument();
   expect(screen.queryByText(/メニュー/)).toBeNull();
-  expect(screen.getByText('ホーム画面に追加した GRIND で使うには、このリンクをコピーして『友達』タブに貼り付けてください')).toBeInTheDocument();
+  expect(screen.getByText('ホーム画面に追加した キントレ部 で使うには、このリンクをコピーして『友達』タブに貼り付けてください')).toBeInTheDocument();
   await userEvent.click(screen.getByRole('button', { name: '保存' }));
   expect(await screen.findByTestId('location')).toHaveTextContent('/friends/friend000001');
   expect(await listFriendWorkouts('friend000001')).toHaveLength(2);

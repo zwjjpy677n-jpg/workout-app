@@ -14,7 +14,7 @@ const draft: MenuDraft = {
 
 test('往復: 名前・曜日・種目（レスト・目標・メイン・上げ幅・メモ）', async () => {
   const r = await buildMenuLink(me, 'friend000001', draft, NOW);
-  expect(r.text.split('\n')[0]).toBe('GRIND のメニュー『PUSH（月）』です。GRIND の『友達』タブに貼り付けてね');
+  expect(r.text.split('\n')[0]).toBe('キントレ部 のメニュー『PUSH（月）』です。キントレ部 の『友達』タブに貼り付けてね');
   const p = parseMenuPayload((await decodeShare(r.text)).data);
   expect(p).toEqual(r.payload);
   expect(p).toMatchObject({ id: me.id, n: 'じろう', to: 'friend000001', name: 'PUSH', weekday: 1 });

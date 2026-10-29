@@ -8,7 +8,7 @@ import s from './friends.module.css';
 
 export const READ_ERRORS: Record<string, string> = {
   invalid: '読み込めないリンクです',
-  newer: 'GRIND を最新にしてから貼り付けてください',
+  newer: 'キントレ部 を最新にしてから貼り付けてください',
   unsupported: 'この端末では共有を使えません',
 };
 

@@ -51,5 +51,5 @@ export async function buildMenuLink(from: { id: string; name: string }, to: stri
     items: menu.items.map((it) => [it.name, BODY_PARTS.indexOf(it.bodyPart), TYPES.indexOf(it.type), it.restSec, it.sets, it.reps, it.main ? 1 : 0, it.inc, it.note]),
   };
   const link = shareUrl(await encodeShare('m', payload));
-  return { text: `GRIND のメニュー『${menuTitle(menu.name, menu.weekday)}』です。GRIND の『友達』タブに貼り付けてね\n${link}`, payload };
+  return { text: `キントレ部 のメニュー『${menuTitle(menu.name, menu.weekday)}』です。キントレ部 の『友達』タブに貼り付けてね\n${link}`, payload };
 }

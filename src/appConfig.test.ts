@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 // App Store に出すための設定が消えたり戻ったりしないように確かめる
@@ -34,4 +34,22 @@ test('猫アイコンが 12 色そろっていて、iPhone の別アイコンと
   }
   const pbx = read('ios/App/App.xcodeproj/project.pbxproj');
   expect(pbx.match(/ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;/g)).toHaveLength(2);
+});
+
+test('表に出る名前はキントレ部', () => {
+  const html = read('index.html');
+  expect(html).toContain('<title>キントレ部</title>');
+  expect(html).toContain('<meta name="apple-mobile-web-app-title" content="キントレ部" />');
+  expect(read('vite.config.ts')).toContain("name: 'キントレ部'");
+  expect(read('capacitor.config.ts')).toContain("appName: 'キントレ部'");
+  expect(read('ios/App/App/Info.plist')).toMatch(/<key>CFBundleDisplayName<\/key>\s*<string>キントレ部<\/string>/);
+  for (const p of ['public/privacy.html', 'public/support.html']) expect(read(p)).not.toContain('GRIND');
+});
+
+test('画面と共有メッセージに GRIND が残っていない', () => {
+  const walk = (d: string): string[] =>
+    readdirSync(file(d), { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? walk(`${d}/${e.name}`) : /\.tsx?$/.test(e.name) && !e.name.includes('.test.') ? [`${d}/${e.name}`] : [],
+    );
+  expect(walk('src').filter((p) => read(p).includes('GRIND'))).toEqual([]);
 });

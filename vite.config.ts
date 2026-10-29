@@ -13,8 +13,8 @@ export default defineConfig({
       injectRegister: null,
       includeAssets: ['icon-192.png', 'icon-512.png', 'apple-touch-icon.png'],
       manifest: {
-        name: 'GRIND',
-        short_name: 'GRIND',
+        name: 'キントレ部',
+        short_name: 'キントレ部',
         description: 'アスリート向け筋トレ記録',
         lang: 'ja',
         start_url: './',

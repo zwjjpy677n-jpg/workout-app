@@ -84,7 +84,7 @@ export async function buildShareLink(src: ShareSource, now: number) {
     const from = starts.length ? Math.min(...starts) : now;
     const to = starts.length ? Math.max(...starts) : now;
     const range = starts.length ? `${formatMDRange(from, to)}・` : '';
-    const text = `GRIND の記録です（${range}${p.w.length}回分）。GRIND の『友達』タブに貼り付けてね\n${link}`;
+    const text = `キントレ部 の記録です（${range}${p.w.length}回分）。キントレ部 の『友達』タブに貼り付けてね\n${link}`;
     return { text, weeks, trimmed: weeks < 8, count: p.w.length, from, to };
   }
   throw new ShareError('too-large');

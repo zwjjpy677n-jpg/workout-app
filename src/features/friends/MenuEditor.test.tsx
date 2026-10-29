@@ -55,7 +55,7 @@ test('名前・曜日・種目を入れ、レストを−/＋で変えて送る�
   await waitFor(() => expect(send).toBeEnabled());
   fireEvent.click(send);
   expect(share).toHaveBeenCalledTimes(1);
-  expect((share.mock.calls[0][0] as { text: string }).text).toMatch(/GRIND のメニュー『PUSH（月）』です[\s\S]*#\/friends\/add\?d=m1/);
+  expect((share.mock.calls[0][0] as { text: string }).text).toMatch(/キントレ部 のメニュー『PUSH（月）』です[\s\S]*#\/friends\/add\?d=m1/);
   expect(await screen.findByTestId('location')).toHaveTextContent('/friends/friend000001');
   const [log] = await listMenuLog('sent', 'friend000001');
   expect(log.menu).toMatchObject({ name: 'PUSH', weekday: 1, to: 'friend000001', items: [['ベンチプレス', 0, 0, 75, 3, '10', 0, 2.5, '']] });

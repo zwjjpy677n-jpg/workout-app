@@ -1,4 +1,4 @@
-"""猫アイコンを 12 色ぶん作る。`python3 scripts/make-icons.py`（Pillow と NumPy が必要）
+"""猫アイコンを 12 色ぶんと、起動画面を作る。`python3 scripts/make-icons.py`（Pillow と NumPy が必要）
 
 元の絵は assets/cat.png（背景が透明な猫とバーベル）。大きい元画像が手に入ったら差し替えて再実行する。
 今の cat.png は、もらった約 260px の黄色いアイコンから作った:
@@ -49,6 +49,16 @@ def appiconset(name: str, img: Image.Image) -> None:
     (d / 'Contents.json').write_text(json.dumps(contents, indent=2) + '\n')
 
 
+def splash(red: Image.Image, S: int = 2732) -> Image.Image:
+    """起動画面: 黒地の中央に赤の猫アイコン（角丸）"""
+    out = Image.new('RGB', (S, S), (0x0B, 0x0B, 0x0D))
+    n = 640
+    mask = Image.new('L', (n, n), 0)
+    ImageDraw.Draw(mask).rounded_rectangle([0, 0, n - 1, n - 1], radius=int(n * 0.22), fill=255)
+    out.paste(red.resize((n, n), Image.LANCZOS), ((S - n) // 2, (S - n) // 2), mask)
+    return out
+
+
 def main() -> None:
     cat = Image.open(ROOT / 'assets/cat.png').convert('RGBA')
     cat = cat.crop(cat.getbbox())
@@ -64,6 +74,11 @@ def main() -> None:
             big.resize((180, 180), Image.LANCZOS).save(ROOT / 'public/apple-touch-icon.png', optimize=True)
             big.resize((192, 192), Image.LANCZOS).save(ROOT / 'public/icon-192.png', optimize=True)
             big.resize((512, 512), Image.LANCZOS).save(ROOT / 'public/icon-512.png', optimize=True)
+            sp = splash(big)
+            for name in ('splash.png', 'splash-dark.png'):
+                sp.save(ROOT / 'assets' / name, optimize=True)
+            for f in (ASSETS / 'Splash.imageset').glob('Default@*.png'):
+                sp.save(f, optimize=True)
 
 
 if __name__ == '__main__':

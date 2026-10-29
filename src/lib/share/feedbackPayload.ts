@@ -73,6 +73,6 @@ export async function buildFeedbackLink(from: { id: string; name: string }, to: 
     best = { link, n };
   }
   const n = best?.n ?? 0;
-  const text = best ? `GRIND のフィードバックです（${n}件）。GRIND の『友達』タブに貼り付けてね\n${best.link}` : '';
+  const text = best ? `キントレ部 のフィードバックです（${n}件）。キントレ部 の『友達』タブに貼り付けてね\n${best.link}` : '';
   return { text, sent: sorted.slice(0, n).map((x) => x.id), rest: comments.length - n };
 }

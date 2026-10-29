@@ -196,9 +196,9 @@ describe('記録中にルーティンをタップ', () => {
   });
 });
 
-test('アプリ名 GRIND を表示', async () => {
+test('アプリ名 キントレ部 を表示', async () => {
   home();
-  expect(await screen.findByLabelText('GRIND')).toBeInTheDocument();
+  expect(await screen.findByLabelText('キントレ部')).toBeInTheDocument();
   expect(screen.queryByText(/IRON/)).toBeNull();
 });
 
