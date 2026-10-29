@@ -118,9 +118,9 @@ export function ImportPage() {
   );
 }
 
-type MenuState = Extract<State, { kind: 'menu' }>;
+export type MenuState = Extract<State, { kind: 'menu' }>;
 
-function MenuCard({ st, failed, cancel, onSave }: { st: MenuState; failed: ReactNode; cancel: ReactNode; onSave(mode: 'replace' | 'add'): void }) {
+export function MenuCard({ st, failed, cancel, onSave }: { st: MenuState; failed: ReactNode; cancel: ReactNode; onSave(mode: 'replace' | 'add'): void }) {
   const { p, preview } = st;
   const blocked = !preview.mine ? 'あなた宛てではないメニューです' : preview.received ? 'このメニューは受け取り済みです' : null;
   const isNew = new Set(preview.newExercises);

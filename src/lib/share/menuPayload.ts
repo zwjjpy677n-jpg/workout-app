@@ -1,4 +1,4 @@
-import { BODY_PARTS, WEEKDAY_LABEL, type BodyPart, type ExerciseType } from '../types';
+import { BODY_PARTS, WEEKDAY_LABEL, type BodyPart, type Exercise, type ExerciseType, type Routine } from '../types';
 import { encodeShare, shareUrl } from './codec';
 import { randomId } from './ids';
 import { TYPES } from './sharePayload';
@@ -45,11 +45,35 @@ export function parseMenuPayload(data: unknown): MenuPayload {
   };
 }
 
-export async function buildMenuLink(from: { id: string; name: string }, to: string, menu: MenuDraft, now: number) {
-  const payload: MenuPayload = {
+export function buildMenuPayload(from: { id: string; name: string }, to: string, menu: MenuDraft, now: number): MenuPayload {
+  return {
     id: from.id, n: from.name, to, at: Math.floor(now / 60000), mid: randomId(), name: menu.name, weekday: menu.weekday ?? -1,
     items: menu.items.map((it) => [it.name, BODY_PARTS.indexOf(it.bodyPart), TYPES.indexOf(it.type), it.restSec, it.sets, it.reps, it.main ? 1 : 0, it.inc, it.note]),
   };
+}
+
+/** 自分のルーティンを、アプリで送るメニューにする。種目が見つからない項目は入れない（1つも無ければ null） */
+export function routineToMenuPayload(r: Routine, exercises: Map<string, Exercise>, from: { id: string; name: string }, to: string, now: number): MenuPayload | null {
+  const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+  const seen = new Set<string>();
+  const items: MenuDraftItem[] = [];
+  for (const it of r.items) {
+    const e = exercises.get(it.exerciseId);
+    const name = e?.name.trim().slice(0, MENU.name);
+    if (!e || !name || seen.has(name)) continue;
+    seen.add(name);
+    items.push({
+      name, bodyPart: e.bodyPart, type: e.type, restSec: clamp(Math.round(it.restSec ?? e.restSec), MENU.restMin, MENU.restMax),
+      sets: clamp(Math.round(it.sets), 1, MENU.setsMax), reps: it.reps.trim().slice(0, MENU.reps) || '10', main: it.main,
+      inc: clamp(it.inc, MENU.incMin, MENU.incMax), note: it.note.trim().slice(0, MENU.note),
+    });
+  }
+  if (items.length === 0) return null;
+  return buildMenuPayload(from, to, { name: r.name.trim().slice(0, MENU.name) || 'メニュー', weekday: r.weekday, items: items.slice(0, MENU.items) }, now);
+}
+
+export async function buildMenuLink(from: { id: string; name: string }, to: string, menu: MenuDraft, now: number) {
+  const payload = buildMenuPayload(from, to, menu, now);
   const link = shareUrl(await encodeShare('m', payload));
   return { text: `キントレ部 のメニュー『${menuTitle(menu.name, menu.weekday)}』です。キントレ部 の『友達』タブに貼り付けてね\n${link}`, payload };
 }

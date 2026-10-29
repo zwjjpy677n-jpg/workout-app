@@ -22,8 +22,9 @@ async function exerciseByName(): Promise<Map<string, Exercise>> {
   return new Map(list.map((e) => [norm(e.name), e]));
 }
 
-export async function previewMenu(p: MenuPayload) {
-  const mine = (await getProfile())?.id === p.to;
+/** trustRecipient: アプリで届いたメニュー。サーバーが宛先を確かめているので、リンクのような宛先の照合はしない */
+export async function previewMenu(p: MenuPayload, opts: { trustRecipient?: boolean } = {}) {
+  const mine = opts.trustRecipient || (await getProfile())?.id === p.to;
   const received = !!(await db.menuLog.get(logId('received', p.mid)));
   const byName = await exerciseByName();
   const newExercises = [...new Set(p.items.map((it) => norm(it[0])).filter((n) => !byName.has(n)))];

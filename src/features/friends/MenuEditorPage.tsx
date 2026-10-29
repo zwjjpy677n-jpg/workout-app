@@ -8,8 +8,10 @@ import { logSentMenu } from '../../db/menus';
 import { useExercises, useFriend, useProfile } from '../../hooks/useData';
 import { formatDuration } from '../../lib/calc';
 import { ShareError } from '../../lib/share/codec';
-import { buildMenuLink, MENU, type MenuDraftItem } from '../../lib/share/menuPayload';
+import { queueMenu } from '../../lib/online/outbox';
+import { buildMenuLink, buildMenuPayload, MENU, type MenuDraftItem } from '../../lib/share/menuPayload';
 import { BODY_PART_LABEL, BODY_PARTS, EXERCISE_TYPE_LABEL, WEEKDAY_LABEL, type BodyPart, type ExerciseType } from '../../lib/types';
+import { flushNote, SENT_NOTE, senderIdentity } from './appSend';
 import { NameSheet } from './NameSheet';
 import { usePreparedLink } from './usePreparedLink';
 import { sendText, type ShareNote } from './useShareMine';
@@ -32,6 +34,7 @@ export function MenuEditorPage() {
   const [picking, setPicking] = useState(false);
   const [naming, setNaming] = useState(false);
   const [note, setNote] = useState<ShareNote>(null);
+  const [sending, setSending] = useState(false);
 
   const valid = name.trim().length >= 1 && name.trim().length <= MENU.name && items.length > 0 && items.every((it) => it.inc != null && it.reps.trim() !== '');
   const draft = { name: name.trim(), weekday, items: items.map((it) => ({ ...it, reps: it.reps.trim(), note: it.note.trim(), inc: it.inc ?? 0 })) };
@@ -68,6 +71,28 @@ export function MenuEditorPage() {
       await logSentMenu(friend, payload, Date.now());
       navigate(`/friends/${id}?tab=menus`);
     });
+  };
+
+  const onlineId = friend.online?.userId;
+  const sendInApp = async () => {
+    if (!onlineId || sending) return;
+    setSending(true);
+    setNote(null);
+    try {
+      const payload = buildMenuPayload(await senderIdentity(), onlineId, draft, Date.now());
+      await queueMenu(onlineId, 'built', payload);
+      await logSentMenu(friend, payload, Date.now());
+      const text = await flushNote();
+      // 送れたら送信履歴へ。つながらなかったときは、あとで自動で送ることを見せてから移る
+      if (text === SENT_NOTE) navigate(`/friends/${id}?tab=menus`);
+      else {
+        setNote({ kind: 'status', text });
+        setTimeout(() => navigate(`/friends/${id}?tab=menus`), 1500);
+      }
+    } catch {
+      setNote({ kind: 'alert', text: '送れませんでした' });
+      setSending(false);
+    }
   };
 
   return (
@@ -115,7 +140,8 @@ export function MenuEditorPage() {
 
       {items.length < MENU.items && <Button block onClick={() => setPicking(true)}>＋ 種目を追加</Button>}
       {note && <p role={note.kind} className={note.kind === 'alert' ? s.error : s.ok}>{note.text}</p>}
-      <Button block variant="primary" className={s.sendFb} disabled={!valid || (!!profile && !link)} onClick={send}>送る</Button>
+      {onlineId && <Button block variant="primary" className={s.sendFb} disabled={!valid || sending} onClick={sendInApp}>アプリで送る</Button>}
+      <Button block variant={onlineId ? undefined : 'primary'} className={s.sendFb} disabled={!valid || (!!profile && !link)} onClick={send}>{onlineId ? 'リンクで送る' : '送る'}</Button>
 
       <PickSheet open={picking} candidates={candidates} added={new Set(items.map((it) => it.name.trim()))} onPick={add} onClose={() => setPicking(false)} />
       <NameSheet open={naming} initial="" onClose={() => setNaming(false)} onShare={send} ready={!!link} />
