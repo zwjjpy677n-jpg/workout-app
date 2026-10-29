@@ -23,3 +23,15 @@ test('ファイル機能のプライバシーマニフェストがあり、ア�
   const pbx = read('ios/App/App.xcodeproj/project.pbxproj');
   expect(pbx).toMatch(/PrivacyInfo\.xcprivacy in Resources/);
 });
+
+const ICON_KEYS = ['red', 'yellow', 'orange', 'pink', 'purple', 'blue', 'sky', 'mint', 'green', 'navy', 'black', 'cream'];
+
+test('猫アイコンが 12 色そろっていて、iPhone の別アイコンとして組み込まれている', () => {
+  for (const k of ICON_KEYS) {
+    expect(existsSync(file(`public/icons/${k}-180.png`))).toBe(true);
+    expect(existsSync(file(`public/icons/${k}-64.png`))).toBe(true);
+    if (k !== 'red') expect(existsSync(file(`ios/App/App/Assets.xcassets/AppIcon-${k}.appiconset/Contents.json`))).toBe(true);
+  }
+  const pbx = read('ios/App/App.xcodeproj/project.pbxproj');
+  expect(pbx.match(/ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;/g)).toHaveLength(2);
+});
