@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { useUnread } from '../lib/online/pull';
 import s from './TabBar.module.css';
 
 const TABS = [
@@ -10,12 +11,14 @@ const TABS = [
 ];
 
 export function TabBar() {
+  const { total } = useUnread();
   return (
     <nav className={s.bar}>
       {TABS.map((t) => (
         <NavLink key={t.to} to={t.to} end={t.to === '/'} className={({ isActive }) => `${s.tab} ${isActive ? s.on : ''}`}>
           <svg viewBox="0 0 24 24" aria-hidden="true">{t.icon}</svg>
           <span>{t.label}</span>
+          {t.to === '/friends' && total > 0 && <i className={s.dot} role="img" aria-label="未読あり" />}
         </NavLink>
       ))}
     </nav>

@@ -50,7 +50,8 @@ export function FriendPage() {
       {tab === 'weeks' && <FriendWeeks friendId={friend.id} workouts={workouts} exercises={exMap} />}
       {tab === 'exercises' && <FriendExercises friend={friend} workouts={workouts} />}
       {tab === 'menus' && <FriendMenus friend={friend} />}
-      <Button block variant="danger" className={s.remove} onClick={remove}>この友達を削除</Button>
+      {/* オンラインの友達は次の受け取りでまた作られるので、削除は出さない（解除は次の段階） */}
+      {!friend.online && <Button block variant="danger" className={s.remove} onClick={remove}>この友達を削除</Button>}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { Brand } from './components/Brand';
 import { checkStorage } from './db/checkStorage';
 import { ensureSeeded } from './db/seed';
 import { ensureMenuSeeded } from './db/menuSeed';
+import { startOnlineSync } from './lib/online/auth';
 import { registerServiceWorker } from './lib/registerSW';
 
 export async function bootstrap(el: HTMLElement): Promise<void> {
@@ -31,4 +32,5 @@ export async function bootstrap(el: HTMLElement): Promise<void> {
       <App />
     </StrictMode>,
   );
+  startOnlineSync();
 }

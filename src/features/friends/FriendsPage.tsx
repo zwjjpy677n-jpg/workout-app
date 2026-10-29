@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/Button';
 import { useFriends, useProfile } from '../../hooks/useData';
 import { formatMD } from '../../lib/dates';
+import { useUnread } from '../../lib/online/pull';
 import { Inbox } from './Inbox';
 import { MenuPickSheet } from './MenuPickSheet';
 import { NameSheet } from './NameSheet';
+import { OnlineSection } from './OnlineSection';
 import { PasteSheet } from './PasteSheet';
 import { useShareMine } from './useShareMine';
 import s from './friends.module.css';
@@ -17,6 +19,7 @@ export function FriendsPage() {
   // 共有するメニューは毎回選ぶ（覚えておかない。選ばなければ記録だけ送る）
   const [menuIds, setMenuIds] = useState<string[]>([]);
   const { shareMine, note, ready, hasProfile, loading, trimmedWeeks } = useShareMine(menuIds);
+  const unread = useUnread();
   const [sheet, setSheet] = useState<'name' | 'rename' | 'paste' | 'menus' | null>(null);
 
   const onShare = () => (hasProfile ? shareMine() : setSheet('name'));
@@ -24,6 +27,7 @@ export function FriendsPage() {
   return (
     <div className="page">
       <h1 className="page-title">FRIENDS</h1>
+      <OnlineSection />
       <div className={s.actions}>
         <Button block onClick={() => setSheet('menus')}>{`共有するメニューを選ぶ（${menuIds.length}件）`}</Button>
         <Button block variant="primary" disabled={loading || (hasProfile && !ready)} onClick={onShare}>{menuIds.length ? '自分の記録とメニューを共有' : '自分の記録を共有'}</Button>
@@ -39,7 +43,11 @@ export function FriendsPage() {
         {friends?.map((f) => (
           <button key={f.id} type="button" className={s.item} onClick={() => navigate(`/friends/${f.id}`)}>
             <div>
-              <div className={s.name}>{f.name}</div>
+              <div className={s.nameRow}>
+                <div className={s.name}>{f.name}</div>
+                {f.online && <span className={s.onlineTag}>オンライン</span>}
+                {unread.friends.has(f.id) && <i className={s.unread} role="img" aria-label="未読" />}
+              </div>
               <div className={s.sub}>
                 {f.lastAt != null && <span>最後のトレーニング {formatMD(f.lastAt)}</span>}
                 <span>受け取り {formatMD(f.receivedAt)}</span>
