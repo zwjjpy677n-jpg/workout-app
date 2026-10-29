@@ -151,20 +151,27 @@ create trigger comments_touch before insert or update on public.comments
 -- 関数（security definer: RLS をまたいで調べる）
 -- ============================================================
 
+-- 呼べるのは本人のことだけ（uid が自分でなければ false）。ほかの人どうしの関係を探られないように
+-- （呼んでいる policy・関数はどれも uid に auth.uid() を渡している）
 create or replace function public.is_group_member(gid uuid, uid uuid) returns boolean
 language sql stable security definer
 set search_path = public
 as $$
-  select exists (select 1 from public.group_members where group_id = gid and user_id = uid);
+  select
+    coalesce(uid = auth.uid(), false)
+    and exists (select 1 from public.group_members where group_id = gid and user_id = uid);
 $$;
 
 -- つながっている = 友達、または同じグループのメンバー。どちらかがブロックしていれば false
+-- 呼べるのは本人がかかわる組み合わせだけ（a・b のどちらも自分でなければ false）
+-- （呼んでいる policy はどれも auth.uid() か、auth.uid() と等しいと確かめた列を渡している）
 create or replace function public.is_connected(a uuid, b uuid) returns boolean
 language sql stable security definer
 set search_path = public
 as $$
   select
-    not exists (
+    coalesce(auth.uid() in (a, b), false)
+    and not exists (
       select 1 from public.blocks
       where (blocker = a and blocked = b) or (blocker = b and blocked = a)
     )

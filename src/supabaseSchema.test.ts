@@ -66,3 +66,17 @@ test('profiles.name は 1〜20 字、更新日時の index とトリガーがあ
   expect(flat).toMatch(/create index (if not exists )?\w+ on (public\.)?shared_workouts \(updated_at\)/i);
   expect(flat).toMatch(/create trigger \w+ before (insert or )?update on (public\.)?shared_workouts/i);
 });
+
+const fnBody = (name: string) => {
+  const m = flat.match(new RegExp(`create or replace function public\\.${name}\\([^$]*\\$\\$(.*?)\\$\\$`, 'i'));
+  expect(m).not.toBeNull();
+  return m![1];
+};
+
+test('is_connected は本人がかかわる組み合わせしか調べられない', () => {
+  expect(fnBody('is_connected')).toMatch(/coalesce\(auth\.uid\(\) in \(a, b\), false\)/);
+});
+
+test('is_group_member は本人のことしか調べられない', () => {
+  expect(fnBody('is_group_member')).toMatch(/coalesce\(uid = auth\.uid\(\), false\)/);
+});
