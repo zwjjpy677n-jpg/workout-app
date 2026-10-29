@@ -33,7 +33,7 @@
 ## 3. 名前
 
 - 次の「GRIND」を「キントレ部」に変える:
-  - `index.html` の `<title>`、`apple-mobile-web-app-title`
+  - `index.html` の `<title>`（ホーム画面の名前用に `apple-mobile-web-app-title` も足す）
   - `vite.config.ts` の manifest の `name` / `short_name`
   - `capacitor.config.ts` の `appName`、`ios/App/App/Info.plist` の `CFBundleDisplayName`
   - 共有メッセージ（`sharePayload.ts`、`feedbackPayload.ts`、`menuPayload.ts` など）、画面の文言（`FriendsPage`、`PasteSheet`、`ImportPage` など）
