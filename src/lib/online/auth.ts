@@ -1,5 +1,5 @@
 import { getApi } from './api';
-import { flushOutbox } from './outbox';
+import { claimOutbox, flushOutbox } from './outbox';
 import { setSession } from './prefs';
 import { pullAll } from './pull';
 import { OnlineError, type OnlineUser } from './types';
@@ -8,6 +8,7 @@ export async function signIn(email: string, code: string): Promise<OnlineUser> {
   const api = getApi();
   if (!api) throw new OnlineError('unknown');
   const user = await api.verifyCode(email, code);
+  await claimOutbox(user.userId);
   setSession({ userId: user.userId });
   return user;
 }

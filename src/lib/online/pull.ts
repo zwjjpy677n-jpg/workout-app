@@ -7,6 +7,7 @@ import { parseMenuPayload, type MenuPayload } from '../share/menuPayload';
 import { LIMIT, TYPES, type SetTuple } from '../share/sharePayload';
 import { arr, id, int, isNum, str, tup } from '../share/validate';
 import { getApi } from './api';
+import { claimOutbox } from './outbox';
 import { getSession } from './prefs';
 import { friendPrs, fromSharedRows } from './sharedWorkout';
 import { OnlineError, type MenuMessage, type SharedWorkoutRow } from './types';
@@ -92,7 +93,9 @@ function toRoutine(friend: Friend, p: MenuPayload, now: number): Routine {
 /** 友達・記録・メニューをサーバーから取ってくる。通信が先、書き込みは最後にまとめて（失敗しても中途半端に残さない） */
 export async function pullAll(now: number): Promise<'done' | 'offline' | 'skipped'> {
   const api = getApi();
-  if (!api || !getSession()) return 'skipped';
+  const session = getSession();
+  if (!api || !session) return 'skipped';
+  await claimOutbox(session.userId);
   const cursor = async (key: string) => String((await db.sync.get(key))?.value ?? '');
   const wSince = await cursor('workoutsSince');
   const mSince = await cursor('menusSince');
