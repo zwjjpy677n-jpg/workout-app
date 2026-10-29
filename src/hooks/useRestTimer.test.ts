@@ -1,7 +1,9 @@
 import { act, renderHook } from '@testing-library/react';
+import { cancelRestEnd, scheduleRestEnd } from '../lib/restNotify';
 import { beep, setSoundPrefs } from '../lib/sound';
 import { useRestTimer } from './useRestTimer';
 
+vi.mock('../lib/restNotify', () => ({ scheduleRestEnd: vi.fn(), cancelRestEnd: vi.fn() }));
 vi.mock('../lib/sound', async (orig) => ({ ...(await orig<typeof import('../lib/sound')>()), beep: vi.fn() }));
 
 beforeEach(() => vi.useFakeTimers());
@@ -100,5 +102,40 @@ describe('終了の音', () => {
     act(() => vi.advanceTimersByTime(4000));
     expect(result.current.finished).toBe(true);
     expect(beep).not.toHaveBeenCalled();
+  });
+});
+
+describe('アプリの通知の予約', () => {
+  beforeEach(() => {
+    vi.mocked(scheduleRestEnd).mockClear();
+    vi.mocked(cancelRestEnd).mockClear();
+  });
+
+  test('開始で予約、±15秒で新しい時刻で予約し直し、スキップで取り消し', () => {
+    const { result } = renderHook(() => useRestTimer());
+    act(() => result.current.start(90));
+    expect(scheduleRestEnd).toHaveBeenLastCalledWith(Date.now() + 90_000);
+    act(() => result.current.add(15));
+    expect(scheduleRestEnd).toHaveBeenLastCalledWith(Date.now() + 105_000);
+    act(() => result.current.skip());
+    expect(cancelRestEnd).toHaveBeenCalledTimes(1);
+  });
+
+  test('0秒で開始・0以下になる add は取り消し', () => {
+    const { result } = renderHook(() => useRestTimer());
+    act(() => result.current.start(0));
+    expect(cancelRestEnd).toHaveBeenCalledTimes(1);
+    act(() => result.current.start(30));
+    act(() => result.current.add(-60));
+    expect(cancelRestEnd).toHaveBeenCalledTimes(2);
+    expect(scheduleRestEnd).toHaveBeenCalledTimes(1);
+  });
+
+  test('画面を開いたまま 0 になったら取り消す（通知を重ねて出さない）', () => {
+    const { result } = renderHook(() => useRestTimer());
+    act(() => result.current.start(2));
+    act(() => vi.advanceTimersByTime(3000));
+    expect(result.current.finished).toBe(true);
+    expect(cancelRestEnd).toHaveBeenCalledTimes(1);
   });
 });
