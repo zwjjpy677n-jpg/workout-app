@@ -4,7 +4,7 @@ import { resetDb } from '../../db/db';
 import { getFriend, listFriendWorkouts, saveImportedShare, saveProfileName } from '../../db/friends';
 import { encodeShare } from '../../lib/share/codec';
 import { buildSharePayload } from '../../lib/share/sharePayload';
-import { entry, ex, set, wk } from '../../test/factories';
+import { entry, ex, item, routine, set, wk } from '../../test/factories';
 import { renderRoute } from '../../test/render';
 import { ImportPage } from './ImportPage';
 
@@ -56,4 +56,10 @@ test('やめるで友達タブへ', async () => {
   await open(await encodeShare('r', payload([])));
   await userEvent.click(await screen.findByRole('button', { name: 'やめる' }));
   expect(await screen.findByTestId('location')).toHaveTextContent('/friends');
+});
+
+test('メニュー付きのリンクなら「メニュー N」を出す', async () => {
+  const p = buildSharePayload({ profile: { id: 'friend000001', name: 'じろう' }, exercises: [sq], workouts: [], routines: [routine('LEG', [item(sq.id)])] }, new Date(2026, 9, 28, 20).getTime());
+  await open(await encodeShare('r', p));
+  expect(await screen.findByText('種目 1 ・ メニュー 1')).toBeInTheDocument();
 });

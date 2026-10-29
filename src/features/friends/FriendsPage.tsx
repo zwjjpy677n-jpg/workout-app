@@ -4,6 +4,7 @@ import { Button } from '../../components/Button';
 import { useFriends, useProfile } from '../../hooks/useData';
 import { formatMD } from '../../lib/dates';
 import { Inbox } from './Inbox';
+import { MenuPickSheet } from './MenuPickSheet';
 import { NameSheet } from './NameSheet';
 import { PasteSheet } from './PasteSheet';
 import { useShareMine } from './useShareMine';
@@ -13,8 +14,10 @@ export function FriendsPage() {
   const navigate = useNavigate();
   const friends = useFriends();
   const profile = useProfile();
-  const { shareMine, note, ready, hasProfile, loading, trimmedWeeks } = useShareMine();
-  const [sheet, setSheet] = useState<'name' | 'rename' | 'paste' | null>(null);
+  // 共有するメニューは毎回選ぶ（覚えておかない。選ばなければ記録だけ送る）
+  const [menuIds, setMenuIds] = useState<string[]>([]);
+  const { shareMine, note, ready, hasProfile, loading, trimmedWeeks } = useShareMine(menuIds);
+  const [sheet, setSheet] = useState<'name' | 'rename' | 'paste' | 'menus' | null>(null);
 
   const onShare = () => (hasProfile ? shareMine() : setSheet('name'));
 
@@ -22,7 +25,8 @@ export function FriendsPage() {
     <div className="page">
       <h1 className="page-title">FRIENDS</h1>
       <div className={s.actions}>
-        <Button block variant="primary" disabled={loading || (hasProfile && !ready)} onClick={onShare}>自分の記録を共有</Button>
+        <Button block onClick={() => setSheet('menus')}>{`共有するメニューを選ぶ（${menuIds.length}件）`}</Button>
+        <Button block variant="primary" disabled={loading || (hasProfile && !ready)} onClick={onShare}>{menuIds.length ? '自分の記録とメニューを共有' : '自分の記録を共有'}</Button>
         {trimmedWeeks != null && <p className={s.hint}>直近{trimmedWeeks}週ぶんを共有します</p>}
         <Button block onClick={() => setSheet('paste')}>リンクを貼り付けて追加</Button>
       </div>
@@ -55,6 +59,15 @@ export function FriendsPage() {
       <NameSheet open={sheet === 'name'} initial="" onClose={() => setSheet(null)} onShare={shareMine} ready={ready} />
       <NameSheet open={sheet === 'rename'} initial={profile?.name ?? ''} onClose={() => setSheet(null)} />
       <PasteSheet open={sheet === 'paste'} onClose={() => setSheet(null)} />
+      <MenuPickSheet
+        open={sheet === 'menus'}
+        selected={menuIds}
+        onClose={() => setSheet(null)}
+        onDone={(ids) => {
+          setMenuIds(ids);
+          setSheet(null);
+        }}
+      />
     </div>
   );
 }

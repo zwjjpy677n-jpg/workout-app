@@ -1,4 +1,4 @@
-import { entry, ex, set, wk } from '../test/factories';
+import { entry, ex, item, routine, set, wk } from '../test/factories';
 import { buildSharePayload, type SharePayload } from '../lib/share/sharePayload';
 import type { Workout } from '../lib/types';
 import { db, resetDb } from './db';
@@ -123,4 +123,14 @@ test('古いリンクは、まだ無い記録と種目だけ足し、保存済�
   expect(ws.find((x) => x.id === 'friend000001:bbbbbbbb')?.entries[0].sets[0].weight).toBe(90);
   expect(ws).toHaveLength(2);
   expect((await getFriend('friend000001'))?.exercises.map((e) => e.name).sort()).toEqual(['デッドリフト', 'ベンチプレス']);
+});
+
+test('メニュー付きのリンクのあと記録だけのリンクが来ても、メニューは残る。新しいメニュー付きで置き換わる', async () => {
+  const withMenu = (name: string, at: number) =>
+    buildSharePayload({ profile: { id: 'friend000001', name: 'たろう' }, exercises: [bench], workouts: [], routines: [routine(name, [item(bench.id)])] }, at);
+  await saveImportedShare(withMenu('PUSH', NOW), NOW);
+  await saveImportedShare(share([w('aaaaaaaa-1', 1, 80)], { at: NOW + DAY }), NOW + DAY);
+  expect((await getFriend('friend000001'))?.routines.map((r) => r.name)).toEqual(['PUSH']);
+  await saveImportedShare(withMenu('PULL', NOW + 2 * DAY), NOW + 2 * DAY);
+  expect((await getFriend('friend000001'))?.routines.map((r) => r.name)).toEqual(['PULL']);
 });

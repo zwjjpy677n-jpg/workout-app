@@ -1,5 +1,5 @@
 import { emptyCondition, type Exercise, type Workout } from '../types';
-import { entry, ex, set, wk } from '../../test/factories';
+import { entry, ex, item, routine, set, wk } from '../../test/factories';
 import { buildShareLink, buildSharePayload } from './sharePayload';
 
 const NOW = new Date(2026, 9, 28, 20).getTime();
@@ -93,4 +93,14 @@ test('普通の量（週4回×8週・1回8種目×4セット）なら8週間ぶ�
   const r = await buildShareLink({ profile, exercises, workouts }, NOW);
   expect(r).toMatchObject({ trimmed: false, weeks: 8, count: 32 });
   console.log('普通の量のリンク文字数:', r.text.split('\n').pop()!.length);
+});
+
+test('選んだメニューだけ送る（曜日なしは -1）。メニューにしか無い種目も入れる', () => {
+  const r1 = routine('PULL', [item(pull.id, { sets: 4, reps: '6〜8', main: true })]);
+  const r2 = routine('PUSH', [item(bench.id, { sets: 3, reps: '5' })], { weekday: 1 });
+  const recent = wk(NOW - DAY, [entry(bench.id, [set({ weight: 80, reps: 8 })])]);
+  const p = buildSharePayload({ profile, exercises: [bench, pull], workouts: [recent], routines: [r1, r2] }, NOW);
+  const xi = (id: string) => p.x.findIndex((x) => x[0] === id.slice(0, 8));
+  expect(p.r).toEqual([['PULL', -1, [[xi(pull.id), 4, '6〜8', 1]]], ['PUSH', 1, [[xi(bench.id), 3, '5', 0]]]]);
+  expect(p.x.map((x) => x[1])).toEqual(['ベンチプレス', '懸垂']);
 });

@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
 import { getProfile } from '../../db/friends';
-import { listExercises, listWorkouts } from '../../db/repository';
+import { listExercises, listRoutines, listWorkouts } from '../../db/repository';
 import { ShareError } from '../../lib/share/codec';
 import { buildShareLink } from '../../lib/share/sharePayload';
 import { copyText, shareSheet } from '../../lib/device';
@@ -19,12 +19,15 @@ const ERRORS: Record<string, string> = {
  * 自分の記録のリンクを前もって作っておき、タップしたらすぐ共有画面を出す。
  * iPhone の Safari はタップの直後でないと共有画面を出せないので、押してから作るのでは間に合わない
  */
-export function useShareMine() {
+export function useShareMine(menuIds: string[] = []) {
+  const key = menuIds.join(',');
   const src = useLiveQuery(async () => {
     const profile = await getProfile();
     if (!profile) return null;
-    return { profile, exercises: await listExercises({ includeArchived: true }), workouts: await listWorkouts() };
-  });
+    const picked = new Set(menuIds);
+    const routines = (await listRoutines()).filter((r) => picked.has(r.id));
+    return { profile, exercises: await listExercises({ includeArchived: true }), workouts: await listWorkouts(), routines };
+  }, [key]);
   const link = usePreparedLink<Link>(src ? () => buildShareLink(src, Date.now()) : null, [src]);
   const [note, setNote] = useState<ShareNote>(null);
 

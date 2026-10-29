@@ -44,14 +44,22 @@ test('種目タブで自己ベストと最後の日、押すとグラフへ', as
   expect(await screen.findByTestId('location')).toHaveTextContent('/friends/friend000001/exercise/sq-uuid-');
 });
 
-test('メニュータブに友達のメニューは出さない（前の版で届いたメニューが残っていても）', async () => {
-  const { db } = await import('../../db/db');
-  await db.friends.update('friend000001', { routines: [routine('LEG', [item('friend000001:sq-uuid-')], { weekday: 1 })] });
+test('メニュータブ: 共有されたメニューを曜日順（なしは最後）で、メイン種目に印', async () => {
+  const routines = [routine('PUSH', [item(bp.id, { sets: 3, reps: '8', main: true })], { weekday: 3 }), routine('LEG', [item(sq.id, { sets: 5, reps: '5' })], { weekday: 1 }), routine('自由', [item(sq.id)])];
+  await saveImportedShare(buildSharePayload({ profile: { id: 'friend000001', name: 'じろう' }, exercises: [sq, bp], workouts: [], routines }, NOW + 60_000), NOW + 60_000);
   open();
   await userEvent.click(await screen.findByRole('tab', { name: 'メニュー' }));
-  expect(await screen.findByRole('button', { name: 'メニューを組んで送る' })).toBeInTheDocument();
+  const cards = await screen.findAllByRole('article');
+  expect(cards.map((c) => within(c).getByRole('heading').textContent)).toEqual(['LEG（月）', 'PUSH（水）', '自由']);
+  expect(within(cards[1]).getByText('3セット×8')).toBeInTheDocument();
+  expect(within(cards[1]).getByText('メイン')).toBeInTheDocument();
+});
+
+test('メニュータブ: メニューが共有されていなければ「まだメニューは共有されていません」', async () => {
+  open();
+  await userEvent.click(await screen.findByRole('tab', { name: 'メニュー' }));
+  expect(await screen.findByText('じろうさんのメニューはまだ共有されていません')).toBeInTheDocument();
   expect(screen.queryByRole('article')).toBeNull();
-  expect(screen.queryByText(/LEG/)).toBeNull();
 });
 
 test('削除すると一覧へ戻り、友達と記録が消える', async () => {
