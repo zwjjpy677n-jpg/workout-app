@@ -1,7 +1,7 @@
 .btn { min-height: 44px; padding: 0 16px; border-radius: 12px; font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: transform .08s; }
 .btn:active { transform: scale(.98); }
 .btn:disabled { opacity: .4; }
-.primary { background: var(--red); color: var(--on-accent); font-family: var(--font-num); letter-spacing: .1em; font-size: 18px; min-height: 56px; box-shadow: 0 8px 24px color-mix(in srgb, var(--red) 35%, transparent); }
+.primary { background: var(--red); color: var(--on-accent); font-family: var(--font-num); letter-spacing: .1em; font-size: 18px; min-height: 56px; box-shadow: 0 8px 24px rgb(var(--red-rgb) / .35); }
 .ghost { background: var(--surface2); }
 .danger { background: transparent; color: #ff6b66; border: 1px solid #4a1d1d; }
 .block { display: flex; width: 100%; }

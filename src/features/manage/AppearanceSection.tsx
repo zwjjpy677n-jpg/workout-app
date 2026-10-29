@@ -14,7 +14,7 @@ export function AppearanceSection() {
     setMsg('');
     setAppearance({ ...a, icon: key });
     const r = await changeAppIcon(key);
-    if (r === 'reinstall') setMsg('ホーム画面のアイコンをこの色にするには、ホーム画面に追加し直してください');
+    if (r === 'reinstall') setMsg('iPhone のホーム画面のアイコンをこの色にするには、Safari からホーム画面に追加し直してください');
     if (r === 'failed') {
       setAppearance(prev);
       setMsg('アイコンを変えられませんでした');

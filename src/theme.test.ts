@@ -24,3 +24,13 @@ test('強調色の薄い赤 rgba(225, 6, 0, …) を直接書いていない', (
 test('強調色の上の文字を白で固定していない', () => {
   expect(hits(/background:\s*var\(--red\)[^}]*color:\s*#fff/)).toEqual([]);
 });
+
+// color-mix() は iOS 16.2 より前の Safari で使えない（アプリは iOS 15 から動く）。透明度は rgb(var(--…-rgb) / a) で書く
+test('color-mix() を使っていない', () => {
+  expect(hits(/color-mix\(/)).toEqual([]);
+});
+
+test('カレンダーの一番濃い日は、強調色の上の文字色で読める', () => {
+  const cal = readFileSync(resolve(process.cwd(), 'src/features/calendar/calendar.module.css'), 'utf8');
+  expect(cal).toMatch(/\.d\[data-level='3'\]\s*\{[^}]*color:\s*var\(--on-accent\)/);
+});

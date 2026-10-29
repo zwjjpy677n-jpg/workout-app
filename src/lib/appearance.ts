@@ -89,12 +89,20 @@ export function setAppearance(a: Appearance): void {
   listeners.forEach((fn) => fn());
 }
 
+const channels = (hex: string): number[] => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+
 export function applyAppearance(a: Appearance): void {
   const accent = ACCENTS.find((x) => x.key === a.accent) ?? ACCENTS[0];
   const bg = BGS.find((x) => x.key === a.bg) ?? BGS[0];
   const st = document.documentElement.style;
   st.setProperty('--red', accent.color);
-  st.setProperty('--red-soft', `color-mix(in srgb, ${accent.color} 15%, transparent)`);
+  const rgb = channels(accent.color);
+  const bgRgb = channels(bg.bg);
+  // 透明度つきの色は rgb(var(--red-rgb) / a) で書く（color-mix は iOS 16.2 より前で使えない）
+  st.setProperty('--red-rgb', rgb.join(' '));
+  st.setProperty('--red-soft', `rgb(${rgb.join(' ')} / 0.15)`);
+  st.setProperty('--bg-rgb', bgRgb.join(' '));
+  st.setProperty('--bg-deep', `rgb(${bgRgb.map((c) => Math.round(c * 0.6)).join(' ')})`);
   st.setProperty('--on-accent', accent.on);
   st.setProperty('--bg', bg.bg);
   st.setProperty('--surface', bg.surface);

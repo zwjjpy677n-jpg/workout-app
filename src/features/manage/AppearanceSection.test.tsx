@@ -54,7 +54,7 @@ test('Web でアイコンの「黄」を押すと選択が黄になり、追加�
   await userEvent.click(within(group('アイコンの色')).getByRole('button', { name: '黄' }));
   expect(change).toHaveBeenCalledWith('yellow');
   expect(getAppearance().icon).toBe('yellow');
-  expect(await screen.findByRole('status')).toHaveTextContent('ホーム画面のアイコンをこの色にするには、ホーム画面に追加し直してください');
+  expect(await screen.findByRole('status')).toHaveTextContent('iPhone のホーム画面のアイコンをこの色にするには、Safari からホーム画面に追加し直してください');
 });
 
 test('アイコンの切り替えに失敗すると「アイコンを変えられませんでした」が出て、選択は赤に戻る', async () => {

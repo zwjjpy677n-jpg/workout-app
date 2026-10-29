@@ -44,7 +44,10 @@ test('適用すると CSS 変数・theme-color・ホーム画面アイコンが�
   applyAppearance({ icon: 'mint', accent: 'yellow', bg: 'navy' });
   expect(css('--red')).toBe('#FFC21A');
   expect(css('--on-accent')).toBe('#111');
-  expect(css('--red-soft')).toBe('color-mix(in srgb, #FFC21A 15%, transparent)');
+  expect(css('--red-soft')).toBe('rgb(255 194 26 / 0.15)');
+  expect(css('--red-rgb')).toBe('255 194 26');
+  expect(css('--bg-rgb')).toBe('10 15 30');
+  expect(css('--bg-deep')).toBe('rgb(6 9 18)');
   expect(css('--bg')).toBe('#0A0F1E');
   expect(css('--surface')).toBe('#131A2C');
   expect(css('--surface2')).toBe('#1B2338');

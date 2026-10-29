@@ -6,7 +6,10 @@
   --text: #F4F4F5;
   --muted: #8B8B94;
   --red: #E10600;
-  --red-soft: rgba(225, 6, 0, 0.15);
+  --red-rgb: 225 6 0;
+  --red-soft: rgb(225 6 0 / 0.15);
+  --bg-rgb: 11 11 13;
+  --bg-deep: rgb(7 7 8);
   --on-accent: #fff;
   --green: #4ADE80;
   --font-num: 'Oswald', 'Arial Narrow', system-ui, sans-serif;
