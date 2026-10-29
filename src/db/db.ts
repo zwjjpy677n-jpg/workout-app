@@ -3,6 +3,7 @@ import { migrateExerciseV1, migrateRoutineV1, migrateWorkoutV1 } from '../lib/ba
 import type { FeedbackIn, FeedbackOut } from '../lib/share/feedbackPayload';
 import type { Friend, FriendWorkout } from '../lib/share/importShare';
 import type { OutboxItem } from '../lib/online/outbox';
+import type { MenuInboxItem } from '../lib/online/pull';
 import type { MenuLog } from '../lib/share/menuPayload';
 import type { BodyweightLog, Exercise, Program, Routine, Settings, Workout } from '../lib/types';
 
@@ -35,6 +36,7 @@ export const STORES_V4 = {
   ...STORES_V3,
   outbox: 'id',
   sync: 'key',
+  menuInbox: 'id, at',
 };
 
 /** 自分のデータのテーブル（バックアップの対象） */
@@ -52,7 +54,8 @@ export class IronLogDB extends Dexie {
   feedbackOut!: Table<FeedbackOut, string>;
   menuLog!: Table<MenuLog, string>;
   outbox!: Table<OutboxItem, string>;
-  sync!: Table<{ key: string; value: string }, string>;
+  sync!: Table<{ key: string; value: string | number }, string>;
+  menuInbox!: Table<MenuInboxItem, string>;
 
   constructor() {
     super('ironlog');

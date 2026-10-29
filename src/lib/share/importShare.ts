@@ -22,10 +22,12 @@ export interface Friend {
 /** 自分の Workout と同じ形にして、グラフや要約の関数をそのまま使う */
 export interface FriendWorkout extends Workout {
   friendId: string;
+  /** オンラインで受け取った時刻（未読の判定に使う） */
+  receivedAt?: number;
 }
 
 // --- 検証（細工されたリンクも来る前提で、型と値の範囲を全部確かめる） ---
-const setTuple = (v: unknown): SetTuple => {
+export const setTuple = (v: unknown): SetTuple => {
   const [w, r, s, rpe] = tup(v, 4);
   return [numOrNull(w, -200, 1000), numOrNull(r, 0, 999), numOrNull(s, 0, 36000), numOrNull(rpe, 1, 10)];
 };

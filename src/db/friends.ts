@@ -75,7 +75,7 @@ export async function saveImportedShare(p: SharePayload, now: number): Promise<v
  * メニューは上書きせず貯める。同じ名前で中身が変わった版が来たら、前の版を履歴に移す。
  * 新しいリンクに無いメニューも残す（記録だけのリンクでは何も変わらない）
  */
-function mergeMenus(old: Friend | undefined, incoming: Routine[]): { routines: Routine[]; menuHistory: Routine[] } {
+export function mergeMenus(old: Friend | undefined, incoming: Routine[]): { routines: Routine[]; menuHistory: Routine[] } {
   const routines = new Map((old?.routines ?? []).map((r) => [r.name, r]));
   const history = [...(old?.menuHistory ?? [])];
   const body = (r: Routine) => JSON.stringify([r.weekday, r.items]);
