@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Area, AreaChart, CartesianGrid, Tooltip, XAxis, YAxis } from 'recharts';
+import { ACCENTS, BGS, useAppearance } from '../../lib/appearance';
 import type { Point } from '../../lib/progress';
 import s from './progress.module.css';
 
-const RED = 'var(--red)';
 const AXIS = { fill: '#8B8B94', fontFamily: 'Oswald, sans-serif', fontSize: 10 };
 
 function useWidth() {
@@ -26,6 +26,10 @@ const md = (t: number) => {
 
 export function ProgressChart({ data, format }: { data: Point[]; format(v: number): string }) {
   const { ref, w } = useWidth();
+  // iPhone の Safari は SVG の属性の var() を解決しないことがあるので、選んだ色の実際の値を使う
+  const look = useAppearance();
+  const RED = ACCENTS.find((x) => x.key === look.accent)!.color;
+  const { bg, line } = BGS.find((x) => x.key === look.bg)!;
   return (
     <div ref={ref} className={s.chart}>
       <AreaChart width={w} height={210} data={data} margin={{ top: 10, right: 12, bottom: 0, left: 0 }}>
@@ -35,7 +39,7 @@ export function ProgressChart({ data, format }: { data: Point[]; format(v: numbe
             <stop offset="1" stopColor={RED} stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid stroke="var(--line)" vertical={false} />
+        <CartesianGrid stroke={line} vertical={false} />
         <XAxis dataKey="date" type="number" scale="time" domain={['dataMin', 'dataMax']} tickFormatter={md} tick={AXIS} axisLine={false} tickLine={false} minTickGap={24} />
         <YAxis domain={['auto', 'auto']} tick={AXIS} axisLine={false} tickLine={false} width={40} tickFormatter={(v: number) => String(Math.round(v * 10) / 10)} />
         <Tooltip
@@ -55,8 +59,8 @@ export function ProgressChart({ data, format }: { data: Point[]; format(v: numbe
           stroke={RED}
           strokeWidth={2}
           fill="url(#fillRed)"
-          dot={{ r: 4, fill: 'var(--bg)', stroke: RED, strokeWidth: 2 }}
-          activeDot={{ r: 6, fill: RED, stroke: 'var(--bg)', strokeWidth: 2 }}
+          dot={{ r: 4, fill: bg, stroke: RED, strokeWidth: 2 }}
+          activeDot={{ r: 6, fill: RED, stroke: bg, strokeWidth: 2 }}
           isAnimationActive={false}
         />
       </AreaChart>
