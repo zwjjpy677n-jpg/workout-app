@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { notifyEnd } from '../lib/haptics';
 import { cancelRestEnd, scheduleRestEnd } from '../lib/restNotify';
 import { beep, getSoundPrefs } from '../lib/sound';
 
@@ -39,7 +40,7 @@ export function useRestTimer() {
       setSt((cur) => {
         const remaining = secsLeft(cur.endAt);
         if (remaining > 0) return { ...cur, remaining };
-        navigator.vibrate?.(300);
+        notifyEnd();
         persist(null);
         return { ...cur, remaining: 0, running: false, finished: true };
       });
