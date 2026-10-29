@@ -9,6 +9,8 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // 登録は registerServiceWorker() で行う（アプリでは登録しないため）
+      injectRegister: null,
       includeAssets: ['icon-192.png', 'icon-512.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'GRIND',

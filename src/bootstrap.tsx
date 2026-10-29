@@ -5,8 +5,10 @@ import { Brand } from './components/Brand';
 import { checkStorage } from './db/checkStorage';
 import { ensureSeeded } from './db/seed';
 import { ensureMenuSeeded } from './db/menuSeed';
+import { registerServiceWorker } from './lib/registerSW';
 
 export async function bootstrap(el: HTMLElement): Promise<void> {
+  registerServiceWorker();
   const root = createRoot(el);
   const fail = (msg: string) =>
     root.render(

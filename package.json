@@ -8,9 +8,17 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "lint": "tsc -b --noEmit"
+    "lint": "tsc -b --noEmit",
+    "build:ios": "npm run build && npx cap sync ios"
   },
   "dependencies": {
+    "@capacitor/clipboard": "^8.0.1",
+    "@capacitor/core": "^8.6.0",
+    "@capacitor/filesystem": "^8.1.5",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/ios": "^8.6.0",
+    "@capacitor/local-notifications": "^8.3.1",
+    "@capacitor/share": "^8.0.3",
     "dexie": "^4.4.7",
     "dexie-react-hooks": "^4.4.0",
     "react": "^18.3.1",
@@ -19,6 +27,8 @@
     "recharts": "^2.15.4"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.6.0",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
