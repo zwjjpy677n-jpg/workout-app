@@ -1,4 +1,5 @@
 import { Clipboard } from '@capacitor/clipboard';
+import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { isNativeApp } from './platform';
 
@@ -35,4 +36,19 @@ export const canReadClipboard = (): boolean => isNativeApp() || !!navigator.clip
 export async function readClipboard(): Promise<string> {
   if (isNativeApp()) return (await Clipboard.read()).value;
   return navigator.clipboard.readText();
+}
+
+/** ファイルとして保存する。アプリでは一時フォルダに書いて共有画面（「ファイルに保存」など）を出し、Web ではダウンロードする */
+export async function saveFile(name: string, text: string): Promise<'saved' | 'cancelled'> {
+  if (isNativeApp()) {
+    const { uri } = await Filesystem.writeFile({ path: name, data: text, directory: Directory.Cache, encoding: Encoding.UTF8 });
+    return (await shareSheet({ files: [uri] })) === 'cancelled' ? 'cancelled' : 'saved';
+  }
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(url);
+  return 'saved';
 }

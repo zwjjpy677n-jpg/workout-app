@@ -1,12 +1,13 @@
-const { native, share, write, read } = vi.hoisted(() => ({ native: { value: true }, share: vi.fn(), write: vi.fn(), read: vi.fn() }));
+const { native, share, write, read, writeFile } = vi.hoisted(() => ({ native: { value: true }, share: vi.fn(), write: vi.fn(), read: vi.fn(), writeFile: vi.fn() }));
+vi.mock('@capacitor/filesystem', () => ({ Filesystem: { writeFile }, Directory: { Cache: 'CACHE' }, Encoding: { UTF8: 'utf8' } }));
 vi.mock('./platform', async (orig) => ({ ...(await orig<typeof import('./platform')>()), isNativeApp: () => native.value }));
 vi.mock('@capacitor/share', () => ({ Share: { share } }));
 vi.mock('@capacitor/clipboard', () => ({ Clipboard: { write, read } }));
 
-import { canReadClipboard, copyText, readClipboard, shareSheet } from './device';
+import { canReadClipboard, copyText, readClipboard, saveFile, shareSheet } from './device';
 
 beforeEach(() => {
-  for (const f of [share, write, read]) f.mockReset();
+  for (const f of [share, write, read, writeFile]) f.mockReset();
 });
 
 describe('アプリ', () => {
@@ -51,4 +52,24 @@ describe('Web', () => {
     expect(await readClipboard()).toBe('web');
     expect(write).not.toHaveBeenCalled();
   });
+});
+
+test('アプリでのファイル保存: Cache に書いて、その uri で共有画面。キャンセルは cancelled', async () => {
+  native.value = true;
+  writeFile.mockResolvedValue({ uri: 'file:///cache/grind-2026-10-29.json' });
+  share.mockResolvedValueOnce({});
+  expect(await saveFile('grind-2026-10-29.json', '{"a":1}')).toBe('saved');
+  expect(writeFile).toHaveBeenCalledWith({ path: 'grind-2026-10-29.json', data: '{"a":1}', directory: 'CACHE', encoding: 'utf8' });
+  expect(share).toHaveBeenCalledWith({ files: ['file:///cache/grind-2026-10-29.json'] });
+  share.mockRejectedValueOnce(new Error('Share canceled'));
+  expect(await saveFile('grind-2026-10-29.json', '{}')).toBe('cancelled');
+});
+
+test('Web でのファイル保存はダウンロード', async () => {
+  native.value = false;
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:x'), revokeObjectURL: vi.fn() });
+  expect(await saveFile('grind.json', '{}')).toBe('saved');
+  expect(click).toHaveBeenCalled();
+  expect(writeFile).not.toHaveBeenCalled();
 });
