@@ -3,6 +3,7 @@ import { isNativeApp } from './platform';
 import { getSoundPrefs } from './sound';
 
 // アプリでだけ、レスト終了を iPhone の通知で予約する（画面を消していても届く）。失敗してもタイマーは止めない
+// sound を指定しないと iOS では無音になる（'default' は同梱の音が無いのでシステムの通知音になる）
 const ID = 1;
 
 export async function cancelRestEnd(): Promise<void> {
@@ -22,7 +23,7 @@ export async function scheduleRestEnd(endAt: number): Promise<void> {
   try {
     if ((await LocalNotifications.requestPermissions()).display !== 'granted') return;
     await LocalNotifications.schedule({
-      notifications: [{ id: ID, title: 'レスト終了', body: '次のセットへ', schedule: { at: new Date(endAt), allowWhileIdle: true } }],
+      notifications: [{ id: ID, title: 'レスト終了', body: '次のセットへ', sound: 'default', schedule: { at: new Date(endAt), allowWhileIdle: true } }],
     });
   } catch {
     // 同上

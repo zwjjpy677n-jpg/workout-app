@@ -21,7 +21,7 @@ test('許可されたら、前の予約を取り消してから ID 1 で endAt �
   await scheduleRestEnd(END);
   expect(ln.cancel).toHaveBeenCalledWith({ notifications: [{ id: 1 }] });
   expect(ln.schedule).toHaveBeenCalledWith({
-    notifications: [{ id: 1, title: 'レスト終了', body: '次のセットへ', schedule: { at: new Date(END), allowWhileIdle: true } }],
+    notifications: [{ id: 1, title: 'レスト終了', body: '次のセットへ', sound: 'default', schedule: { at: new Date(END), allowWhileIdle: true } }],
   });
   expect(ln.cancel.mock.invocationCallOrder[0]).toBeLessThan(ln.schedule.mock.invocationCallOrder[0]);
 });

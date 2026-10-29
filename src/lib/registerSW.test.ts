@@ -1,19 +1,26 @@
-const { registerSW, native } = vi.hoisted(() => ({ registerSW: vi.fn(), native: { value: false } }));
-vi.mock('virtual:pwa-register', () => ({ registerSW }));
+const { native } = vi.hoisted(() => ({ native: { value: false } }));
 vi.mock('./platform', () => ({ isNativeApp: () => native.value }));
 
 import { registerServiceWorker } from './registerSW';
 
-beforeEach(() => registerSW.mockReset());
+const register = vi.fn();
+beforeEach(() => {
+  register.mockReset().mockResolvedValue({});
+  Object.defineProperty(navigator, 'serviceWorker', { value: { register }, configurable: true });
+});
 
-test('Web では Service Worker を登録する', () => {
+test('Web では読み込み後に sw.js を登録するだけ（更新で勝手に再読み込みしない）', () => {
   native.value = false;
   registerServiceWorker();
-  expect(registerSW).toHaveBeenCalledWith({ immediate: true });
+  expect(register).not.toHaveBeenCalled();
+  window.dispatchEvent(new Event('load'));
+  expect(register).toHaveBeenCalledWith('./sw.js', { scope: './' });
 });
 
 test('アプリでは登録しない（更新は App Store 経由）', () => {
   native.value = true;
+  const add = vi.spyOn(window, 'addEventListener');
   registerServiceWorker();
-  expect(registerSW).not.toHaveBeenCalled();
+  expect(add).not.toHaveBeenCalledWith('load', expect.anything());
+  expect(register).not.toHaveBeenCalled();
 });
