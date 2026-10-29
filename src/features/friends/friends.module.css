@@ -61,3 +61,7 @@
 .sentList { display: flex; flex-direction: column; gap: 6px; margin-top: 18px; }
 .menuPreview { list-style: none; padding: 0; margin: 10px 0; }
 .pick:disabled { opacity: .35; }
+.olderMenu { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
+.olderMenu summary { font-size: 13px; color: var(--muted); cursor: pointer; }
+.menuLink { display: block; margin-left: auto; margin-top: 8px; min-height: 40px; padding: 0 4px; font-size: 13px; font-weight: 700; color: var(--red); }
+.pick[aria-pressed='true'] { background: var(--red); color: #fff; font-weight: 700; }

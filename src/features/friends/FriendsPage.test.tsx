@@ -159,3 +159,25 @@ test('最初はメニューを送らず、選んだメニューだけ一緒に�
   expect(screen.getByRole('button', { name: '自分の記録とメニューを共有' })).toBeInTheDocument();
   await waitFor(async () => expect(await sent()).toEqual(['PULL']));
 });
+
+test('メニューを選んだ直後に押しても、選ぶ前のリンク（メニュー無し）を送らない', async () => {
+  await saveProfileName('たろう');
+  const exs = await listExercises();
+  await saveRoutine({ name: 'PULL', weekday: 2, items: [item(exs[1].id)] });
+  page();
+  const b0 = await screen.findByRole('button', { name: '自分の記録を共有' });
+  await waitFor(() => expect(b0).toBeEnabled());
+  await userEvent.click(screen.getByRole('button', { name: '共有するメニューを選ぶ（0件）' }));
+  const dlg = screen.getByRole('dialog', { name: '共有するメニュー' });
+  await userEvent.click(within(dlg).getByRole('checkbox', { name: /PULL/ }));
+  await userEvent.click(within(dlg).getByRole('button', { name: '決定' }));
+  fireEvent.click(screen.getByRole('button', { name: '自分の記録とメニューを共有' }));
+  const b = screen.getByRole('button', { name: '自分の記録とメニューを共有' });
+  await waitFor(() => expect(b).toBeEnabled());
+  fireEvent.click(b);
+  await waitFor(() => expect(share).toHaveBeenCalled());
+  for (const [arg] of share.mock.calls) {
+    const r = parseSharePayload((await decodeShare((arg as { text: string }).text)).data).r.map((x) => x[0]);
+    expect(r).toEqual(['PULL']);
+  }
+});

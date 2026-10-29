@@ -125,12 +125,27 @@ test('古いリンクは、まだ無い記録と種目だけ足し、保存済�
   expect((await getFriend('friend000001'))?.exercises.map((e) => e.name).sort()).toEqual(['デッドリフト', 'ベンチプレス']);
 });
 
-test('メニュー付きのリンクのあと記録だけのリンクが来ても、メニューは残る。新しいメニュー付きで置き換わる', async () => {
+test('メニュー付きのリンクのあと記録だけのリンクが来ても、メニューは残る。別のメニューが来たら足される', async () => {
   const withMenu = (name: string, at: number) =>
     buildSharePayload({ profile: { id: 'friend000001', name: 'たろう' }, exercises: [bench], workouts: [], routines: [routine(name, [item(bench.id)])] }, at);
   await saveImportedShare(withMenu('PUSH', NOW), NOW);
   await saveImportedShare(share([w('aaaaaaaa-1', 1, 80)], { at: NOW + DAY }), NOW + DAY);
   expect((await getFriend('friend000001'))?.routines.map((r) => r.name)).toEqual(['PUSH']);
   await saveImportedShare(withMenu('PULL', NOW + 2 * DAY), NOW + 2 * DAY);
-  expect((await getFriend('friend000001'))?.routines.map((r) => r.name)).toEqual(['PULL']);
+  expect((await getFriend('friend000001'))?.routines.map((r) => r.name)).toEqual(['PUSH', 'PULL']);
+});
+
+test('メニューは上書きせず貯める: 同じ名前の新しい版は前の版を履歴へ、新しい名前は追加、届かなかったメニューも残る', async () => {
+  const menuLink = (rs: ReturnType<typeof routine>[], at: number) =>
+    buildSharePayload({ profile: { id: 'friend000001', name: 'たろう' }, exercises: [bench], workouts: [], routines: rs }, at);
+  await saveImportedShare(menuLink([routine('PUSH', [item(bench.id, { sets: 3 })]), routine('LEG', [item(bench.id, { sets: 4 })])], NOW), NOW);
+  await saveImportedShare(menuLink([routine('PUSH', [item(bench.id, { sets: 5 })]), routine('PULL', [item(bench.id, { sets: 2 })])], NOW + DAY), NOW + DAY);
+  let f = await getFriend('friend000001');
+  expect(f?.routines.map((r) => [r.name, r.items[0].sets, r.createdAt]).sort()).toEqual([['LEG', 4, NOW], ['PULL', 2, NOW + DAY], ['PUSH', 5, NOW + DAY]]);
+  expect(f?.menuHistory?.map((r) => [r.name, r.items[0].sets, r.createdAt])).toEqual([['PUSH', 3, NOW]]);
+  // 同じ中身をもう一度受け取っても履歴は増えない
+  await saveImportedShare(menuLink([routine('PUSH', [item(bench.id, { sets: 5 })])], NOW + 2 * DAY), NOW + 2 * DAY);
+  f = await getFriend('friend000001');
+  expect(f?.menuHistory).toHaveLength(1);
+  expect(f?.routines).toHaveLength(3);
 });

@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import type { Friend } from '../../lib/share/importShare';
-import { WEEKDAY_LABEL } from '../../lib/types';
+import { menuTitle } from '../../lib/share/menuPayload';
 import { SentMenus } from './SentMenus';
 import s from './friends.module.css';
 
@@ -20,7 +20,7 @@ export function FriendMenus({ friend }: { friend: Friend }) {
       {menus.map((r) => (
         <Card key={r.id} className={s.menu}>
           <article>
-            <h2 className={s.day}>{r.weekday == null ? r.name : `${r.name}（${WEEKDAY_LABEL[r.weekday]}）`}</h2>
+            <h2 className={s.day}>{menuTitle(r.name, r.weekday)}</h2>
             {r.items.map((it, i) => (
               <div key={i} className={s.entry}>
                 <span>
@@ -30,6 +30,14 @@ export function FriendMenus({ friend }: { friend: Friend }) {
                 <span className="num">{`${it.sets}セット×${it.reps}`}</span>
               </div>
             ))}
+            <button
+              type="button"
+              className={s.menuLink}
+              aria-label={`${menuTitle(r.name, r.weekday)}の記録とグラフ`}
+              onClick={() => navigate(`/friends/${friend.id}/menus/${encodeURIComponent(r.name)}`)}
+            >
+              記録とグラフを見る ›
+            </button>
           </article>
         </Card>
       ))}

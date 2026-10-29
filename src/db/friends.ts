@@ -1,4 +1,5 @@
 import { toFriendRecords, type Friend, type FriendWorkout } from '../lib/share/importShare';
+import type { Routine } from '../lib/types';
 import type { SharePayload } from '../lib/share/sharePayload';
 import { randomId } from '../lib/share/ids';
 import { db } from './db';
@@ -63,12 +64,28 @@ export async function saveImportedShare(p: SharePayload, now: number): Promise<v
       await db.friendWorkouts.bulkAdd(workouts.filter((w) => !have.has(w.id)));
     } else {
       // 新しいリンクに載っていない種目も、前に受け取った記録が使うので残す
-      // メニューはメニュー付きのリンクのときだけ置き換える（記録だけのリンクでは前のメニューを残す）
-      const routines = friend.routines.length || !old ? friend.routines : old.routines;
-      await db.friends.put(old ? { ...friend, routines, exercises: mergeById(old.exercises, friend.exercises, (e) => e.id), prs: mergeById(old.prs, friend.prs, (p) => p.exerciseId) } : friend);
+      const { routines, menuHistory } = mergeMenus(old, friend.routines);
+      await db.friends.put(old ? { ...friend, routines, menuHistory, exercises: mergeById(old.exercises, friend.exercises, (e) => e.id), prs: mergeById(old.prs, friend.prs, (p) => p.exerciseId) } : friend);
       await db.friendWorkouts.bulkPut(workouts);
     }
   });
+}
+
+/**
+ * メニューは上書きせず貯める。同じ名前で中身が変わった版が来たら、前の版を履歴に移す。
+ * 新しいリンクに無いメニューも残す（記録だけのリンクでは何も変わらない）
+ */
+function mergeMenus(old: Friend | undefined, incoming: Routine[]): { routines: Routine[]; menuHistory: Routine[] } {
+  const routines = new Map((old?.routines ?? []).map((r) => [r.name, r]));
+  const history = [...(old?.menuHistory ?? [])];
+  const body = (r: Routine) => JSON.stringify([r.weekday, r.items]);
+  for (const r of incoming) {
+    const prev = routines.get(r.name);
+    if (prev && body(prev) === body(r)) continue;
+    if (prev) history.unshift(prev);
+    routines.set(r.name, r);
+  }
+  return { routines: [...routines.values()], menuHistory: history };
 }
 
 /** base に over を重ねる（同じキーは over が勝つ） */

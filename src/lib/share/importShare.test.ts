@@ -18,7 +18,7 @@ test('作った payload を変換すると本番セット・種目・メニュ�
     { id: 'abcdefghijkl:plank-uu', name: 'プランク', bodyPart: 'core', type: 'time', restSec: 0, archived: false, createdAt: 0, barKg: null },
   ]);
   expect(friend.routines).toEqual([
-    { id: 'abcdefghijkl:r0', name: 'PUSH', weekday: 1, createdAt: 0, items: [{ exerciseId: 'abcdefghijkl:bench-uu', sets: 3, reps: '5', main: true, inc: 0, note: '' }] },
+    { id: 'abcdefghijkl:menu:PUSH', name: 'PUSH', weekday: 1, createdAt: NOW + 1000, items: [{ exerciseId: 'abcdefghijkl:bench-uu', sets: 3, reps: '5', main: true, inc: 0, note: '' }] },
   ]);
   expect(friend.prs).toEqual([
     { exerciseId: 'abcdefghijkl:bench-uu', set: { weight: 80, reps: 8, durationSec: null, rpe: 8, warmup: false, note: '', done: true } },

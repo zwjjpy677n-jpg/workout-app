@@ -76,3 +76,12 @@ test('いない友達なら友達タブへ戻る', async () => {
   renderRoute('/friends/nobody', '/friends/:id', <FriendPage />);
   expect(await screen.findByTestId('location')).toHaveTextContent('/friends');
 });
+
+test('メニュータブ: メニューを押すとそのメニューの記録とグラフへ', async () => {
+  const routines = [routine('LEG', [item(sq.id, { sets: 5, reps: '5' })], { weekday: 1 })];
+  await saveImportedShare(buildSharePayload({ profile: { id: 'friend000001', name: 'じろう' }, exercises: [sq, bp], workouts: [], routines }, NOW + 60_000), NOW + 60_000);
+  open();
+  await userEvent.click(await screen.findByRole('tab', { name: 'メニュー' }));
+  await userEvent.click(await screen.findByRole('button', { name: 'LEG（月）の記録とグラフ' }));
+  expect(await screen.findByTestId('location')).toHaveTextContent('/friends/friend000001/menus/LEG');
+});

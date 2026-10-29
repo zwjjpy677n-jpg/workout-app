@@ -26,9 +26,11 @@ export function useShareMine(menuIds: string[] = []) {
     if (!profile) return null;
     const picked = new Set(menuIds);
     const routines = (await listRoutines()).filter((r) => picked.has(r.id));
-    return { profile, exercises: await listExercises({ includeArchived: true }), workouts: await listWorkouts(), routines };
+    return { key, profile, exercises: await listExercises({ includeArchived: true }), workouts: await listWorkouts(), routines };
   }, [key]);
-  const link = usePreparedLink<Link>(src ? () => buildShareLink(src, Date.now()) : null, [src]);
+  const built = usePreparedLink<Link & { key: string }>(src ? async () => ({ ...(await buildShareLink(src, Date.now())), key: src.key }) : null, [src]);
+  // 選んだメニューに合わせて作り直している途中は、前のリンク（違うメニュー）を送らない
+  const link = built && !(built instanceof ShareError) && built.key !== key ? null : built;
   const [note, setNote] = useState<ShareNote>(null);
 
   const shareMine = () => {

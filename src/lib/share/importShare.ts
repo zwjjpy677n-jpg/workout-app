@@ -10,7 +10,10 @@ export interface Friend {
   /** 友達がリンクを作った時刻 */
   sharedAt: number;
   exercises: Exercise[];
+  /** 共有されたメニュー（名前ごとに最新の版）。createdAt はその版を受け取った時刻 */
   routines: Routine[];
+  /** 新しい版に置き換わった前の版（新しい順）。無い友達もいる */
+  menuHistory?: Routine[];
   prs: { exerciseId: string; set: WorkoutSet }[];
 }
 
@@ -76,11 +79,12 @@ export function toFriendRecords(p: SharePayload, receivedAt: number): { friend: 
   const exercises: Exercise[] = p.x.map(([, name, part, type], i) => ({
     id: exId(i), name, bodyPart: BODY_PARTS[part], type: TYPES[type], restSec: 0, archived: false, createdAt: 0, barKg: null,
   }));
-  const routines: Routine[] = p.r.map(([name, weekday, items], i) => ({
-    id: `${p.id}:r${i}`,
+  const routines: Routine[] = p.r.map(([name, weekday, items]) => ({
+    // 名前で見分ける（受け取るたびにメニューを貯めていくため）
+    id: `${p.id}:menu:${name}`,
     name,
     weekday: weekday < 0 ? null : weekday,
-    createdAt: 0,
+    createdAt: receivedAt,
     items: items.map(([xi, sets, reps, main]) => ({ exerciseId: exId(xi), sets, reps, main: main === 1, inc: 0, note: '' })),
   }));
   const workouts: FriendWorkout[] = p.w.map(([w8, start, name, entries]) => ({
