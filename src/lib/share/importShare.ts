@@ -5,6 +5,8 @@ import { LIMIT, TYPES, type SetTuple, type SharePayload } from './sharePayload';
 export interface Friend {
   id: string;
   name: string;
+  /** オンラインでつながった友達（サーバー上のユーザー） */
+  online?: { userId: string };
   /** 最後に記録を受け取った時刻 */
   receivedAt: number;
   /** 友達がリンクを作った時刻 */

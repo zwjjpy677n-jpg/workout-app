@@ -3,6 +3,7 @@ import { toDateKey } from '../lib/dates';
 import { programStatus } from '../lib/program';
 import { buildRoutineEntries } from '../lib/routineEntries';
 import { emptyCondition, emptySet, type BodyweightLog, type Exercise, type Program, type Routine, type RoutineItem, type Settings, type Workout } from '../lib/types';
+import { queueWorkout } from '../lib/online/outbox';
 import { db, OWN_TABLES } from './db';
 import { DEFAULT_SETTINGS } from './seed';
 import { stamp } from './stamp';
@@ -127,12 +128,22 @@ export async function saveWorkout(w: Workout): Promise<void> {
   await db.workouts.put(w);
 }
 
+/** 友達への自動共有の予約。失敗しても記録の保存は失敗にしない */
+async function share(id: string, op: 'upsert' | 'delete'): Promise<void> {
+  try {
+    await queueWorkout(id, op);
+  } catch {
+    /* 送る予定に入れられなくても、記録は保存済み */
+  }
+}
+
 export async function finishWorkout(id: string, now: number = Date.now()): Promise<'saved' | 'empty'> {
   const w = await db.workouts.get(id);
   if (!w) return 'empty';
   const entries = w.entries.filter((e) => e.sets.some((s) => s.done));
   if (entries.length === 0) return 'empty';
   await db.workouts.put({ ...w, entries, endedAt: now });
+  await share(id, 'upsert');
   return 'saved';
 }
 
@@ -143,11 +154,13 @@ export async function saveEditedWorkout(id: string): Promise<'saved' | 'empty'> 
   const entries = w.entries.filter((e) => e.sets.some((s) => s.done));
   if (entries.length === 0) return 'empty';
   await db.workouts.put({ ...w, entries });
+  await share(id, 'upsert');
   return 'saved';
 }
 
 export async function deleteWorkout(id: string): Promise<void> {
   await db.workouts.delete(id);
+  await share(id, 'delete');
 }
 
 export async function listWorkouts(): Promise<Workout[]> {

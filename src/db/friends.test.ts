@@ -83,8 +83,8 @@ test('saveProfileName は初回だけ12文字の ID を作り、2回目は名前
   expect(await getProfile()).toEqual(b);
 });
 
-test('友達のテーブルは version 3 で用意されている', () => {
-  expect(db.verno).toBe(3);
+test('友達のテーブルは version 3 以降で用意されている', () => {
+  expect(db.verno).toBe(4);
   expect(db.tables.map((t) => t.name)).toEqual(expect.arrayContaining(['friends', 'friendWorkouts', 'feedbackIn', 'feedbackOut', 'menuLog']));
 });
 

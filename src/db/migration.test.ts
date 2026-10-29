@@ -47,7 +47,8 @@ test('version 2 のデータを version 3 に開いても記録・種目はそ�
   old.close();
 
   await db.open();
-  expect(db.verno).toBe(3);
+  expect(db.verno).toBe(4);
+  expect(await db.outbox.count()).toBe(0);
   expect(await listExercises()).toEqual([e]);
   expect(await listWorkouts()).toEqual([w]);
   expect(await db.table('friends').count()).toBe(0);

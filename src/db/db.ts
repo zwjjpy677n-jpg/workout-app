@@ -2,6 +2,7 @@ import Dexie, { type Table } from 'dexie';
 import { migrateExerciseV1, migrateRoutineV1, migrateWorkoutV1 } from '../lib/backup';
 import type { FeedbackIn, FeedbackOut } from '../lib/share/feedbackPayload';
 import type { Friend, FriendWorkout } from '../lib/share/importShare';
+import type { OutboxItem } from '../lib/online/outbox';
 import type { MenuLog } from '../lib/share/menuPayload';
 import type { BodyweightLog, Exercise, Program, Routine, Settings, Workout } from '../lib/types';
 
@@ -29,6 +30,13 @@ const STORES_V3 = {
   menuLog: 'id, friendId, at',
 };
 
+// v4: オンライン共有。送る予定の箱（outbox）と、同期の位置（sync）
+export const STORES_V4 = {
+  ...STORES_V3,
+  outbox: 'id',
+  sync: 'key',
+};
+
 /** 自分のデータのテーブル（バックアップの対象） */
 export const OWN_TABLES = ['exercises', 'routines', 'workouts', 'bodyweights', 'settings'] as const;
 
@@ -43,6 +51,8 @@ export class IronLogDB extends Dexie {
   feedbackIn!: Table<FeedbackIn, string>;
   feedbackOut!: Table<FeedbackOut, string>;
   menuLog!: Table<MenuLog, string>;
+  outbox!: Table<OutboxItem, string>;
+  sync!: Table<{ key: string; value: string }, string>;
 
   constructor() {
     super('ironlog');
@@ -62,6 +72,7 @@ export class IronLogDB extends Dexie {
         });
       });
     this.version(3).stores(STORES_V3);
+    this.version(4).stores(STORES_V4);
   }
 }
 
