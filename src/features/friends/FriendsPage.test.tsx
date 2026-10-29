@@ -98,7 +98,7 @@ test('友達がいないときの案内と、一覧の名前・最後のトレ�
   expect(await screen.findByText('まだ友達がいません。友達に GRIND の記録を送ってもらって、ここに貼り付けてください')).toBeInTheDocument();
   const b = ex('fb-uuid-00001', { name: 'スクワット' });
   const at = new Date(2026, 9, 27, 18).getTime();
-  await saveImportedShare(buildSharePayload({ profile: { id: 'friend000001', name: 'じろう' }, exercises: [b], routines: [], workouts: [wk(at, [entry(b.id, [set({ weight: 100, reps: 5 })])])] }, at + 3600_000), new Date(2026, 9, 28, 9).getTime());
+  await saveImportedShare(buildSharePayload({ profile: { id: 'friend000001', name: 'じろう' }, exercises: [b], workouts: [wk(at, [entry(b.id, [set({ weight: 100, reps: 5 })])])] }, at + 3600_000), new Date(2026, 9, 28, 9).getTime());
   const item = await screen.findByRole('button', { name: /じろう/ });
   expect(item).toHaveTextContent('最後のトレーニング 10/27');
   expect(item).toHaveTextContent('受け取り 10/28');

@@ -17,7 +17,7 @@ beforeEach(async () => {
   await resetDb();
   await saveProfileName('たろう');
   const workouts = [wk(new Date(2026, 9, 27, 18), [entry(sq.id, [set({ weight: 100, reps: 5 })])], { id: 'aaaaaaaa-1', name: 'LEG' })];
-  await saveImportedShare(buildSharePayload({ profile: { id: 'friend000001', name: 'じろう' }, exercises: [sq], routines: [], workouts }, NOW), NOW);
+  await saveImportedShare(buildSharePayload({ profile: { id: 'friend000001', name: 'じろう' }, exercises: [sq], workouts }, NOW), NOW);
   share.mockReset().mockResolvedValue(undefined);
   writeText.mockReset().mockResolvedValue(undefined);
   Object.defineProperty(navigator, 'share', { value: share, configurable: true });

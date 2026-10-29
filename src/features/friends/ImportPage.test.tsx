@@ -4,14 +4,14 @@ import { resetDb } from '../../db/db';
 import { getFriend, listFriendWorkouts, saveImportedShare, saveProfileName } from '../../db/friends';
 import { encodeShare } from '../../lib/share/codec';
 import { buildSharePayload } from '../../lib/share/sharePayload';
-import { entry, ex, item, routine, set, wk } from '../../test/factories';
+import { entry, ex, set, wk } from '../../test/factories';
 import { renderRoute } from '../../test/render';
 import { ImportPage } from './ImportPage';
 
 const sq = ex('sq-uuid-000001', { name: 'スクワット', bodyPart: 'legs' });
 const w = (id: string, d: Date) => wk(d, [entry(sq.id, [set({ weight: 100, reps: 5 })])], { id });
 const payload = (workouts: ReturnType<typeof w>[], id = 'friend000001') =>
-  buildSharePayload({ profile: { id, name: 'じろう' }, exercises: [sq], routines: [routine('LEG', [item(sq.id)])], workouts }, new Date(2026, 9, 28, 20).getTime());
+  buildSharePayload({ profile: { id, name: 'じろう' }, exercises: [sq], workouts }, new Date(2026, 9, 28, 20).getTime());
 const open = async (data: string) => renderRoute(`/friends/add?d=${data}`, '/friends/add', <ImportPage />);
 
 beforeEach(() => resetDb());
@@ -19,7 +19,8 @@ beforeEach(() => resetDb());
 test('初めての友達: 件数と期間を出し、保存すると詳細へ', async () => {
   await open(await encodeShare('r', payload([w('aaaaaaaa-1', new Date(2026, 8, 3, 18)), w('bbbbbbbb-1', new Date(2026, 9, 27, 18))])));
   expect(await screen.findByText('じろうさんの記録（2回分・9/3〜10/27）')).toBeInTheDocument();
-  expect(screen.getByText('種目 1 ・ メニュー 1')).toBeInTheDocument();
+  expect(screen.getByText('種目 1')).toBeInTheDocument();
+  expect(screen.queryByText(/メニュー/)).toBeNull();
   expect(screen.getByText('ホーム画面に追加した GRIND で使うには、このリンクをコピーして『友達』タブに貼り付けてください')).toBeInTheDocument();
   await userEvent.click(screen.getByRole('button', { name: '保存' }));
   expect(await screen.findByTestId('location')).toHaveTextContent('/friends/friend000001');

@@ -10,7 +10,7 @@ const DAY = 86400_000;
 const bench = ex('bench-uuid-0001', { name: 'ベンチプレス' });
 const w = (id: string, daysAgo: number, weight: number) => wk(NOW - daysAgo * DAY, [entry(bench.id, [set({ weight, reps: 5 })])], { id });
 const share = (workouts: Workout[], o: { id?: string; name?: string; at?: number } = {}): SharePayload =>
-  buildSharePayload({ profile: { id: o.id ?? 'friend000001', name: o.name ?? 'たろう' }, exercises: [bench], routines: [], workouts }, o.at ?? NOW);
+  buildSharePayload({ profile: { id: o.id ?? 'friend000001', name: o.name ?? 'たろう' }, exercises: [bench], workouts }, o.at ?? NOW);
 
 beforeEach(() => resetDb());
 
@@ -106,7 +106,7 @@ test('バックアップにプロフィールは入り友達は入らない。�
 
 test('新しいリンクに載っていない種目も、前に受け取った記録のために残る', async () => {
   const dl = ex('dl-uuid-00000001', { name: 'デッドリフト' });
-  const p1 = buildSharePayload({ profile: { id: 'friend000001', name: 'たろう' }, exercises: [bench, dl], routines: [], workouts: [wk(NOW - 60 * DAY, [entry(dl.id, [set({ weight: 150, reps: 3 })])], { id: 'dddddddd-1' })] }, NOW - 59 * DAY);
+  const p1 = buildSharePayload({ profile: { id: 'friend000001', name: 'たろう' }, exercises: [bench, dl], workouts: [wk(NOW - 60 * DAY, [entry(dl.id, [set({ weight: 150, reps: 3 })])], { id: 'dddddddd-1' })] }, NOW - 59 * DAY);
   await saveImportedShare(p1, NOW - 59 * DAY);
   await saveImportedShare(share([w('aaaaaaaa-1', 1, 80)]), NOW);
   const f = await getFriend('friend000001');
@@ -117,7 +117,7 @@ test('新しいリンクに載っていない種目も、前に受け取った�
 test('古いリンクは、まだ無い記録と種目だけ足し、保存済みの記録は上書きしない', async () => {
   const dl = ex('dl-uuid-00000001', { name: 'デッドリフト' });
   await saveImportedShare(share([w('bbbbbbbb-1', 2, 90)], { at: NOW }), NOW);
-  const old = buildSharePayload({ profile: { id: 'friend000001', name: 'たろう' }, exercises: [bench, dl], routines: [], workouts: [w('bbbbbbbb-1', 2, 70), wk(NOW - 9 * DAY, [entry(dl.id, [set({ weight: 150, reps: 3 })])], { id: 'dddddddd-1' })] }, NOW - DAY);
+  const old = buildSharePayload({ profile: { id: 'friend000001', name: 'たろう' }, exercises: [bench, dl], workouts: [w('bbbbbbbb-1', 2, 70), wk(NOW - 9 * DAY, [entry(dl.id, [set({ weight: 150, reps: 3 })])], { id: 'dddddddd-1' })] }, NOW - DAY);
   await saveImportedShare(old, NOW + 1);
   const ws = await listFriendWorkouts('friend000001');
   expect(ws.find((x) => x.id === 'friend000001:bbbbbbbb')?.entries[0].sets[0].weight).toBe(90);

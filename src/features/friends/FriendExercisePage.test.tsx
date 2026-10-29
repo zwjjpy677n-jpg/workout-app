@@ -17,7 +17,7 @@ beforeEach(async () => {
   const workouts = Array.from({ length: 7 }, (_, i) =>
     wk(now - (7 - i) * 3 * DAY, [entry(sq.id, [set({ weight: 90 + i * 2.5, reps: 5 }), set({ weight: 90 + i * 2.5, reps: 5 })]), entry(pull.id, [set({ weight: i, reps: 8 })])], { id: `w${i}-uuid-xyz` }),
   );
-  await saveImportedShare(buildSharePayload({ profile: { id: 'friend000001', name: 'じろう' }, exercises: [sq, pull], routines: [], workouts }, now), now);
+  await saveImportedShare(buildSharePayload({ profile: { id: 'friend000001', name: 'じろう' }, exercises: [sq, pull], workouts }, now), now);
 });
 
 const open = (x8: string) => renderRoute(`/friends/friend000001/exercise/${x8}`, '/friends/:id/exercise/:x8', <FriendExercisePage />);

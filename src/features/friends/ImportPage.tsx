@@ -86,7 +86,7 @@ export function ImportPage() {
           <h2 className={s.importTitle}>
             {st.p.n}さんの記録（{st.preview.total}回分{st.preview.from != null && `・${formatMDRange(st.preview.from, st.preview.to!)}`}）
           </h2>
-          <p className={s.sub}>種目 {st.p.x.length} ・ メニュー {st.p.r.length}</p>
+          <p className={s.sub}>種目 {st.p.x.length}</p>
           {st.mine ? (
             <p role="alert" className={s.error}>自分の記録です</p>
           ) : (

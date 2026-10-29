@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
 import { getProfile } from '../../db/friends';
-import { listExercises, listRoutines, listWorkouts } from '../../db/repository';
+import { listExercises, listWorkouts } from '../../db/repository';
 import { ShareError } from '../../lib/share/codec';
 import { buildShareLink } from '../../lib/share/sharePayload';
 import { copyText, shareSheet } from '../../lib/device';
@@ -23,7 +23,7 @@ export function useShareMine() {
   const src = useLiveQuery(async () => {
     const profile = await getProfile();
     if (!profile) return null;
-    return { profile, exercises: await listExercises({ includeArchived: true }), routines: await listRoutines(), workouts: await listWorkouts() };
+    return { profile, exercises: await listExercises({ includeArchived: true }), workouts: await listWorkouts() };
   });
   const link = usePreparedLink<Link>(src ? () => buildShareLink(src, Date.now()) : null, [src]);
   const [note, setNote] = useState<ShareNote>(null);

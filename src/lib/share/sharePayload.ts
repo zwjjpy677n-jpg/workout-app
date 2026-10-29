@@ -1,7 +1,7 @@
 import { isWorking, topSet } from '../calc';
 import { DAY, formatMDRange } from '../dates';
 import { completed } from '../summary';
-import { BODY_PARTS, type Exercise, type ExerciseType, type Routine, type Workout, type WorkoutSet } from '../types';
+import { BODY_PARTS, type Exercise, type ExerciseType, type Workout, type WorkoutSet } from '../types';
 import { encodeShare, ShareError, shareUrl } from './codec';
 
 export type SetTuple = [weight: number | null, reps: number | null, sec: number | null, rpe: number | null];
@@ -14,7 +14,7 @@ export type SharePayload = {
   r: [name: string, weekday: number, items: [xi: number, sets: number, reps: string, main: 0 | 1][]][];
   p: [xi: number, s: SetTuple][];
 };
-export type ShareSource = { profile: { id: string; name: string }; exercises: Exercise[]; routines: Routine[]; workouts: Workout[] };
+export type ShareSource = { profile: { id: string; name: string }; exercises: Exercise[]; workouts: Workout[] };
 
 export const TYPES: ExerciseType[] = ['weight', 'bodyweight', 'time'];
 export const MAX_LINK = 7500;
@@ -23,7 +23,7 @@ export const LIMIT = { name: 40, reps: 20, entries: 50, sets: 50, menus: 30 };
 const min = (ms: number) => Math.floor(ms / 60000);
 const tuple = (s: WorkoutSet): SetTuple => [s.weight, s.reps, s.durationSec, s.rpe];
 
-/** 直近 days 日の終了済みの記録（本番セットだけ）・メニュー・全期間の自己ベストを詰める。体重やメモ・コンディションは入れない */
+/** 直近 days 日の終了済みの記録（本番セットだけ）と全期間の自己ベストを詰める。メニュー・体重・メモ・コンディションは入れない */
 export function buildSharePayload(src: ShareSource, now: number, days = 56): SharePayload {
   const exById = new Map(src.exercises.map((e) => [e.id, e]));
   const x: SharePayload['x'] = [];
@@ -50,14 +50,8 @@ export function buildSharePayload(src: ShareSource, now: number, days = 56): Sha
     if (e.length) w.push([wo.id.slice(0, 8), min(wo.startedAt), wo.name.slice(0, LIMIT.name), e.slice(0, LIMIT.entries)]);
   }
 
-  const r: SharePayload['r'] = src.routines.slice(0, LIMIT.menus).map((ro) => [
-    ro.name.slice(0, LIMIT.name),
-    ro.weekday ?? -1,
-    ro.items
-      .filter((it) => exById.has(it.exerciseId))
-      .slice(0, LIMIT.entries)
-      .map((it): [number, number, string, 0 | 1] => [ref(it.exerciseId), it.sets, it.reps.slice(0, LIMIT.reps), it.main ? 1 : 0]),
-  ]);
+  // 自分のメニュー（ルーティン）は送らない。古い版の GRIND でも読めるよう、項目だけ空で残す
+  const r: SharePayload['r'] = [];
 
   const p: SharePayload['p'] = [];
   for (const id of [...xIndex.keys()]) {

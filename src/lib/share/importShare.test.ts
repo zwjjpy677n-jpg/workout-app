@@ -1,4 +1,4 @@
-import { entry, ex, item, routine, set, wk } from '../../test/factories';
+import { entry, ex, set, wk } from '../../test/factories';
 import { parseSharePayload, toFriendRecords } from './importShare';
 import { buildSharePayload, type SharePayload } from './sharePayload';
 
@@ -6,8 +6,9 @@ const NOW = new Date(2026, 9, 28, 20).getTime();
 const bench = ex('bench-uuid-0001', { name: 'ベンチプレス' });
 const plank = ex('plank-uuid-0002', { name: 'プランク', type: 'time', bodyPart: 'core' });
 const w1 = wk(NOW - 86400_000, [entry(bench.id, [set({ weight: 80, reps: 8, rpe: 8 }), set({ weight: 82.5, reps: 5 })]), entry(plank.id, [set({ durationSec: 60 })])], { id: 'work-uuid-1111', name: 'PUSH' });
-const src = { profile: { id: 'abcdefghijkl', name: 'たろう' }, exercises: [bench, plank], routines: [routine('PUSH', [item(bench.id, { sets: 3, reps: '5', main: true })], { weekday: 1 })], workouts: [w1] };
-const payload = () => JSON.parse(JSON.stringify(buildSharePayload(src, NOW))) as SharePayload;
+const src = { profile: { id: 'abcdefghijkl', name: 'たろう' }, exercises: [bench, plank], workouts: [w1] };
+// 今の GRIND はメニューを送らないが、古い版から届いたリンクのメニューも読めること
+const payload = (): SharePayload => ({ ...(JSON.parse(JSON.stringify(buildSharePayload(src, NOW))) as SharePayload), r: [['PUSH', 1, [[0, 3, '5', 1]]]] });
 
 test('作った payload を変換すると本番セット・種目・メニュー・自己ベストが戻る', () => {
   const { friend, workouts } = toFriendRecords(parseSharePayload(payload()), NOW + 1000);
@@ -58,16 +59,14 @@ test('範囲外・型違い・巨大な配列は invalid', () => {
   for (const f of bad) expect(() => parseSharePayload(f(payload())), String(f)).toThrow(expect.objectContaining({ code: 'invalid' }));
 });
 
-test('長い種目名・メニュー名・目標の表記や多すぎるセットでも、作ったリンクは受け取れる', () => {
+test('長い種目名・記録名や多すぎるセットでも、作ったリンクは受け取れる', () => {
   const long = ex('long-uuid-0001', { name: 'と'.repeat(60) });
   const sets = Array.from({ length: 60 }, () => set({ weight: 50, reps: 5 }));
   const wo = wk(NOW - 86400_000, [entry(long.id, sets)], { id: 'long-work-1', name: 'メ'.repeat(60) });
-  const menus = Array.from({ length: 35 }, (_, i) => routine(`メニュー${i}${'ー'.repeat(50)}`, [item(long.id, { reps: '8-12（最後はドロップセットで限界まで）' })]));
-  const p = JSON.parse(JSON.stringify(buildSharePayload({ ...src, exercises: [long], routines: menus, workouts: [wo] }, NOW))) as SharePayload;
+  const p = JSON.parse(JSON.stringify(buildSharePayload({ ...src, exercises: [long], workouts: [wo] }, NOW))) as SharePayload;
   const parsed = parseSharePayload(p);
   expect(parsed.x[0][1]).toHaveLength(40);
   expect(parsed.w[0][2]).toHaveLength(40);
   expect(parsed.w[0][3][0][1]).toHaveLength(50);
-  expect(parsed.r).toHaveLength(30);
-  expect(parsed.r[0][2][0][2]).toHaveLength(20);
+  expect(parsed.r).toEqual([]);
 });
