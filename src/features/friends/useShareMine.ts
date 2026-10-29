@@ -4,6 +4,7 @@ import { getProfile } from '../../db/friends';
 import { listExercises, listRoutines, listWorkouts } from '../../db/repository';
 import { ShareError } from '../../lib/share/codec';
 import { buildShareLink } from '../../lib/share/sharePayload';
+import { copyText, shareSheet } from '../../lib/device';
 import { usePreparedLink } from './usePreparedLink';
 
 export type ShareNote = { kind: 'status' | 'alert'; text: string } | null;
@@ -61,16 +62,14 @@ export async function sendText(text: string, setNote: (n: ShareNote) => void): P
 }
 
 async function send(text: string, setNote: (n: ShareNote) => void): Promise<'shared' | 'copied' | 'cancelled' | 'failed'> {
-  if (navigator.share) {
-    try {
-      await navigator.share({ text });
-      return 'shared';
-    } catch (e) {
-      if (e instanceof DOMException && (e.name === 'AbortError' || e.name === 'InvalidStateError')) return 'cancelled';
-    }
+  try {
+    const r = await shareSheet({ text });
+    if (r !== 'unavailable') return r;
+  } catch {
+    // 共有できなかったときはコピーに切り替える
   }
   try {
-    await navigator.clipboard.writeText(text);
+    await copyText(text);
     setNote({ kind: 'status', text: 'コピーしました。LINE に貼り付けて送ってください' });
     return 'copied';
   } catch {
