@@ -82,7 +82,7 @@
 - `src/lib/appearance.ts`
   - `type Appearance = { icon: IconKey; accent: AccentKey; bg: BgKey }`
   - 既定値 `{ icon: 'red', accent: 'red', bg: 'black' }`
-  - `getAppearance()` / `setAppearance(a)`: localStorage の `ironlog.appearance` に保存（端末ごと。バックアップには含めない）。読めない・壊れている・知らないキーのときは、その項目を既定値にする
+  - `getAppearance()` / `setAppearance(a)`: localStorage の `ironlog:appearance` に保存（端末ごと。バックアップには含めない）。読めない・壊れている・知らないキーのときは、その項目を既定値にする
   - `applyAppearance(a)`: 下の CSS 変数を `document.documentElement` に設定し、`<meta name="theme-color">` を背景色にし、`<link rel="apple-touch-icon">` を選んだ色のアイコンにする
 - `main.tsx` で、最初の描画の前に `applyAppearance(getAppearance())` を呼ぶ（赤が一瞬見えることがない）
 
