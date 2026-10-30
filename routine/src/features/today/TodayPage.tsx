@@ -4,6 +4,7 @@ import { db } from '../../db/db';
 import { useToday } from '../../hooks/useToday';
 import { currentStreak, dayResult } from '../../lib/stats';
 import { RoutineList } from './RoutineList';
+import { TodoList } from './TodoList';
 import s from './today.module.css';
 
 const WD = ['日', '月', '火', '水', '木', '金', '土'];
@@ -31,6 +32,7 @@ export function TodayPage() {
       <h1 className="page-title">{`${d.getMonth() + 1}月${d.getDate()}日（${WD[d.getDay()]}）`}</h1>
       <Summary today={today} />
       <RoutineList date={today} today={today} />
+      <TodoList today={today} />
     </div>
   );
 }
