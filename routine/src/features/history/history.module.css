@@ -1,0 +1,14 @@
+.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 16px; }
+.tiles > div { background: var(--surface); border-radius: var(--radius); padding: 10px 4px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.tiles b { font-size: 18px; }
+.tiles small { font-size: 11px; }
+.rates { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.rates li { position: relative; display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; background: var(--surface); overflow: hidden; font-size: 14px; }
+.rates li span { flex: 1; min-width: 0; position: relative; z-index: 1; }
+.rates li b { position: relative; z-index: 1; }
+.rates li i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--red-soft); }
+.picker { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.picker button { min-height: 36px; padding: 0 12px; border-radius: 10px; background: var(--surface2); color: var(--muted); font-size: 13px; }
+.picker button[aria-pressed='true'] { background: var(--red-soft); color: var(--red); }
+.chart { background: var(--surface); border-radius: var(--radius); padding: 8px 0; }
+.tip { background: var(--surface2); border-radius: 8px; padding: 6px 10px; display: flex; flex-direction: column; font-size: 12px; }

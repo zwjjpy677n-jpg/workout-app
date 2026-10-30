@@ -7,6 +7,7 @@ import { useToday } from '../../hooks/useToday';
 import { dayResult, rateLevel } from '../../lib/stats';
 import type { Log } from '../../lib/types';
 import { DaySheet } from './DaySheet';
+import { Stats } from './Stats';
 
 const WEEK = ['月', '火', '水', '木', '金', '土', '日'];
 
@@ -52,6 +53,7 @@ export function HistoryPage() {
           );
         })}
       </div>
+      {items && logs && <Stats items={items} logs={logs} today={today} />}
       {open && <DaySheet date={open} today={today} onClose={() => setOpen(null)} />}
     </div>
   );
