@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import { Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { TabBar } from './components/TabBar';
+import { HistoryPage } from './features/history/HistoryPage';
 import { RoutinesPage } from './features/routines/RoutinesPage';
 import { TodayPage } from './features/today/TodayPage';
 
@@ -21,14 +22,12 @@ function TabLayout() {
   );
 }
 
-const Placeholder = ({ title }: { title: string }) => <h1>{title}</h1>;
-
 export function App() {
   return (
     <Routes>
       <Route element={<TabLayout />}>
         <Route path="/" element={<TodayPage />} />
-        <Route path="/history" element={<Placeholder title="記録" />} />
+        <Route path="/history" element={<HistoryPage />} />
         <Route path="/routines" element={<RoutinesPage />} />
       </Route>
     </Routes>
