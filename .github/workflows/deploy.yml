@@ -25,11 +25,8 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
+      # オンライン共有の接続先は .env.production（公開してよい値）から読む
       - run: npm run build
-        env:
-          # リポジトリの Variables（Settings → Secrets and variables → Actions → Variables）。無ければ空でビルドされ、オンライン機能は出ない
-          VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
       - name: Upload Pages artifact
         if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3

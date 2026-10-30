@@ -123,33 +123,20 @@ Resend はメールを送るためのサービスで、無料の枠がありま�
    - **service_role**（secret）と書かれた鍵は **絶対に使わない・どこにも貼らない** でください。こちらは何でもできてしまう鍵です
    - anon public の鍵はアプリに入れて公開される前提の鍵です。表ごとの「見てよい人」の決まり（手順 3 で作ったもの）で守られています
 
-## 8. GitHub に登録して、アプリを作り直す
+## 8. アプリに接続先を入れる
 
-1. GitHub でこのリポジトリを開き、上のタブの **Settings** を押す
-2. 左のメニューの **Secrets and variables** → **Actions** を開く
-3. **Variables** のタブを選ぶ（Secrets ではなく Variables）
-4. **New repository variable** を押して、次の 2 つを登録する
-   - Name: `SUPABASE_URL` / Value: 手順 7 の Project URL
-   - Name: `SUPABASE_ANON_KEY` / Value: 手順 7 の anon public の鍵
-5. 上のタブの **Actions** を開き、左の **CI / Deploy to GitHub Pages** を選ぶ
-6. 右の **Run workflow** → **Run workflow** を押す
-7. 緑のチェックになったら完了。数分後に公開中のページを開き直すと、友達タブに「オンラインでつながる」が出ます
+手順 7 の Project URL と publishable（または anon public）の鍵は、リポジトリの `.env.production` に書きます（公開してよい値です）。
 
-## 9. iPhone アプリ（Mac でビルドする版）に入れる
+```
+VITE_SUPABASE_URL=https://xxxx.supabase.co
+VITE_SUPABASE_ANON_KEY=sb_publishable_...
+```
 
-GitHub に登録した値は、GitHub 上で作るウェブ版にしか入りません。Mac で作る iPhone アプリには、Mac の中に同じ 2 つの値を置きます。
+main に入ると GitHub が自動でウェブ版を作り直します。数分後に公開中のページを開き直すと、友達タブに「オンラインでつながる」が出ます。
 
-1. Mac のターミナルで `workout-app` のフォルダに入る（`cd workout-app`）
-2. 次を実行して、`.env.production.local` というファイルを作る（`xxxx` と `eyJ...` は手順 7 で控えた値に置き換える）
+## 9. iPhone アプリ（Mac でビルドする版）
 
-   ```
-   printf 'VITE_SUPABASE_URL=https://xxxx.supabase.co\nVITE_SUPABASE_ANON_KEY=eyJ...\n' > .env.production.local
-   ```
-
-3. いつもどおり `npm run build:ios` をやり直して、Xcode で ▶ を押す
-
-このファイルは GitHub には上がりません（`.gitignore` で外してあります）。Mac を替えたときや、フォルダを作り直したときは、もう一度作ってください。
-ひな形は `.env.example` にあります。
+`.env.production` はリポジトリに入っているので、Mac ではいつもどおり `npm run build:ios` をやり直して、Xcode で ▶ を押すだけです。
 
 ## 10. ちゃんと動くかの確認リスト
 
@@ -178,4 +165,4 @@ GitHub に登録した値は、GitHub 上で作るウェブ版にしか入りま
 - **コードのメールが届かない**: 迷惑メールのフォルダを見る。自分には届くのに友達に届かないなら、手順 5 の送り元の設定ができていません（最初から付いている送り元は自分あてにしか届きません）。手順 5 の値（特に Password と Sender email）を見直す。Supabase の **Authentication** → **Logs**、Resend なら **Emails** の画面に失敗の理由が出ます。手順 4 のテンプレートが保存されているかも確かめる。1 時間に送れる数を超えていたら、しばらく待つ
 - **メールにコードではなくリンクが来る**: 手順 4 の本文に `{{ .Token }}` が入っているか確かめる
 - **急につながらなくなった**: 手順 6 の一時停止かもしれません。Supabase を開いて Restore を押す
-- **友達タブに「オンラインでつながる」が出ない**: 手順 8 の Variables の名前（`SUPABASE_URL` / `SUPABASE_ANON_KEY`）がぴったり合っているか、Run workflow をやり直したか確かめる。iPhone アプリなら手順 9
+- **友達タブに「オンラインでつながる」が出ない**: `.env.production` の 2 つの値が正しいか、GitHub の Actions が緑で終わったか確かめる。iPhone アプリなら手順 9
