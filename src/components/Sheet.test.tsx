@@ -41,3 +41,14 @@ test('キーボードが閉じたら元に戻す', () => {
   act(() => vv.listeners.get('resize')!());
   expect(backdrop().style.height).toBe('');
 });
+
+test('シートは中身のスクロール領域の外（body 直下）に出す（iPhone で領域に切り取られてタブバーの下に隠れたため）', () => {
+  const { container } = render(
+    <main>
+      <Sheet open title="メニュー" onClose={() => {}}>中身</Sheet>
+    </main>,
+  );
+  const dialog = screen.getByRole('dialog');
+  expect(container.querySelector('main')!.contains(dialog)).toBe(false);
+  expect(dialog.parentElement!.parentElement).toBe(document.body);
+});

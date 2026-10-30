@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import s from './Sheet.module.css';
 
 /**
@@ -26,7 +27,8 @@ function useKeyboardBox(open: boolean): CSSProperties | undefined {
 export function Sheet({ open, title, onClose, children }: { open: boolean; title: string; onClose(): void; children: ReactNode }) {
   const box = useKeyboardBox(open);
   if (!open) return null;
-  return (
+  // 中身のスクロール領域の外（body 直下）に出す。iPhone では領域の中に置くと切り取られ、タブバーの下に隠れる
+  return createPortal(
     <div className={s.backdrop} style={box} onClick={onClose}>
       <div role="dialog" aria-label={title} className={s.sheet} onClick={(e) => e.stopPropagation()}>
         <div className={s.head}>
@@ -35,6 +37,7 @@ export function Sheet({ open, title, onClose, children }: { open: boolean; title
         </div>
         <div className={s.body}>{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
