@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import { Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { TabBar } from './components/TabBar';
+import { TodayPage } from './features/today/TodayPage';
 
 // 中身だけをスクロールさせ、タブバーはその下に並べる（GRIND と同じ作り）
 function TabLayout() {
@@ -25,7 +26,7 @@ export function App() {
   return (
     <Routes>
       <Route element={<TabLayout />}>
-        <Route path="/" element={<Placeholder title="今日" />} />
+        <Route path="/" element={<TodayPage />} />
         <Route path="/history" element={<Placeholder title="記録" />} />
         <Route path="/routines" element={<Placeholder title="ルーティン" />} />
       </Route>

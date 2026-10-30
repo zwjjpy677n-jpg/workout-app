@@ -1,0 +1,13 @@
+.summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.summary > div { background: var(--surface); border-radius: var(--radius); padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.summary b { font-size: 20px; }
+.summary small { font-size: 11px; }
+.list { display: flex; flex-direction: column; gap: 6px; }
+.row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 8px 12px; border-radius: var(--radius); background: var(--surface); text-align: left; }
+.numRow { flex-wrap: wrap; }
+.box { flex: none; width: 24px; height: 24px; border-radius: 7px; border: 2px solid var(--line); display: grid; place-items: center; font-size: 14px; font-weight: 700; color: var(--on-accent); }
+.done .box { background: var(--red); border-color: var(--red); }
+.done .name { color: var(--muted); }
+.name { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 15px; }
+.name small { font-size: 12px; }
+.stepper { width: 160px; flex: none; }
