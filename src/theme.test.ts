@@ -39,3 +39,13 @@ test('タブバーを画面に固定しない（iPhone のホーム画面アプ�
   const css = readFileSync(resolve(process.cwd(), 'src/components/TabBar.module.css'), 'utf8');
   expect(css).not.toMatch(/position:\s*fixed/);
 });
+
+test('ホーム画面アプリでは、iPhone が引いてくる上の分（--vgap）を足して画面の一番下まで使う', () => {
+  const g = readFileSync(resolve(process.cwd(), 'src/styles/global.css'), 'utf8');
+  expect(g).toMatch(/html\.standalone\s*\{[^}]*--vgap:\s*calc\(100lvh - 100dvh\)/);
+  expect(g).toMatch(/\.shell\s*\{[^}]*height:\s*calc\(100% \+ var\(--vgap\)\)/);
+  const sheet = readFileSync(resolve(process.cwd(), 'src/components/Sheet.module.css'), 'utf8');
+  expect(sheet).toMatch(/bottom:\s*calc\(0px - var\(--vgap\)\)/);
+  const rest = readFileSync(resolve(process.cwd(), 'src/features/workout/rest.module.css'), 'utf8');
+  expect(rest).toMatch(/var\(--vgap\)/);
+});
