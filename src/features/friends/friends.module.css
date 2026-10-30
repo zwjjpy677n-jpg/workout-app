@@ -69,3 +69,4 @@
 .onlineTitle { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
 .onlineTag { font-size: 10px; color: var(--muted); border: 1px solid var(--line); border-radius: 99px; padding: 0 6px; margin-left: 6px; font-weight: 400; }
 .nameRow { display: flex; align-items: center; gap: 6px; }
+.sheetFoot { margin-top: 16px; }

@@ -110,6 +110,25 @@ test('友達のメニュータブに「メニューを組んで送る」と送�
   expect(await screen.findByTestId('location')).toHaveTextContent('/friends/friend000001/menu/new');
 });
 
+test('送ったメニューは詳細から履歴を削除できる（確認でキャンセルなら残る）', async () => {
+  const { buildMenuLink } = await import('../../lib/share/menuPayload');
+  const { payload } = await buildMenuLink({ id: 'meeeeeeeeeee', name: 'たろう' }, 'friend000001', { name: 'PUSH', weekday: 1, items: [{ name: 'ベンチプレス', bodyPart: 'chest', type: 'weight', restSec: 75, sets: 3, reps: '5', main: true, inc: 2.5, note: '' }] }, NOW);
+  await logSentMenu({ id: 'friend000001', name: 'じろう' }, payload, NOW);
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  renderRoute('/friends/friend000001', '/friends/:id', <FriendPage />);
+  await userEvent.click(await screen.findByRole('tab', { name: 'メニュー' }));
+  await userEvent.click(within(await screen.findByRole('region', { name: '送ったメニュー' })).getByRole('button', { name: /PUSH（月）/ }));
+  await userEvent.click(within(screen.getByRole('dialog', { name: 'PUSH（月）' })).getByRole('button', { name: 'この履歴を削除' }));
+  expect(confirm).toHaveBeenCalledWith('この送ったメニューを履歴から削除しますか？ 友達に届いたメニューは消えません');
+  expect(await listMenuLog('sent')).toHaveLength(1);
+  confirm.mockReturnValue(true);
+  await userEvent.click(within(screen.getByRole('dialog', { name: 'PUSH（月）' })).getByRole('button', { name: 'この履歴を削除' }));
+  await waitFor(() => expect(screen.queryByRole('region', { name: '送ったメニュー' })).toBeNull());
+  expect(await listMenuLog('sent')).toEqual([]);
+  expect(screen.queryByRole('dialog')).toBeNull();
+  confirm.mockRestore();
+});
+
 test('追加済みの種目は一覧で選べず、目標が空だと送れない', async () => {
   open();
   await userEvent.type(await screen.findByRole('textbox', { name: 'メニュー名' }), 'PUSH');

@@ -16,6 +16,10 @@ export async function listMenuLog(direction: MenuLog['direction'], friendId?: st
   return (await db.menuLog.toArray()).filter((l) => l.direction === direction && (friendId == null || l.friendId === friendId)).sort((a, b) => b.at - a.at);
 }
 
+export async function deleteMenuLog(id: string): Promise<void> {
+  await db.menuLog.delete(id);
+}
+
 /** 名前（前後の空白を除いて完全一致）で、使える（アーカイブしていない）自分の種目を探す */
 async function exerciseByName(): Promise<Map<string, Exercise>> {
   const list = (await db.exercises.toArray()).filter((e) => !e.archived);
