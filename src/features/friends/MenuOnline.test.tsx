@@ -12,6 +12,7 @@ import { setSession } from '../../lib/online/prefs';
 import { saveImportedShare } from '../../db/friends';
 import { buildSharePayload } from '../../lib/share/sharePayload';
 import { renderRoute } from '../../test/render';
+import { FriendPage } from './FriendPage';
 import { FriendsPage } from './FriendsPage';
 import { MenuEditorPage } from './MenuEditorPage';
 
@@ -174,4 +175,64 @@ test('アプリで送るを2回続けて押しても、メニューは1回だけ
   await screen.findByText('送りました');
   api.as('b');
   expect(await api.pullMenus('')).toHaveLength(1);
+});
+
+async function openSentAndUnsend() {
+  renderRoute('/friends/b', '/friends/:id', <FriendPage />);
+  await userEvent.click(await screen.findByRole('tab', { name: 'メニュー' }));
+  await userEvent.click(within(await screen.findByRole('region', { name: '送ったメニュー' })).getByRole('button', { name: /PUSH/ }));
+  await userEvent.click(within(screen.getByRole('dialog', { name: 'PUSH' })).getByRole('button', { name: '送信を取り消す' }));
+}
+
+test('送信を取り消すと、友達が受け取る前ならメニューは届かず、送信履歴からも消える', async () => {
+  await buildAndSend('アプリで送る');
+  await screen.findByTestId('location');
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  await openSentAndUnsend();
+  expect(confirm).toHaveBeenCalledWith('送信を取り消しますか？ 友達がまだ追加していなければ、友達のアプリからも消えます');
+  await waitFor(async () => expect(await listMenuLog('sent', 'b')).toEqual([]));
+  expect(screen.queryByRole('dialog')).toBeNull();
+  confirm.mockRestore();
+  await switchToB();
+  expect(await db.menuInbox.count()).toBe(0);
+});
+
+test('友達がもう受け取っていても、追加する前なら次に開いたとき届いたメニューから消える', async () => {
+  await buildAndSend('アプリで送る');
+  await screen.findByTestId('location');
+  await switchToB();
+  const bInbox = await db.menuInbox.toArray();
+  expect(bInbox).toHaveLength(1);
+  // a が取り消す
+  api.as('a');
+  await api.unsendMenu(bInbox[0].body.mid);
+  api.as('b');
+  await pullAll(3000);
+  expect(await db.menuInbox.count()).toBe(0);
+});
+
+test('つながらないときは取り消せないと出て、送信履歴は残る', async () => {
+  await buildAndSend('アプリで送る');
+  await screen.findByTestId('location');
+  api.offline = true;
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
+  await openSentAndUnsend();
+  expect(await screen.findByRole('alert')).toHaveTextContent('今はつながりません。つながるところでもう一度お試しください');
+  expect(await listMenuLog('sent', 'b')).toHaveLength(1);
+  vi.mocked(window.confirm).mockRestore();
+  api.offline = false;
+  api.as('b');
+  expect(await api.pullMenus('')).toHaveLength(1);
+});
+
+test('まだ送れていない（outbox にある）メニューは、オフラインでも取り消せる', async () => {
+  api.offline = true;
+  await buildAndSend('アプリで送る');
+  await screen.findByTestId('location', {}, { timeout: 3000 });
+  expect(await db.outbox.count()).toBe(1);
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
+  await openSentAndUnsend();
+  await waitFor(async () => expect(await listMenuLog('sent', 'b')).toEqual([]));
+  expect(await db.outbox.count()).toBe(0);
+  vi.mocked(window.confirm).mockRestore();
 });

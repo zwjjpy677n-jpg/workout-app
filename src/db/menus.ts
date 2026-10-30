@@ -8,8 +8,8 @@ import { addExercise, saveRoutine } from './repository';
 const logId = (direction: MenuLog['direction'], mid: string) => `${direction}:${mid}`;
 const norm = (s: string) => s.trim();
 
-export async function logSentMenu(friend: { id: string; name: string }, menu: MenuPayload, at: number): Promise<void> {
-  await db.menuLog.put({ id: logId('sent', menu.mid), direction: 'sent', friendId: friend.id, friendName: friend.name, at, menu, result: null });
+export async function logSentMenu(friend: { id: string; name: string }, menu: MenuPayload, at: number, viaApp = false): Promise<void> {
+  await db.menuLog.put({ id: logId('sent', menu.mid), direction: 'sent', friendId: friend.id, friendName: friend.name, at, menu, result: null, ...(viaApp && { viaApp }) });
 }
 
 export async function listMenuLog(direction: MenuLog['direction'], friendId?: string): Promise<MenuLog[]> {

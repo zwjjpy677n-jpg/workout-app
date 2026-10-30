@@ -192,5 +192,17 @@ export function createSupabaseApi(cfg: { url: string; anonKey: string }): Online
       const rows = ((await run(q.order('created_at', { ascending: true }))) ?? []) as MenuDbRow[];
       return rows.map((m): MenuMessage => ({ id: m.id, sender: m.sender, recipient: m.recipient, kind: m.kind, body: m.body, createdAt: m.created_at }));
     },
+
+    async unsendMenu(mid) {
+      const uid = await me();
+      await run(sb.from('menu_messages').delete().eq('sender', uid).eq('body->>mid', mid));
+    },
+
+    async existingMenus(ids) {
+      if (!ids.length) return [];
+      const uid = await me();
+      const rows = ((await run(sb.from('menu_messages').select('id').eq('recipient', uid).in('id', ids))) ?? []) as { id: string }[];
+      return rows.map((r) => r.id);
+    },
   };
 }

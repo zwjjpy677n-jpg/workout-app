@@ -20,6 +20,10 @@ export interface OnlineApi {
   pullWorkouts(since: string, userId?: string): Promise<SharedWorkoutRow[]>;
   sendMenu(to: string, kind: 'built' | 'mine', body: MenuPayload): Promise<void>;
   pullMenus(since: string): Promise<MenuMessage[]>;
+  /** 自分が送ったメニュー（mid で探す）をサーバーから消す。無ければ何もしない */
+  unsendMenu(mid: string): Promise<void>;
+  /** 渡した id のうち、自分あてでまだサーバーにあるもの */
+  existingMenus(ids: string[]): Promise<string[]>;
 }
 
 let testApi: OnlineApi | null = null;

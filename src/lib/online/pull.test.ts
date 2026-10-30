@@ -140,6 +140,16 @@ test('組んだメニュー（built）は届いたメニューに入る', async 
   expect(await db.menuInbox.count()).toBe(1);
 });
 
+test('送り主が取り消した組んだメニューは、届いたメニューから消える（ほかは残る）', async () => {
+  await asA(() => api.sendMenu('b', 'built', menu('脚')));
+  await asA(() => api.sendMenu('b', 'built', menu('背中', { mid: 'midback' })));
+  await pullAll(5000);
+  expect(await db.menuInbox.count()).toBe(2);
+  await asA(() => api.unsendMenu('midback'));
+  await pullAll(6000);
+  expect((await db.menuInbox.toArray()).map((m) => m.body.name)).toEqual(['脚']);
+});
+
 test('未読：取ってきたあとは 1、markFriendsSeen のあとは 0', async () => {
   await asA(() => api.upsertWorkout(shared('w1')));
   await asA(() => api.sendMenu('b', 'built', menu('脚')));

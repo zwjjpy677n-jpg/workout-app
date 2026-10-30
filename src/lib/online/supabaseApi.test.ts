@@ -232,6 +232,23 @@ test('sendMenu は自分を送り主にして入れる。友達でなければ i
   expect(await code(api().sendMenu('u3', 'mine', body))).toBe('invalid');
 });
 
+test('unsendMenu は自分が送った同じ mid の行を消す', async () => {
+  await api().unsendMenu('mid123');
+  expect(calls).toContainEqual(['from', 'menu_messages']);
+  expect(calls).toContainEqual(['delete']);
+  expect(calls).toContainEqual(['eq', 'sender', 'me']);
+  expect(calls).toContainEqual(['eq', 'body->>mid', 'mid123']);
+});
+
+test('existingMenus は自分あてでまだある id を返す。空なら問い合わせない', async () => {
+  expect(await api().existingMenus([])).toEqual([]);
+  expect(calls).toEqual([]);
+  results = [{ data: [{ id: 'x' }] }];
+  expect(await api().existingMenus(['x', 'y'])).toEqual(['x']);
+  expect(calls).toContainEqual(['eq', 'recipient', 'me']);
+  expect(calls).toContainEqual(['in', 'id', ['x', 'y']]);
+});
+
 test('listFriends は自分の友達関係の相手の名前を返す（読めない相手は出さない）', async () => {
   results = [
     { data: [{ user_a: 'a1', user_b: 'me' }, { user_a: 'me', user_b: 'z9' }, { user_a: 'b2', user_b: 'me' }] },

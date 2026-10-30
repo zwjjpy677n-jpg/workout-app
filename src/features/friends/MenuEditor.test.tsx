@@ -105,6 +105,8 @@ test('友達のメニュータブに「メニューを組んで送る」と送�
   await userEvent.click(row);
   const dlg = screen.getByRole('dialog', { name: 'PUSH（月）' });
   expect(within(dlg).getByText('3セット×5 ・ レスト 1:15')).toBeInTheDocument();
+  // リンクで送った分は取り消せない
+  expect(within(dlg).queryByRole('button', { name: '送信を取り消す' })).toBeNull();
   await userEvent.click(within(dlg).getByRole('button', { name: '閉じる' }));
   await userEvent.click(screen.getByRole('button', { name: 'メニューを組んで送る' }));
   expect(await screen.findByTestId('location')).toHaveTextContent('/friends/friend000001/menu/new');

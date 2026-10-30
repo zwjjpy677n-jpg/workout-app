@@ -65,6 +65,22 @@ export async function claimOutbox(userId: string): Promise<void> {
 
 let inflight: Promise<'done' | 'offline' | 'skipped'> | null = null;
 
+/** 送ったメニューを取り消す。まだ送っていない分は outbox から外し、送った分はサーバーから消す（つながらなければ OnlineError） */
+export async function unsendMenu(mid: string): Promise<void> {
+  const queued = await db.outbox.filter((i) => i.kind === 'menu' && i.body.mid === mid).delete();
+  const api = getApi();
+  if (!api || !getSession()) {
+    if (queued) return;
+    throw new OnlineError('auth');
+  }
+  // 送っている途中の分は、届き終わってから消す
+  await inflight?.catch(() => undefined);
+  // outbox にあった分はまだ届いていないので、サーバーに消しに行けなくても取り消せている
+  await api.unsendMenu(mid).catch((e: unknown) => {
+    if (!queued) throw e;
+  });
+}
+
 /** 古い順に送り、成功した分を消す。同時には 1 つだけ動く */
 export function flushOutbox(): Promise<'done' | 'offline' | 'skipped'> {
   inflight ??= run().finally(() => {

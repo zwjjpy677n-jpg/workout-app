@@ -19,6 +19,8 @@ export interface MenuLog {
   menu: MenuPayload;
   /** 受け取ったとき: 置き換えたか追加したか */
   result: 'replaced' | 'added' | null;
+  /** 送ったとき: アプリで送った（取り消せる） */
+  viaApp?: boolean;
 }
 
 export const MENU = { name: 40, items: 50, restMin: 10, restMax: 600, setsMax: 20, reps: 20, incMin: 0.5, incMax: 20, note: 100 };

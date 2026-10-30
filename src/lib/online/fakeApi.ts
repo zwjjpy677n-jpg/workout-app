@@ -113,6 +113,14 @@ export function createFakeApi(): FakeApi {
       const u = user();
       return menus.filter((m) => m.recipient === u.userId && m.createdAt > since);
     },
+    async unsendMenu(mid: string) {
+      const u = user();
+      for (let i = menus.length - 1; i >= 0; i--) if (menus[i].sender === u.userId && menus[i].body.mid === mid) menus.splice(i, 1);
+    },
+    async existingMenus(ids: string[]) {
+      const u = user();
+      return menus.filter((m) => m.recipient === u.userId && ids.includes(m.id)).map((m) => m.id);
+    },
   } satisfies OnlineApi);
 
   return api;

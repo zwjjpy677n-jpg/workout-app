@@ -81,7 +81,7 @@ export function MenuEditorPage() {
     try {
       const payload = buildMenuPayload(await senderIdentity(), onlineId, draft, Date.now());
       const qid = await queueMenu(onlineId, 'built', payload);
-      await logSentMenu(friend, payload, Date.now());
+      await logSentMenu(friend, payload, Date.now(), true);
       const { ok, text } = await flushNote([qid]);
       // 送れたら送信履歴へ。つながらなかったときは、あとで自動で送ることを見せてから移る
       if (ok) navigate(`/friends/${id}?tab=menus`);

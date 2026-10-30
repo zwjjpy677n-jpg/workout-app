@@ -101,7 +101,7 @@ export async function pullAll(now: number): Promise<'done' | 'offline' | 'skippe
   const mSince = await cursor('menusSince');
   const pulled = await pulledFriends();
 
-  let list, rawRows, rawMenus;
+  let list, rawRows, rawMenus, alive: Set<string>;
   const extra: SharedWorkoutRow[] = [];
   try {
     list = await api.listFriends();
@@ -111,6 +111,10 @@ export async function pullAll(now: number): Promise<'done' | 'offline' | 'skippe
     const fresh = wSince ? list.map((f) => f.userId).filter((uid) => !pulled.has(uid)) : [];
     for (const uid of fresh) extra.push(...(await api.pullWorkouts('', uid)));
     rawMenus = await api.pullMenus(mSince);
+    // 送り主が取り消したメニューは、まだ追加していなければ届いたメニューから消す
+    const inboxIds = (await db.menuInbox.toArray()).map((m) => m.id);
+    alive = new Set(await api.existingMenus(inboxIds));
+    for (const m of rawMenus) alive.add(m.id);
   } catch (e) {
     if (e instanceof OnlineError && e.code === 'offline') return 'offline';
     throw e;
@@ -153,6 +157,7 @@ export async function pullAll(now: number): Promise<'done' | 'offline' | 'skippe
       friend.prs = friendPrs(friend.exercises, all);
       await db.friends.put(friend);
     }
+    await db.menuInbox.filter((m) => !alive.has(m.id)).delete();
     for (const m of menus.filter((m) => m.kind === 'built')) {
       if (await db.menuInbox.get(m.id)) continue;
       const at = Date.parse(m.createdAt);
