@@ -54,5 +54,26 @@ test('数値項目は目標まで増やすとチェックが付く', async () =>
   for (let i = 0; i < 6; i++) await userEvent.click(plus);
   expect(await screen.findByText('1500 / 1500 ml')).toBeInTheDocument();
   expect(screen.getByRole('img', { name: '水を飲む できた' })).toBeInTheDocument();
-  expect(screen.getByText('1/3')).toBeInTheDocument();
+  expect(await screen.findByText('1/3')).toBeInTheDocument();
+});
+
+test('数値を打っている途中は1文字ごとに保存しない（少し待つと保存される）', async () => {
+  render(<TodayPage />);
+  const field = await screen.findByRole('textbox', { name: '水を飲む' });
+  await userEvent.type(field, '15');
+  expect(await db.logs.get('2026-10-30:h')).toBeUndefined();
+  expect(field).toHaveValue('15');
+  await vi.waitFor(async () => expect(await db.logs.get('2026-10-30:h')).toMatchObject({ value: 15, done: false }));
+  expect(field).toHaveValue('15');
+});
+
+test('目標の10倍より大きい数を打っても、保存した値は消えない', async () => {
+  await db.items.update('h', { target: 1 });
+  await db.logs.put({ id: '2026-10-30:h', date: '2026-10-30', itemId: 'h', done: true, value: 8 });
+  render(<TodayPage />);
+  const field = await screen.findByRole('textbox', { name: '水を飲む' });
+  await vi.waitFor(() => expect(field).toHaveValue('8'));
+  await userEvent.clear(field);
+  await userEvent.type(field, '12');
+  await vi.waitFor(async () => expect(await db.logs.get('2026-10-30:h')).toMatchObject({ value: 12, done: true }));
 });
