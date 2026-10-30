@@ -104,7 +104,8 @@ describe('初回の確認', () => {
     expect(n).toBeGreaterThan(0);
     await toPrompt();
     await userEvent.click(screen.getByRole('button', { name: 'はい' }));
-    expect(localStorage.getItem('ironlog:sharedHistoryAsked:u-a@x.com')).not.toBeNull();
+    // 記録を箱に入れ終わってから「答えた」と残すので、待ってから確かめる
+    await waitFor(() => expect(localStorage.getItem('ironlog:sharedHistoryAsked:u-a@x.com')).not.toBeNull());
     await waitFor(async () => expect((await serverRows()).length).toBe(n));
   });
 
