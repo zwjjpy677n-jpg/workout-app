@@ -1,15 +1,16 @@
-import { useState } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '../../components/Button';
 import { NumberInput } from '../../components/NumberInput';
 import { Sheet } from '../../components/Sheet';
 import { Stepper } from '../../components/Stepper';
-import { logSentMenu } from '../../db/menus';
+import { db } from '../../db/db';
+import { deleteMenuLog, logSentMenu } from '../../db/menus';
 import { useExercises, useFriend, useProfile } from '../../hooks/useData';
 import { formatDuration } from '../../lib/calc';
 import { ShareError } from '../../lib/share/codec';
-import { queueMenu } from '../../lib/online/outbox';
-import { buildMenuLink, buildMenuPayload, MENU, type MenuDraftItem } from '../../lib/share/menuPayload';
+import { queueMenu, unsendMenu } from '../../lib/online/outbox';
+import { buildMenuLink, buildMenuPayload, MENU, payloadToDraft, type MenuDraftItem, type MenuLog } from '../../lib/share/menuPayload';
 import { BODY_PART_LABEL, BODY_PARTS, EXERCISE_TYPE_LABEL, WEEKDAY_LABEL, type BodyPart, type ExerciseType } from '../../lib/types';
 import { flushNote, OFFLINE_NOTE, senderIdentity } from './appSend';
 import { NameSheet } from './NameSheet';
@@ -21,9 +22,19 @@ type Item = Omit<MenuDraftItem, 'inc'> & { inc: number | null };
 const WEEK = [1, 2, 3, 4, 5, 6, 0];
 const REST_STEP = 15;
 
-/** 友達に送るメニューを一から組む */
+const RETIRE_FAILED = '前に送ったメニューを取り消せませんでした。つながるところでもう一度お試しください';
+
+/** 前に送ったメニューを片付ける。アプリで送った分は取り消してから、履歴を消す */
+async function retire(old: MenuLog) {
+  if (old.viaApp) await unsendMenu(old.menu.mid);
+  await deleteMenuLog(old.id);
+}
+
+/** 友達に送るメニューを一から組む。?edit=<送った履歴の id> なら、その中身から組み直して送り直す */
 export function MenuEditorPage() {
   const { id = '' } = useParams();
+  const editId = useSearchParams()[0].get('edit');
+  const [old, setOld] = useState<MenuLog | null>(null);
   const navigate = useNavigate();
   const friend = useFriend(id);
   const mine = useExercises();
@@ -35,6 +46,22 @@ export function MenuEditorPage() {
   const [naming, setNaming] = useState(false);
   const [note, setNote] = useState<ShareNote>(null);
   const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    if (!editId) return;
+    let alive = true;
+    void db.menuLog.get(editId).then((l) => {
+      if (!alive || !l || l.direction !== 'sent') return;
+      const d = payloadToDraft(l.menu);
+      setOld(l);
+      setName(d.name);
+      setWeekday(d.weekday);
+      setItems(d.items);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [editId]);
 
   const valid = name.trim().length >= 1 && name.trim().length <= MENU.name && items.length > 0 && items.every((it) => it.inc != null && it.reps.trim() !== '');
   const draft = { name: name.trim(), weekday, items: items.map((it) => ({ ...it, reps: it.reps.trim(), note: it.note.trim(), inc: it.inc ?? 0 })) };
@@ -69,6 +96,13 @@ export function MenuEditorPage() {
     void sendText(text, setNote).then(async (r) => {
       if (r !== 'shared' && r !== 'copied') return;
       await logSentMenu(friend, payload, Date.now());
+      if (old) {
+        try {
+          await retire(old);
+        } catch {
+          return setNote({ kind: 'alert', text: RETIRE_FAILED });
+        }
+      }
       navigate(`/friends/${id}?tab=menus`);
     });
   };
@@ -78,6 +112,13 @@ export function MenuEditorPage() {
     if (!onlineId || sending) return;
     setSending(true);
     setNote(null);
+    try {
+      if (old) await retire(old);
+    } catch {
+      setNote({ kind: 'alert', text: RETIRE_FAILED });
+      setSending(false);
+      return;
+    }
     try {
       const payload = buildMenuPayload(await senderIdentity(), onlineId, draft, Date.now());
       const qid = await queueMenu(onlineId, 'built', payload);
@@ -100,6 +141,7 @@ export function MenuEditorPage() {
     <div className="page">
       <button type="button" className={s.back} onClick={() => navigate(`/friends/${id}?tab=menus`)}>‹ {friend.name}</button>
       <h1 className={s.friendName}>{`${friend.name}さんに送るメニュー`}</h1>
+      {old && <p className={s.hint}>送ったメニューを直して送り直します。前に送ったメニューは取り消します</p>}
       <input className={s.text} aria-label="メニュー名" placeholder="メニュー名（PUSH など）" value={name} onChange={(e) => setName(e.target.value)} maxLength={MENU.name} />
       <div className={s.weekdays}>
         <button type="button" aria-pressed={weekday == null} onClick={() => setWeekday(null)}>なし</button>

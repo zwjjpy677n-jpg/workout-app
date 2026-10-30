@@ -131,6 +131,25 @@ test('送ったメニューは詳細から履歴を削除できる（確認で�
   confirm.mockRestore();
 });
 
+test('リンクで送ったメニューも編集して送り直せる（前の履歴は消える）', async () => {
+  const { buildMenuLink } = await import('../../lib/share/menuPayload');
+  const { payload } = await buildMenuLink({ id: 'meeeeeeeeeee', name: 'たろう' }, 'friend000001', { name: 'PUSH', weekday: 1, items: [{ name: 'ベンチプレス', bodyPart: 'chest', type: 'weight', restSec: 75, sets: 3, reps: '5', main: true, inc: 2.5, note: 'ゆっくり' }] }, NOW);
+  await logSentMenu({ id: 'friend000001', name: 'じろう' }, payload, NOW);
+  renderRoute(`/friends/friend000001/menu/new?edit=sent:${payload.mid}`, '/friends/:id/menu/new', <MenuEditorPage />);
+  const nameBox = await screen.findByDisplayValue('PUSH');
+  const g = screen.getByRole('group', { name: 'ベンチプレス' });
+  expect(within(g).getByRole('textbox', { name: 'メモ' })).toHaveValue('ゆっくり');
+  expect(within(g).getByRole('checkbox', { name: 'メイン' })).toBeChecked();
+  expect(screen.getByRole('button', { name: '月' })).toHaveAttribute('aria-pressed', 'true');
+  await userEvent.clear(nameBox);
+  await userEvent.type(nameBox, 'PUSH2');
+  const send = screen.getByRole('button', { name: '送る' });
+  await waitFor(() => expect(send).toBeEnabled());
+  await userEvent.click(send);
+  expect(await screen.findByTestId('location')).toHaveTextContent('/friends/friend000001?tab=menus');
+  expect((await listMenuLog('sent')).map((l) => l.menu.name)).toEqual(['PUSH2']);
+});
+
 test('追加済みの種目は一覧で選べず、目標が空だと送れない', async () => {
   open();
   await userEvent.type(await screen.findByRole('textbox', { name: 'メニュー名' }), 'PUSH');

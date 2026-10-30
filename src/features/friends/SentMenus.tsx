@@ -1,4 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/Button';
 import { Sheet } from '../../components/Sheet';
 import { deleteMenuLog } from '../../db/menus';
@@ -41,6 +42,7 @@ export function SentMenus({ friendId }: { friendId: string }) {
   const [open, setOpen] = useState<MenuLog | null>(null);
   const [error, setError] = useState('');
   const busy = useRef(false);
+  const navigate = useNavigate();
   if (!logs?.length) return null;
   const close = () => {
     setOpen(null);
@@ -84,6 +86,7 @@ export function SentMenus({ friendId }: { friendId: string }) {
           open && (
             <>
               {error && <p role="alert" className={s.error}>{error}</p>}
+              <Button block onClick={() => navigate(`/friends/${friendId}/menu/new?edit=${encodeURIComponent(open.id)}`)}>編集して送り直す</Button>
               {open.viaApp && <Button block onClick={() => void unsend(open)}>送信を取り消す</Button>}
               <Button variant="danger" block onClick={() => void remove(open)}>この履歴を削除</Button>
             </>

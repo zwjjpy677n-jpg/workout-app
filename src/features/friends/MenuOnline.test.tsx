@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { db, resetDb } from '../../db/db';
 import { saveProfileName } from '../../db/friends';
@@ -235,4 +235,48 @@ test('まだ送れていない（outbox にある）メニューは、オフラ�
   await waitFor(async () => expect(await listMenuLog('sent', 'b')).toEqual([]));
   expect(await db.outbox.count()).toBe(0);
   vi.mocked(window.confirm).mockRestore();
+});
+
+test('送ったメニューを編集して送り直すと、前の分は取り消され、友達には直した分だけ届く', async () => {
+  await buildAndSend('アプリで送る');
+  await screen.findByTestId('location');
+  const [first] = await listMenuLog('sent', 'b');
+  cleanup();
+  const view = renderRoute('/friends/b', '/friends/:id', <FriendPage />);
+  await userEvent.click(await screen.findByRole('tab', { name: 'メニュー' }));
+  await userEvent.click(within(await screen.findByRole('region', { name: '送ったメニュー' })).getByRole('button', { name: /PUSH/ }));
+  await userEvent.click(within(screen.getByRole('dialog', { name: 'PUSH' })).getByRole('button', { name: '編集して送り直す' }));
+  expect(await screen.findByTestId('location')).toHaveTextContent(`/friends/b/menu/new?edit=${encodeURIComponent(first.id)}`);
+  view.unmount();
+
+  renderRoute(`/friends/b/menu/new?edit=${first.id}`, '/friends/:id/menu/new', <MenuEditorPage />);
+  expect(await screen.findByDisplayValue('PUSH')).toBeInTheDocument();
+  expect(screen.getByText('送ったメニューを直して送り直します。前に送ったメニューは取り消します')).toBeInTheDocument();
+  const reps = within(screen.getByRole('group', { name: 'ベンチプレス' })).getByRole('textbox', { name: '目標' });
+  expect(reps).toHaveValue('10');
+  await userEvent.clear(reps);
+  await userEvent.type(reps, '6');
+  await userEvent.click(screen.getByRole('button', { name: 'アプリで送る' }));
+  expect(await screen.findByTestId('location')).toHaveTextContent('/friends/b?tab=menus');
+  const logs = await listMenuLog('sent', 'b');
+  expect(logs).toHaveLength(1);
+  expect(logs[0].id).not.toBe(first.id);
+  expect(logs[0].menu.items[0][5]).toBe('6');
+
+  api.as('b');
+  const got = await api.pullMenus('');
+  expect(got.map((m) => m.body.items[0][5])).toEqual(['6']);
+});
+
+test('前の分を取り消せない（つながらない）ときは、送り直さない', async () => {
+  await buildAndSend('アプリで送る');
+  await screen.findByTestId('location');
+  const [first] = await listMenuLog('sent', 'b');
+  api.offline = true;
+  renderRoute(`/friends/b/menu/new?edit=${first.id}`, '/friends/:id/menu/new', <MenuEditorPage />);
+  await screen.findByDisplayValue('PUSH');
+  await userEvent.click(screen.getByRole('button', { name: 'アプリで送る' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('前に送ったメニューを取り消せませんでした');
+  expect((await listMenuLog('sent', 'b')).map((l) => l.id)).toEqual([first.id]);
+  expect(await db.outbox.count()).toBe(0);
 });

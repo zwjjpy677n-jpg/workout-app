@@ -54,6 +54,16 @@ export function buildMenuPayload(from: { id: string; name: string }, to: string,
   };
 }
 
+/** 送ったメニューを、組み直せる形に戻す（編集して送り直すとき） */
+export function payloadToDraft(p: MenuPayload): MenuDraft {
+  return {
+    name: p.name, weekday: p.weekday < 0 ? null : p.weekday,
+    items: p.items.map(([name, part, type, restSec, sets, reps, main, inc, note]) => ({
+      name, bodyPart: BODY_PARTS[part], type: TYPES[type], restSec, sets, reps, main: main === 1, inc, note,
+    })),
+  };
+}
+
 /** 自分のルーティンを、アプリで送るメニューにする。種目が見つからない項目は入れない（1つも無ければ null） */
 export function routineToMenuPayload(r: Routine, exercises: Map<string, Exercise>, from: { id: string; name: string }, to: string, now: number): MenuPayload | null {
   const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
