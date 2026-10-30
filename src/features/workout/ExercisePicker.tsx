@@ -32,6 +32,8 @@ export function ExercisePicker({ open, onClose, onPick }: { open: boolean; onClo
       ) : (
         <>
           <input className={s.search} aria-label="種目を検索" placeholder="検索" value={q} onChange={(e) => setQ(e.target.value)} />
+          {/* 一覧が長いと一番下は見つけにくいので、作るボタンは上に置く */}
+          <Button block className={s.newExBtn} onClick={() => setMaking(true)}>＋ 新しい種目を作る</Button>
           <div className={s.filters}>
             <button type="button" aria-pressed={part === null} onClick={() => setPart(null)}>すべて</button>
             {BODY_PARTS.map((b) => (
@@ -44,7 +46,6 @@ export function ExercisePicker({ open, onClose, onPick }: { open: boolean; onClo
             ))}
             {list.length === 0 && <p className="muted" style={{ fontSize: 13, padding: 16, textAlign: 'center' }}>該当する種目がありません</p>}
           </div>
-          <Button block className={s.newExBtn} onClick={() => setMaking(true)}>＋ 新しい種目を作る</Button>
         </>
       )}
     </Sheet>
