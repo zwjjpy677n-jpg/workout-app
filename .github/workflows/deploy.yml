@@ -27,6 +27,7 @@ jobs:
       - run: npm test
       # オンライン共有の接続先は .env.production（公開してよい値）から読む
       - run: npm run build
+      - run: npm run build:routine
       - name: Upload Pages artifact
         if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3

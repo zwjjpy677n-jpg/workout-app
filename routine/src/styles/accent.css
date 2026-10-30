@@ -1,0 +1,7 @@
+/* ルーティンのアクセント色（GRIND の --red を緑に置き換える） */
+:root {
+  --red: #22C55E;
+  --red-rgb: 34 197 94;
+  --red-soft: rgb(34 197 94 / 0.15);
+  --on-accent: #0B0B0D;
+}

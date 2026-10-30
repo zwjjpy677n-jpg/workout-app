@@ -7,6 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "dev:routine": "vite --config vite.routine.config.ts",
+    "build:routine": "tsc -b && vite build --config vite.routine.config.ts",
+    "preview:routine": "vite preview --config vite.routine.config.ts",
     "test": "vitest run",
     "lint": "tsc -b --noEmit",
     "build:ios": "npm run build && npx cap sync ios"
