@@ -30,6 +30,7 @@ const builder = () => {
 const auth = {
   getSession: vi.fn(async () => ({ data: { session }, error: null })),
   signInWithOtp: vi.fn(async (_: unknown) => ({ data: {}, error: null as unknown })),
+  signInAnonymously: vi.fn(async () => ({ data: { user: { id: 'anon1', is_anonymous: true } as unknown, session: null }, error: null as unknown })),
   verifyOtp: vi.fn(async (_: unknown) => ({ data: { user: null as unknown, session: null }, error: null as unknown })),
   signOut: vi.fn(async (_?: unknown) => ({ error: null as unknown })),
 };
@@ -361,4 +362,16 @@ test('コメント：消していない分を古い順に。書く・消す（de
   expect(calls).toContainEqual(['update', { deleted: true }]);
   expect(calls).toContainEqual(['eq', 'id', 'c1']);
   expect(calls).toContainEqual(['eq', 'user_id', 'me']);
+});
+
+test('signInAnonymously はメールなしの人として返し、無効な設定ならエラー', async () => {
+  expect(await api().signInAnonymously()).toEqual({ userId: 'anon1', email: '', anonymous: true });
+  auth.signInAnonymously.mockResolvedValueOnce({ data: { user: null, session: null }, error: { name: 'AuthApiError', message: 'Anonymous sign-ins are disabled', status: 422 } });
+  expect(await code(api().signInAnonymously())).toBe('unknown');
+});
+
+test('currentUser はメールなしの人に anonymous を付ける', async () => {
+  session = { user: { id: 'anon1', is_anonymous: true } as { id: string } };
+  expect(await api().currentUser()).toEqual({ userId: 'anon1', email: '', anonymous: true });
+  session = { user: { id: 'me', email: 'me@example.com' } };
 });

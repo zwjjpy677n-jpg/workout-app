@@ -73,7 +73,7 @@ export function createSupabaseApi(cfg: { url: string; anonKey: string }): Online
     }
     if (res.error) throw toOnlineError(res.error);
     const u = res.data.session?.user;
-    return u ? { userId: u.id, email: u.email ?? '' } : null;
+    return u ? { userId: u.id, email: u.email ?? '', ...(u.is_anonymous && { anonymous: true }) } : null;
   };
   const me = async (): Promise<string> => {
     const u = await sessionUser();
@@ -102,6 +102,13 @@ export function createSupabaseApi(cfg: { url: string; anonKey: string }): Online
       const u = res.data.user;
       if (!u) throw new OnlineError('code');
       return { userId: u.id, email: u.email ?? email.trim() };
+    },
+
+    async signInAnonymously() {
+      const data = await run(sb.auth.signInAnonymously());
+      const u = data?.user;
+      if (!u) throw new OnlineError('unknown');
+      return { userId: u.id, email: '', anonymous: true };
     },
 
     currentUser: sessionUser,

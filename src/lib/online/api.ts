@@ -7,6 +7,8 @@ import type { Comment, Emoji, FriendRow, GroupRow, MenuMessage, OnlineUser, Reac
 export interface OnlineApi {
   sendCode(email: string): Promise<void>;
   verifyCode(email: string, code: string): Promise<OnlineUser>;
+  /** メールなしではじめる（Supabase の匿名ログイン） */
+  signInAnonymously(): Promise<OnlineUser>;
   currentUser(): Promise<OnlineUser | null>;
   signOut(): Promise<void>;
   getMyName(): Promise<string | null>;

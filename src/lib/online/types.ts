@@ -6,7 +6,8 @@ export type SharedBody = { e: SharedEntry[] };
 export type SharedWorkout = { id: string; name: string; startedAt: number; endedAt: number; body: SharedBody };
 export type SharedWorkoutRow = SharedWorkout & { userId: string; updatedAt: string; deleted: boolean };
 export type MenuMessage = { id: string; sender: string; recipient: string; kind: 'built' | 'mine'; body: MenuPayload; createdAt: string };
-export type OnlineUser = { userId: string; email: string };
+/** anonymous: メールなしではじめた人（この端末のログインが消えると戻れない） */
+export type OnlineUser = { userId: string; email: string; anonymous?: boolean };
 export type FriendRow = { userId: string; name: string };
 export type GroupRow = { id: string; name: string; owner: string };
 export const EMOJIS = ['💪', '🔥', '👏'] as const;

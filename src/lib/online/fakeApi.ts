@@ -66,6 +66,11 @@ export function createFakeApi(): FakeApi {
       me = { userId: `u-${email}`, email };
       return me;
     },
+    async signInAnonymously() {
+      guard();
+      me = { userId: `anon-${++seq}`, email: '', anonymous: true };
+      return me;
+    },
     async currentUser() {
       guard();
       return me;

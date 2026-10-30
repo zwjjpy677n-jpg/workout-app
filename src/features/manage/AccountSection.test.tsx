@@ -123,3 +123,14 @@ test('設定: ログイン済みのときだけアカウントが出る', async 
   await screen.findByText('バー重量（kg）');
   expect(screen.queryByRole('heading', { name: 'アカウント' })).toBeNull();
 });
+
+test('メールなしの人には、そう出して、ログアウトの前に戻れないことを伝える', async () => {
+  await api.signInAnonymously();
+  setSession({ userId: 'anon' });
+  render(<AccountSection />);
+  expect(await screen.findByText('メールなし（この端末だけのアカウント）')).toBeInTheDocument();
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  await userEvent.click(screen.getByRole('button', { name: 'ログアウト' }));
+  expect(confirm.mock.calls[0][0]).toContain('もうこのアカウントには戻れません');
+  expect(getSession()).not.toBeNull();
+});

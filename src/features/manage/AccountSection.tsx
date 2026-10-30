@@ -9,6 +9,7 @@ export function AccountSection() {
   const api = getApi();
   const [loggedIn, setLoggedIn] = useState(() => getSession() !== null);
   const [email, setEmail] = useState<string | null>(null);
+  const [anonymous, setAnonymous] = useState(false);
   const [name, setName] = useState('');
   const [loaded, setLoaded] = useState(false);
   const [note, setNote] = useState<'ok' | 'ng' | null>(null);
@@ -17,7 +18,14 @@ export function AccountSection() {
   useEffect(() => {
     if (!api || !loggedIn) return;
     let alive = true;
-    api.currentUser().then((u) => alive && setEmail(u?.email ?? null), () => {});
+    api.currentUser().then(
+      (u) => {
+        if (!alive) return;
+        setEmail(u?.email || null);
+        setAnonymous(!!u?.anonymous);
+      },
+      () => {},
+    );
     api.getMyName().then((n) => alive && (setName(n ?? ''), setLoaded(true)), () => alive && setLoaded(true));
     return () => {
       alive = false;
@@ -38,7 +46,10 @@ export function AccountSection() {
   };
 
   const logout = async () => {
-    if (!window.confirm('ログアウトしますか？ 端末の記録は消えません')) return;
+    const msg = anonymous
+      ? 'ログアウトしますか？ メールなしのアカウントなので、ログアウトするともうこのアカウントには戻れません（友達やグループもやり直しになります）。端末の記録は消えません'
+      : 'ログアウトしますか？ 端末の記録は消えません';
+    if (!window.confirm(msg)) return;
     await signOutOnline();
     setLoggedIn(false);
   };
@@ -47,6 +58,7 @@ export function AccountSection() {
     <section className={s.field}>
       <h2>アカウント</h2>
       {email && <span>{email}</span>}
+      {anonymous && <span>メールなし（この端末だけのアカウント）</span>}
       <label className={s.field}>
         <span>表示名</span>
         <input

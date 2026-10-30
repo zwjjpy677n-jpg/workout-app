@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '../../components/Button';
 import { getApi } from '../../lib/online/api';
-import { signIn, syncNow } from '../../lib/online/auth';
+import { signIn, signInWithoutEmail, syncNow } from '../../lib/online/auth';
 import { flushOutbox, queueRecentWorkouts } from '../../lib/online/outbox';
 import { getSession, setSession } from '../../lib/online/prefs';
 import { markFriendsSeen } from '../../lib/online/pull';
@@ -12,6 +12,8 @@ import { GroupsSection } from '../groups/GroupsSection';
 import s from './friends.module.css';
 
 const OFFLINE_TEXT = '今はつながりません。あとで自動で送ります';
+export const ANON_WARNING =
+  'メールなしではじめますか？\nこの端末だけのアカウントになります。ログアウトしたり、アプリを削除・機種変更したりすると、このアカウントには戻れず、友達やグループもやり直しになります';
 const isOffline = (e: unknown) => e instanceof OnlineError && e.code === 'offline';
 const askedKey = (userId: string) => `ironlog:sharedHistoryAsked:${userId}`;
 const wasAsked = (userId: string) => {
@@ -65,6 +67,28 @@ export function LoginForm({ onDone }: { onDone(user: OnlineUser): void }) {
     }
   };
 
+  /** ログインのあと、名前が決まっていれば終わり。無ければ名前を決める */
+  const afterLogin = async (u: OnlineUser) => {
+    let existing: string | null;
+    try {
+      existing = await getApi()!.getMyName();
+    } catch (e) {
+      // ログインは通っている。ここでの失敗はサーバーの設定などなので、理由を出して原因を追えるようにする
+      throw new AfterLoginError(e);
+    }
+    if (existing) return onDone(u);
+    setUser(u);
+    setStep('name');
+  };
+
+  const withoutEmail = () => {
+    if (!window.confirm(ANON_WARNING)) return;
+    void run(
+      async () => afterLogin(await signInWithoutEmail()),
+      (e) => (e instanceof AfterLoginError ? loginErrorText(e) : isOffline(e) ? OFFLINE_TEXT : 'メールなしでははじめられませんでした。メールアドレスでログインしてください'),
+    );
+  };
+
   if (step === 'email') {
     return (
       <div>
@@ -82,6 +106,7 @@ export function LoginForm({ onDone }: { onDone(user: OnlineUser): void }) {
         >
           コードを送る
         </Button>
+        <button type="button" className={s.link} disabled={busy} onClick={withoutEmail}>メールなしではじめる</button>
         {error && <p role="alert" className={s.error}>{error}</p>}
       </div>
     );
@@ -96,19 +121,7 @@ export function LoginForm({ onDone }: { onDone(user: OnlineUser): void }) {
           variant="primary"
           disabled={busy || code.length < 6}
           onClick={() =>
-            run(async () => {
-              const u = await signIn(email.trim(), code);
-              let existing: string | null;
-              try {
-                existing = await getApi()!.getMyName();
-              } catch (e) {
-                // コードは通っている。ここでの失敗はサーバーの設定などなので、理由を出して原因を追えるようにする
-                throw new AfterLoginError(e);
-              }
-              if (existing) return onDone(u);
-              setUser(u);
-              setStep('name');
-            }, loginErrorText)
+            run(async () => afterLogin(await signIn(email.trim(), code)), loginErrorText)
           }
         >
           ログイン

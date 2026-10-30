@@ -52,6 +52,33 @@ test('未ログインならログインのあとで友達になる', async () =>
   expect(sessionStorage.getItem('ironlog:pendingInvite')).toBeNull();
 });
 
+test('メールなしではじめて、名前を決めると友達になる（先に注意を出す）', async () => {
+  const code = await invite();
+  open(code);
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  await userEvent.click(await screen.findByRole('button', { name: 'メールなしではじめる' }));
+  expect(confirm.mock.calls[0][0]).toContain('この端末だけのアカウントになります');
+  expect(getSession()).toBeNull();
+  confirm.mockReturnValue(true);
+  await userEvent.click(screen.getByRole('button', { name: 'メールなしではじめる' }));
+  await userEvent.type(await screen.findByLabelText('表示名'), 'はなこ');
+  await userEvent.click(screen.getByRole('button', { name: '保存' }));
+  expect(await screen.findByTestId('location')).toHaveTextContent('/friends/owner');
+  expect(getSession()?.userId).toMatch(/^anon-/);
+  expect((await api.listFriends()).map((f) => f.name)).toEqual(['たろう']);
+  confirm.mockRestore();
+});
+
+test('メールなしではじめられない（サーバーの設定が無効など）ときは、メールでのログインを案内する', async () => {
+  const code = await invite();
+  api.signInAnonymously = () => Promise.reject(new OnlineError('unknown'));
+  open(code);
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
+  await userEvent.click(await screen.findByRole('button', { name: 'メールなしではじめる' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('メールなしでははじめられませんでした。メールアドレスでログインしてください');
+  vi.mocked(window.confirm).mockRestore();
+});
+
 test('ログイン済みでも名前が無ければ、先に名前を決める', async () => {
   const code = await invite();
   api.as('guest');
