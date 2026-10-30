@@ -28,7 +28,7 @@ const markAsked = (userId: string) => {
   }
 };
 
-/** メール → 6桁のコード → （名前が無ければ）表示名。Task 7 の参加ページでも使う */
+/** メール → 確認コード（6〜10桁。Supabase の設定で桁数が変わる） → （名前が無ければ）表示名。Task 7 の参加ページでも使う */
 class AfterLoginError extends Error {
   constructor(readonly cause: unknown) {
     super('after-login');
@@ -88,12 +88,12 @@ export function LoginForm({ onDone }: { onDone(user: OnlineUser): void }) {
   if (step === 'code') {
     return (
       <div>
-        <p className={s.hint}>{email} に届いた6桁のコードを入れてください</p>
-        <input className={s.text} inputMode="numeric" autoComplete="one-time-code" maxLength={6} aria-label="6桁のコード" placeholder="123456" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} />
+        <p className={s.hint}>{email} に届いた確認コード（数字）を入れてください</p>
+        <input className={s.text} inputMode="numeric" autoComplete="one-time-code" maxLength={10} aria-label="確認コード" placeholder="12345678" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} />
         <Button
           block
           variant="primary"
-          disabled={busy || code.length !== 6}
+          disabled={busy || code.length < 6}
           onClick={() =>
             run(async () => {
               const u = await signIn(email.trim(), code);

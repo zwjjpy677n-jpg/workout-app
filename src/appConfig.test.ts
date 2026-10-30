@@ -53,3 +53,7 @@ test('画面と共有メッセージに GRIND が残っていない', () => {
     );
   expect(walk('src').filter((p) => read(p).includes('GRIND'))).toEqual([]);
 });
+
+test('入力欄を押しても iPhone が画面を自動で拡大しない（maximum-scale=1）', () => {
+  expect(read('index.html')).toMatch(/<meta name="viewport" content="[^"]*maximum-scale=1[^"]*"/);
+});

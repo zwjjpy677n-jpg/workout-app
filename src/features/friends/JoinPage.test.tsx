@@ -44,7 +44,7 @@ test('未ログインならログインのあとで友達になる', async () =>
   expect(sessionStorage.getItem('ironlog:pendingInvite')).toBe(code);
   await userEvent.type(await screen.findByLabelText('メールアドレス'), 'g@x.com');
   await userEvent.click(screen.getByRole('button', { name: 'コードを送る' }));
-  await userEvent.type(await screen.findByLabelText('6桁のコード'), '123456');
+  await userEvent.type(await screen.findByLabelText('確認コード'), '123456');
   await userEvent.click(screen.getByRole('button', { name: 'ログイン' }));
   await userEvent.type(await screen.findByLabelText('表示名'), 'はなこ');
   await userEvent.click(screen.getByRole('button', { name: '保存' }));

@@ -26,7 +26,7 @@ const page = () => renderRoute('/friends', '/friends', <FriendsPage />);
 async function login(email = 'a@x.com', code = '123456') {
   await userEvent.type(await screen.findByLabelText('メールアドレス'), email);
   await userEvent.click(screen.getByRole('button', { name: 'コードを送る' }));
-  await userEvent.type(await screen.findByLabelText('6桁のコード'), code);
+  await userEvent.type(await screen.findByLabelText('確認コード'), code);
   await userEvent.click(screen.getByRole('button', { name: 'ログイン' }));
 }
 
@@ -251,4 +251,14 @@ test('「はい」の送信が失敗したら、つながらない表示を出�
   expect(screen.getByText('直近8週間の記録を共有しますか？')).toBeInTheDocument();
   expect(localStorage.getItem('ironlog:sharedHistoryAsked:a')).toBeNull();
   spy.mockRestore();
+});
+
+test('8桁のコードも最後まで入れられる（Supabase は 8 桁を送ることがある）', async () => {
+  page();
+  await userEvent.type(await screen.findByLabelText('メールアドレス'), 'a@x.com');
+  await userEvent.click(screen.getByRole('button', { name: 'コードを送る' }));
+  const input = await screen.findByLabelText('確認コード');
+  await userEvent.type(input, '12345678');
+  expect(input).toHaveValue('12345678');
+  expect(screen.getByRole('button', { name: 'ログイン' })).toBeEnabled();
 });
