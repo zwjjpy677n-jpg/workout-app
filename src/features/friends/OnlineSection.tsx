@@ -11,6 +11,7 @@ import { sendText, type ShareNote } from './useShareMine';
 import s from './friends.module.css';
 
 const OFFLINE_TEXT = '今はつながりません。あとで自動で送ります';
+const isOffline = (e: unknown) => e instanceof OnlineError && e.code === 'offline';
 const askedKey = (userId: string) => `ironlog:sharedHistoryAsked:${userId}`;
 const wasAsked = (userId: string) => {
   try {
@@ -28,6 +29,21 @@ const markAsked = (userId: string) => {
 };
 
 /** メール → 6桁のコード → （名前が無ければ）表示名。Task 7 の参加ページでも使う */
+class AfterLoginError extends Error {
+  constructor(readonly cause: unknown) {
+    super('after-login');
+  }
+}
+
+function loginErrorText(e: unknown): string {
+  if (e instanceof AfterLoginError) {
+    if (isOffline(e.cause)) return OFFLINE_TEXT;
+    const detail = e.cause instanceof Error ? e.cause.message : String(e.cause);
+    return `ログインはできましたが、続きの準備に失敗しました（${detail}）`;
+  }
+  return isOffline(e) ? OFFLINE_TEXT : 'コードが違うか、期限が切れています';
+}
+
 export function LoginForm({ onDone }: { onDone(user: OnlineUser): void }) {
   const [step, setStep] = useState<'email' | 'code' | 'name'>('email');
   const [email, setEmail] = useState('');
@@ -47,7 +63,6 @@ export function LoginForm({ onDone }: { onDone(user: OnlineUser): void }) {
       setBusy(false);
     }
   };
-  const isOffline = (e: unknown) => e instanceof OnlineError && e.code === 'offline';
 
   if (step === 'email') {
     return (
@@ -82,11 +97,17 @@ export function LoginForm({ onDone }: { onDone(user: OnlineUser): void }) {
           onClick={() =>
             run(async () => {
               const u = await signIn(email.trim(), code);
-              const existing = await getApi()!.getMyName();
+              let existing: string | null;
+              try {
+                existing = await getApi()!.getMyName();
+              } catch (e) {
+                // コードは通っている。ここでの失敗はサーバーの設定などなので、理由を出して原因を追えるようにする
+                throw new AfterLoginError(e);
+              }
               if (existing) return onDone(u);
               setUser(u);
               setStep('name');
-            }, (e) => (isOffline(e) ? OFFLINE_TEXT : 'コードが違うか、期限が切れています'))
+            }, loginErrorText)
           }
         >
           ログイン

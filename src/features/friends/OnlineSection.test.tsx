@@ -1,3 +1,4 @@
+import { OnlineError } from '../../lib/online/types';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
@@ -73,6 +74,16 @@ test('コードが違うと「コードが違うか、期限が切れていま�
   await login('a@x.com', '000000');
   expect(await screen.findByRole('alert')).toHaveTextContent('コードが違うか、期限が切れています');
   expect(getSession()).toBeNull();
+});
+
+test('コードは合っていて、そのあとの名前の確認で失敗したら、理由つきで別の文を出す', async () => {
+  vi.spyOn(api, 'getMyName').mockRejectedValueOnce(new OnlineError('unknown', 'permission denied for table profiles'));
+  page();
+  await login();
+  const alert = await screen.findByRole('alert');
+  expect(alert).toHaveTextContent('ログインはできましたが、続きの準備に失敗しました');
+  expect(alert).toHaveTextContent('permission denied for table profiles');
+  expect(alert).not.toHaveTextContent('コードが違う');
 });
 
 describe('初回の確認', () => {
