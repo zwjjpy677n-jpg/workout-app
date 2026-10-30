@@ -3,12 +3,15 @@ import { CartesianGrid, Line, LineChart, Tooltip, XAxis, YAxis } from 'recharts'
 import { formatMD, fromDateKey, startOfWeek, toDateKey } from '../../../../src/lib/dates';
 import { addDays } from '../../lib/day';
 import { currentStreak, itemRate, longestStreak, rangeRate } from '../../lib/stats';
-import type { Item, Log } from '../../lib/types';
+import { SLOTS, type Item, type Log } from '../../lib/types';
 import s from './history.module.css';
 
 // iPhone の Safari は SVG の属性の var() を解決しないことがあるので、色は値で書く（accent.css の --red と同じ）
 const GREEN = '#22C55E';
 const AXIS = { fill: '#8B8B94', fontFamily: 'Oswald, sans-serif', fontSize: 10 };
+
+const SLOT_ORDER = new Map(SLOTS.map((x, i) => [x.key, i]));
+const byPosition = (a: Item, b: Item) => SLOT_ORDER.get(a.slot)! - SLOT_ORDER.get(b.slot)! || a.order - b.order;
 
 const pct = (r: number | null) => (r == null ? '—' : `${Math.round(r * 100)}%`);
 
@@ -57,8 +60,8 @@ export function Stats({ items, logs, today }: { items: Item[]; logs: Log[]; toda
   const monthFrom = `${today.slice(0, 8)}01`;
   const from30 = addDays(today, -29);
   const logged = new Set(logs.map((l) => l.itemId));
-  const listed = items.filter((it) => it.deletedAt == null || logged.has(it.id));
-  const numbers = items.filter((it) => it.kind === 'number' && it.deletedAt == null);
+  const listed = items.filter((it) => it.deletedAt == null || logged.has(it.id)).sort(byPosition);
+  const numbers = items.filter((it) => it.kind === 'number' && it.deletedAt == null).sort(byPosition);
   const [pick, setPick] = useState<string | null>(null);
   const chart = numbers.find((it) => it.id === pick) ?? numbers[0];
 

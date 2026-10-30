@@ -15,3 +15,9 @@ test('記録タブを押すと記録の画面', async () => {
   await userEvent.click(screen.getByRole('link', { name: '記録' }));
   expect(screen.getByRole('heading', { name: '記録' })).toBeInTheDocument();
 });
+
+test('保存できない端末では案内が出て、タブは使える', () => {
+  render(<MemoryRouter><App storageOk={false} /></MemoryRouter>);
+  expect(screen.getByRole('alert')).toHaveTextContent('この端末では保存できません');
+  expect(screen.getByRole('link', { name: '記録' })).toBeInTheDocument();
+});

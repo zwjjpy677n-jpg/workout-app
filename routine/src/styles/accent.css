@@ -5,3 +5,13 @@
   --red-soft: rgb(34 197 94 / 0.15);
   --on-accent: #0B0B0D;
 }
+
+.storage-alert { flex: none; padding: calc(env(safe-area-inset-top) + 8px) 16px 8px; background: #7f1d1d; color: #fff; font-size: 13px; }
+
+/* 文字の入力欄。:where で詳細度を 0 にして、GRIND の NumberInput などの見た目を優先させる */
+:where(input[type='text'], input:not([type])) {
+  min-height: 44px; padding: 0 12px; border: 0; outline: 0; border-radius: 10px;
+  background: var(--surface2); font-size: 16px;
+}
+:where(input[type='text'], input:not([type]))::placeholder { color: #5d5d66; }
+:where(input[type='text'], input:not([type])):focus { box-shadow: inset 0 0 0 1.5px var(--red); }

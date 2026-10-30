@@ -6,7 +6,7 @@ import { RoutinesPage } from './features/routines/RoutinesPage';
 import { TodayPage } from './features/today/TodayPage';
 
 // 中身だけをスクロールさせ、タブバーはその下に並べる（GRIND と同じ作り）
-function TabLayout() {
+function TabLayout({ storageOk }: { storageOk: boolean }) {
   const main = useRef<HTMLElement>(null);
   const { pathname } = useLocation();
   useLayoutEffect(() => {
@@ -14,6 +14,11 @@ function TabLayout() {
   }, [pathname]);
   return (
     <div className="shell">
+      {!storageOk && (
+        <div role="alert" className="storage-alert">
+          この端末では保存できません。プライベートブラウズをやめるか、別のブラウザで開いてください
+        </div>
+      )}
       <main ref={main} className="shell-main">
         <Outlet />
       </main>
@@ -22,10 +27,10 @@ function TabLayout() {
   );
 }
 
-export function App() {
+export function App({ storageOk = true }: { storageOk?: boolean }) {
   return (
     <Routes>
-      <Route element={<TabLayout />}>
+      <Route element={<TabLayout storageOk={storageOk} />}>
         <Route path="/" element={<TodayPage />} />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/routines" element={<RoutinesPage />} />

@@ -46,3 +46,22 @@ npm run preview  # ビルド結果の確認
 - `src/db/` Dexie スキーマ・シード・リポジトリ
 - `src/features/` 画面（home / workout / calendar / progress / manage / tools）
 - 設計: `docs/superpowers/specs/2026-10-28-ironlog-design.md`
+
+## ルーティン（別アプリ）
+
+毎日のルーティンと、その日のやることをチェックする自分用のアプリ。GRIND とは別のアプリで、データも端末内の別のデータベース（`routine`）に入ります。
+
+- **今日**: 時間帯（朝／練習前／練習後／夜）ごとに今日やるルーティンを並べる。チェックだけの項目と、数値の項目（水 1500ml、睡眠 7.5時間など。目標に届くと自動でチェック）がある。上に達成率と連続日数
+- **今日のやること**: その日だけのチェックリスト。前の日にできなかったものは「未完了が N 件あります」から選んで今日に持ち越せる
+- **記録**: 日ごとの達成率をカレンダーの色で表示（日付を押すと後から直せる）。今週・今月の達成率、連続・最長の日数、項目ごとの直近30日の達成率、数値の項目の推移グラフ
+- **ルーティン**: 項目の追加・編集・並べ替え・休止・削除。やる曜日を選べる（練習日とオフの日で中身を変えられる）
+
+```bash
+npm run dev:routine      # 開発サーバー
+npm run build:routine    # 本番ビルド（dist-routine/）
+npm run preview:routine  # ビルド結果の確認
+```
+
+ソースは `routine/`、ビルド設定は `vite.routine.config.ts`。ボタンやシートなどの部品と色・フォントは GRIND の `src/` から読み込みます（GRIND 側は変えていません）。テストは `npm test` で GRIND と一緒に走ります。
+
+- 設計: `docs/superpowers/specs/2026-10-30-routine-app-design.md`

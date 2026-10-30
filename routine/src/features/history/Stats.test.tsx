@@ -57,3 +57,14 @@ test('数値の項目を切り替えてグラフを見る。数値の項目が�
   render(<Stats items={[ITEMS[0]]} logs={LOGS} today={TODAY} />);
   expect(screen.queryByRole('heading', { name: /の推移$/ })).not.toBeInTheDocument();
 });
+
+test('項目ごとの一覧は時間帯の順 → 並び順', () => {
+  const xs = [
+    item({ id: 'n', name: '夜の項目', slot: 'night' }),
+    item({ id: 'm1', name: '朝の2番', order: 1 }),
+    item({ id: 'm0', name: '朝の1番', order: 0 }),
+  ];
+  render(<Stats items={xs} logs={[]} today={TODAY} />);
+  const names = within(screen.getByRole('list', { name: '項目ごとの達成率' })).getAllByRole('listitem').map((li) => li.querySelector('span')!.textContent);
+  expect(names).toEqual(['朝の1番', '朝の2番', '夜の項目']);
+});
