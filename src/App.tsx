@@ -1,4 +1,5 @@
-import { HashRouter, Outlet, Route, Routes } from 'react-router-dom';
+import { useLayoutEffect, useRef } from 'react';
+import { HashRouter, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { TabBar } from './components/TabBar';
 import { HomePage } from './features/home/HomePage';
 import { CalendarPage } from './features/calendar/CalendarPage';
@@ -13,12 +14,20 @@ import { MenuEditorPage } from './features/friends/MenuEditorPage';
 import { FriendMenuPage } from './features/friends/FriendMenuPage';
 import { WorkoutPage } from './features/workout/WorkoutPage';
 
+// 中身だけをスクロールさせ、タブバーはその下に並べる（iPhone のホーム画面アプリでは、画面に固定したバーが短いページで浮くため）
 function TabLayout() {
+  const main = useRef<HTMLElement>(null);
+  const { pathname } = useLocation();
+  useLayoutEffect(() => {
+    if (main.current) main.current.scrollTop = 0;
+  }, [pathname]);
   return (
-    <>
-      <Outlet />
+    <div className="shell">
+      <main ref={main} className="shell-main">
+        <Outlet />
+      </main>
       <TabBar />
-    </>
+    </div>
   );
 }
 

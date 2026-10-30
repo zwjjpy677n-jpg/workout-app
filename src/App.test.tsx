@@ -20,3 +20,22 @@ it('記録画面ではタブを出さない', async () => {
   expect(await screen.findByRole('button', { name: '終了' })).toBeInTheDocument();
   expect(screen.queryByRole('link', { name: 'ホーム' })).toBeNull();
 });
+
+// iPhone のホーム画面アプリでは、画面に固定したタブバーが短いページで浮いてしまう。
+// 中身だけをスクロールさせ、タブバーはその下に並べる
+it('タブバーは中身のスクロール領域の外に、下に並べて置く', () => {
+  const { container } = render(<MemoryRouter initialEntries={['/calendar']} future={ROUTER_FUTURE}><AppRoutes /></MemoryRouter>);
+  const main = container.querySelector('main');
+  const nav = container.querySelector('nav');
+  expect(main).not.toBeNull();
+  expect(main!.contains(nav)).toBe(false);
+  expect(main!.nextElementSibling).toBe(nav);
+});
+
+it('タブを切り替えると中身は一番上から表示する', async () => {
+  const { container } = render(<MemoryRouter initialEntries={['/']} future={ROUTER_FUTURE}><AppRoutes /></MemoryRouter>);
+  const main = container.querySelector('main')!;
+  main.scrollTop = 500;
+  await userEvent.click(screen.getByRole('link', { name: 'カレンダー' }));
+  expect(main.scrollTop).toBe(0);
+});

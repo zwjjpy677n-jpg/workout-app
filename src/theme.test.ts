@@ -34,3 +34,8 @@ test('カレンダーの一番濃い日は、強調色の上の文字色で読�
   const cal = readFileSync(resolve(process.cwd(), 'src/features/calendar/calendar.module.css'), 'utf8');
   expect(cal).toMatch(/\.d\[data-level='3'\]\s*\{[^}]*color:\s*var\(--on-accent\)/);
 });
+
+test('タブバーを画面に固定しない（iPhone のホーム画面アプリで短いページだと浮くため）', () => {
+  const css = readFileSync(resolve(process.cwd(), 'src/components/TabBar.module.css'), 'utf8');
+  expect(css).not.toMatch(/position:\s*fixed/);
+});
