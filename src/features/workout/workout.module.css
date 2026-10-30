@@ -89,3 +89,7 @@
 .btnRow button[aria-pressed='true'] { background: #5a1d1d; color: #ffb3ae; }
 .btnRow .next { background: var(--text); color: var(--bg); font-weight: 700; flex: 1; }
 .saveError { margin: 0 4px 10px; padding: 10px 12px; border-radius: 10px; background: #5a1d1d; color: #ffd2cf; font-size: 13px; }
+.newExBtn { margin-top: 12px; }
+.newEx { display: flex; flex-direction: column; gap: 8px; }
+.newEx .filters { padding-bottom: 2px; }
+.newExNote { font-size: 12px; color: var(--muted); line-height: 1.6; }

@@ -73,6 +73,37 @@ test('種目を追加できる', async () => {
   expect(await screen.findByRole('region', { name: 'スクワット' })).toBeInTheDocument();
 });
 
+test('種目の追加から新しい種目を作って、そのまま追加できる（検索した文字が名前に入る）', async () => {
+  renderRoute('/workout', '/workout', <WorkoutPage />);
+  await rows();
+  await userEvent.click(screen.getByRole('button', { name: '＋ 種目を追加' }));
+  const dlg = screen.getByRole('dialog', { name: '種目を追加' });
+  await userEvent.type(within(dlg).getByRole('textbox', { name: '種目を検索' }), 'ケーブルフライ');
+  expect(within(dlg).getByText('該当する種目がありません')).toBeInTheDocument();
+  await userEvent.click(within(dlg).getByRole('button', { name: '＋ 新しい種目を作る' }));
+  expect(within(dlg).getByRole('textbox', { name: '新しい種目の名前' })).toHaveValue('ケーブルフライ');
+  await userEvent.click(within(within(dlg).getByRole('group', { name: '部位' })).getByRole('button', { name: '胸' }));
+  await userEvent.click(within(dlg).getByRole('button', { name: '作って追加' }));
+  expect(await screen.findByRole('region', { name: 'ケーブルフライ' })).toBeInTheDocument();
+  expect(screen.queryByRole('dialog', { name: '種目を追加' })).toBeNull();
+  const made = (await listExercises()).find((e) => e.name === 'ケーブルフライ');
+  expect(made).toMatchObject({ bodyPart: 'chest', type: 'weight', restSec: 90 });
+});
+
+test('新しい種目に、もうある名前を入れると作らずにその種目を追加する', async () => {
+  renderRoute('/workout', '/workout', <WorkoutPage />);
+  await rows();
+  const before = (await listExercises()).length;
+  await userEvent.click(screen.getByRole('button', { name: '＋ 種目を追加' }));
+  const dlg = screen.getByRole('dialog', { name: '種目を追加' });
+  await userEvent.click(within(dlg).getByRole('button', { name: '＋ 新しい種目を作る' }));
+  await userEvent.type(within(dlg).getByRole('textbox', { name: '新しい種目の名前' }), 'スクワット');
+  expect(within(dlg).getByText('「スクワット」はもうあります。押すとその種目を追加します')).toBeInTheDocument();
+  await userEvent.click(within(dlg).getByRole('button', { name: 'この種目を追加' }));
+  expect(await screen.findByRole('region', { name: 'スクワット' })).toBeInTheDocument();
+  expect(await listExercises()).toHaveLength(before);
+});
+
 test('終了するとendedAtが入りカレンダーへ', async () => {
   vi.spyOn(window, 'confirm').mockReturnValue(true);
   renderRoute('/workout', '/workout', <WorkoutPage />);
