@@ -1,7 +1,6 @@
 import { NumberInput } from '../../components/NumberInput';
 import { AccountSection } from './AccountSection';
 import { AppearanceSection } from './AppearanceSection';
-import { ScreenInfo } from './ScreenInfo';
 import { updateSettings } from '../../db/repository';
 import { DEFAULT_SETTINGS } from '../../db/seed';
 import { useState } from 'react';
@@ -76,7 +75,6 @@ export function SettingsForm() {
           ))}
         </div>
       </div>
-      <ScreenInfo />
     </>
   );
 }
