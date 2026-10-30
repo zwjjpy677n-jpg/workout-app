@@ -134,3 +134,63 @@ describe('fakeApi', () => {
     expect(await api.currentUser()).toEqual(u);
   });
 });
+
+describe('fakeApi のグループ', () => {
+  async function group() {
+    const api = await setup();
+    api.as('C');
+    await api.saveMyName('シー');
+    api.as('A');
+    const g = await api.createGroup('朝練');
+    const c = await api.createGroupInvite(g.id);
+    api.as('B');
+    expect(await api.acceptInvite(c)).toEqual({ userId: 'A', name: 'エー', kind: 'group' });
+    // グループの招待は何人でも使える
+    api.as('C');
+    await api.acceptInvite(c);
+    return { api, g };
+  }
+
+  it('メンバーどうしは記録が見え、リアクションとコメントを付けられる。友達にはならない', async () => {
+    const { api, g } = await group();
+    api.as('A');
+    await api.upsertWorkout(w('wa'));
+    expect(await api.listFriends()).toEqual([]);
+    api.as('B');
+    expect((await api.groupMembers(g.id)).map((m) => m.name)).toEqual(['エー', 'ビー', 'シー']);
+    expect((await api.recentWorkouts(['A'], 0)).map((r) => r.id)).toEqual(['wa']);
+    await api.setReaction({ owner: 'A', id: 'wa' }, '💪', true);
+    await api.addComment({ owner: 'A', id: 'wa' }, 'ナイス');
+    expect(await code(api.sendMenu('A', 'built', menu))).toBe('invalid');
+    api.as('C');
+    expect(await api.listReactions([{ owner: 'A', id: 'wa' }])).toEqual([{ owner: 'A', id: 'wa', userId: 'B', emoji: '💪' }]);
+    expect((await api.listComments([{ owner: 'A', id: 'wa' }])).map((c) => c.body)).toEqual(['ナイス']);
+  });
+
+  it('抜けると見えなくなる。作った人が最後に抜けるとグループは消える', async () => {
+    const { api, g } = await group();
+    api.as('A');
+    await api.upsertWorkout(w('wa'));
+    api.as('C');
+    await api.leaveGroup(g.id);
+    expect(await api.listGroups()).toEqual([]);
+    expect(await api.recentWorkouts(['A'], 0)).toEqual([]);
+    expect(await code(api.setReaction({ owner: 'A', id: 'wa' }, '💪', true))).toBe('invalid');
+    api.as('B');
+    await api.leaveGroup(g.id);
+    api.as('A');
+    expect((await api.listGroups()).map((x) => x.name)).toEqual(['朝練']);
+    await api.leaveGroup(g.id);
+    expect(await api.listGroups()).toEqual([]);
+  });
+
+  it('名前を変えられるのは作った人だけ', async () => {
+    const { api, g } = await group();
+    api.as('B');
+    await api.renameGroup(g.id, 'B案');
+    api.as('A');
+    await api.renameGroup(g.id, '夜練');
+    api.as('C');
+    expect((await api.listGroups())[0].name).toBe('夜練');
+  });
+});

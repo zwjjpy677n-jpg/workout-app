@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import { HashRouter, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { TabBar } from './components/TabBar';
+import { GroupPage } from './features/groups/GroupPage';
 import { HomePage } from './features/home/HomePage';
 import { CalendarPage } from './features/calendar/CalendarPage';
 import { ProgressPage } from './features/progress/ProgressPage';
@@ -46,6 +47,7 @@ export function AppRoutes() {
         <Route path="/friends/:id/exercise/:x8" element={<FriendExercisePage />} />
         <Route path="/friends/:id/menu/new" element={<MenuEditorPage />} />
         <Route path="/friends/:id/menus/:name" element={<FriendMenuPage />} />
+        <Route path="/friends/groups/:id" element={<GroupPage />} />
       </Route>
       <Route path="/workout" element={<WorkoutPage />} />
       <Route path="/workout/:id" element={<WorkoutPage />} />

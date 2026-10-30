@@ -33,6 +33,8 @@ type View = 'working' | 'login' | 'name' | { error: string; retry?: boolean };
 export function JoinPage() {
   const [params] = useSearchParams();
   const code = params.get('c');
+  // グループの招待は、入ったあとに開くグループの id も付いている
+  const groupId = params.get('g');
   const navigate = useNavigate();
   const [view, setView] = useState<View>('working');
   const started = useRef(false);
@@ -45,14 +47,15 @@ export function JoinPage() {
   const accept = async () => {
     setView('working');
     try {
-      const friend = await getApi()!.acceptInvite(code!);
+      const inviter = await getApi()!.acceptInvite(code!);
       clearPending();
       try {
         await pullAll(Date.now());
       } catch {
         /* 取り込みは失敗しても友達にはなれている */
       }
-      navigate(`/friends/${friend.userId}`, { replace: true });
+      if (inviter.kind === 'group') navigate(groupId ? `/friends/groups/${groupId}` : '/friends', { replace: true });
+      else navigate(`/friends/${inviter.userId}`, { replace: true });
     } catch (e) {
       const c = e instanceof OnlineError ? e.code : null;
       if (c === 'self') return fail('自分の招待リンクです');
@@ -62,7 +65,7 @@ export function JoinPage() {
         return setView('login');
       }
       if (c === 'offline') return setView({ error: OFFLINE_TEXT, retry: true });
-      fail('友達になれませんでした');
+      fail(groupId ? 'グループに入れませんでした' : '友達になれませんでした');
     }
   };
 
@@ -96,8 +99,8 @@ export function JoinPage() {
 
   return (
     <main className={s.online}>
-      <h1 className={s.onlineTitle}>友達の招待</h1>
-      {view === 'working' && <p role="status" className={s.hint}>友達になっています…</p>}
+      <h1 className={s.onlineTitle}>{groupId ? 'グループの招待' : '友達の招待'}</h1>
+      {view === 'working' && <p role="status" className={s.hint}>{groupId ? 'グループに入っています…' : '友達になっています…'}</p>}
       {view === 'login' && <LoginForm onDone={() => void accept()} />}
       {view === 'name' && <NameStep onSaved={() => void accept()} />}
       {typeof view === 'object' && (

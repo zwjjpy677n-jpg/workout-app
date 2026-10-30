@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import type { MenuPayload } from '../share/menuPayload';
 import type { OnlineApi } from './api';
-import { OnlineError, type FriendRow, type MenuMessage, type OnlineErrorCode, type OnlineUser, type SharedBody, type SharedWorkout, type SharedWorkoutRow } from './types';
+import { EMOJIS, OnlineError, type Comment, type Emoji, type FriendRow, type GroupRow, type MenuMessage, type OnlineErrorCode, type OnlineUser, type SharedBody, type SharedWorkout, type SharedWorkoutRow, type WorkoutKey } from './types';
 
 type Raw = { name?: unknown; message?: unknown; code?: unknown; status?: unknown } | null | undefined;
 
@@ -45,6 +45,17 @@ const iso = (ms: number) => new Date(ms).toISOString();
 const ms = (v: unknown) => (typeof v === 'number' ? v : Date.parse(String(v)));
 
 type WorkoutDbRow = { user_id: string; id: string; name: string; started_at: string; ended_at: string; body: SharedBody; updated_at: string; deleted: boolean };
+const toRow = (r: WorkoutDbRow): SharedWorkoutRow => ({
+  userId: r.user_id, id: r.id, name: r.name, startedAt: ms(r.started_at), endedAt: ms(r.ended_at), body: r.body, updatedAt: r.updated_at, deleted: r.deleted,
+});
+const WORKOUT_COLS = 'user_id,id,name,started_at,ended_at,body,updated_at,deleted';
+const owners = (keys: WorkoutKey[]) => [...new Set(keys.map((k) => k.owner))];
+const ids = (keys: WorkoutKey[]) => [...new Set(keys.map((k) => k.id))];
+const hasKey = (keys: WorkoutKey[]) => {
+  const set = new Set(keys.map((k) => `${k.owner}|${k.id}`));
+  return (r: { workout_owner: string; workout_id: string }) => set.has(`${r.workout_owner}|${r.workout_id}`);
+};
+
 type MenuDbRow = { id: string; sender: string; recipient: string; kind: 'built' | 'mine'; body: MenuPayload; created_at: string };
 
 export function createSupabaseApi(cfg: { url: string; anonKey: string }): OnlineApi {
@@ -128,9 +139,9 @@ export function createSupabaseApi(cfg: { url: string; anonKey: string }): Online
         if (err.code !== 'offline' && err.code !== 'auth' && hit) throw new OnlineError(hit);
         throw err;
       }
-      const r = data as { user_id?: string; name?: string | null } | null;
+      const r = data as { kind?: string; user_id?: string; name?: string | null } | null;
       if (!r?.user_id) throw new OnlineError('unknown');
-      return { userId: r.user_id, name: r.name ?? '' };
+      return { userId: r.user_id, name: r.name ?? '', kind: r.kind === 'group' ? 'group' : 'friend' };
     },
 
     async listFriends() {
@@ -161,22 +172,11 @@ export function createSupabaseApi(cfg: { url: string; anonKey: string }): Online
 
     async pullWorkouts(since, userId) {
       const uid = await me();
-      let q = sb.from('shared_workouts').select('user_id,id,name,started_at,ended_at,body,updated_at,deleted').neq('user_id', uid);
+      let q = sb.from('shared_workouts').select(WORKOUT_COLS).neq('user_id', uid);
       if (userId) q = q.eq('user_id', userId);
       if (since) q = q.gt('updated_at', since);
       const rows = ((await run(q.order('updated_at', { ascending: true }))) ?? []) as WorkoutDbRow[];
-      return rows.map(
-        (r): SharedWorkoutRow => ({
-          userId: r.user_id,
-          id: r.id,
-          name: r.name,
-          startedAt: ms(r.started_at),
-          endedAt: ms(r.ended_at),
-          body: r.body,
-          updatedAt: r.updated_at,
-          deleted: r.deleted,
-        }),
-      );
+      return rows.map(toRow);
     },
 
     async sendMenu(to, kind, body) {
@@ -203,6 +203,100 @@ export function createSupabaseApi(cfg: { url: string; anonKey: string }): Online
       const uid = await me();
       const rows = ((await run(sb.from('menu_messages').select('id').eq('recipient', uid).in('id', ids))) ?? []) as { id: string }[];
       return rows.map((r) => r.id);
+    },
+
+    async createGroup(name) {
+      const uid = await me();
+      const g = (await run(sb.from('groups').insert({ name, owner: uid }).select('id,name,owner').single())) as GroupRow | null;
+      if (!g?.id) throw new OnlineError('unknown');
+      await run(sb.from('group_members').insert({ group_id: g.id, user_id: uid }));
+      return { id: g.id, name: g.name, owner: g.owner };
+    },
+
+    async listGroups() {
+      const uid = await me();
+      const mine = ((await run(sb.from('group_members').select('group_id').eq('user_id', uid))) ?? []) as { group_id: string }[];
+      if (!mine.length) return [];
+      const rows = ((await run(sb.from('groups').select('id,name,owner').in('id', mine.map((m) => m.group_id)).order('created_at', { ascending: true }))) ?? []) as GroupRow[];
+      return rows.map((g) => ({ id: g.id, name: g.name, owner: g.owner }));
+    },
+
+    async renameGroup(id, name) {
+      await me();
+      await run(sb.from('groups').update({ name }).eq('id', id));
+    },
+
+    async leaveGroup(id) {
+      const uid = await me();
+      const g = (await run(sb.from('groups').select('owner').eq('id', id).maybeSingle())) as { owner: string } | null;
+      const others = ((await run(sb.from('group_members').select('user_id').eq('group_id', id).neq('user_id', uid))) ?? []) as unknown[];
+      // 作った人が最後の 1 人なら、だれも見られないグループを残さない
+      if (g?.owner === uid && !others.length) await run(sb.from('groups').delete().eq('id', id));
+      else await run(sb.from('group_members').delete().eq('group_id', id).eq('user_id', uid));
+    },
+
+    async createGroupInvite(groupId) {
+      await me();
+      const code = await run(sb.rpc('create_invite', { kind: 'group', group_id: groupId }));
+      if (typeof code !== 'string' || !code) throw new OnlineError('unknown');
+      return code;
+    },
+
+    async groupMembers(groupId) {
+      await me();
+      const rows = ((await run(sb.from('group_members').select('user_id').eq('group_id', groupId).order('joined_at', { ascending: true }))) ?? []) as { user_id: string }[];
+      if (!rows.length) return [];
+      const profiles = ((await run(sb.from('profiles').select('id,name').in('id', rows.map((r) => r.user_id)))) ?? []) as { id: string; name: string }[];
+      const names = new Map(profiles.map((p) => [p.id, p.name]));
+      // 読めない人（ブロックなど）は出さない
+      return rows.filter((r) => names.has(r.user_id)).map((r): FriendRow => ({ userId: r.user_id, name: names.get(r.user_id) ?? '' }));
+    },
+
+    async recentWorkouts(userIds, since) {
+      if (!userIds.length) return [];
+      await me();
+      const q = sb.from('shared_workouts').select(WORKOUT_COLS).in('user_id', userIds).eq('deleted', false).gte('ended_at', iso(since));
+      const rows = ((await run(q.order('ended_at', { ascending: false }).limit(100))) ?? []) as WorkoutDbRow[];
+      return rows.map(toRow);
+    },
+
+    async listReactions(keys) {
+      if (!keys.length) return [];
+      await me();
+      const rows = ((await run(sb.from('reactions').select('workout_owner,workout_id,user_id,emoji').in('workout_owner', owners(keys)).in('workout_id', ids(keys)))) ?? []) as {
+        workout_owner: string; workout_id: string; user_id: string; emoji: string;
+      }[];
+      return rows
+        .filter(hasKey(keys))
+        .filter((r) => (EMOJIS as readonly string[]).includes(r.emoji))
+        .map((r) => ({ owner: r.workout_owner, id: r.workout_id, userId: r.user_id, emoji: r.emoji as Emoji }));
+    },
+
+    async setReaction(key, emoji, on) {
+      const uid = await me();
+      const row = { workout_owner: key.owner, workout_id: key.id, user_id: uid, emoji };
+      if (on) await run(sb.from('reactions').upsert(row, { onConflict: 'workout_owner,workout_id,user_id,emoji', ignoreDuplicates: true }));
+      else await run(sb.from('reactions').delete().eq('workout_owner', key.owner).eq('workout_id', key.id).eq('user_id', uid).eq('emoji', emoji));
+    },
+
+    async listComments(keys) {
+      if (!keys.length) return [];
+      await me();
+      const q = sb.from('comments').select('id,workout_owner,workout_id,user_id,body,created_at').in('workout_owner', owners(keys)).in('workout_id', ids(keys)).eq('deleted', false);
+      const rows = ((await run(q.order('created_at', { ascending: true }))) ?? []) as {
+        id: string; workout_owner: string; workout_id: string; user_id: string; body: string; created_at: string;
+      }[];
+      return rows.filter(hasKey(keys)).map((r): Comment => ({ owner: r.workout_owner, id: r.workout_id, commentId: r.id, userId: r.user_id, body: r.body, createdAt: r.created_at }));
+    },
+
+    async addComment(key, body) {
+      const uid = await me();
+      await run(sb.from('comments').insert({ workout_owner: key.owner, workout_id: key.id, user_id: uid, body }));
+    },
+
+    async deleteComment(commentId) {
+      const uid = await me();
+      await run(sb.from('comments').update({ deleted: true }).eq('id', commentId).eq('user_id', uid));
     },
   };
 }

@@ -245,3 +245,16 @@ test('あとから友達になった人の、カーソルより古い記録も�
   await pullAll(7000);
   expect(spy.mock.calls.every((c) => c[1] === undefined)).toBe(true);
 });
+
+test('グループだけでつながっている人の記録は、友達として入れない', async () => {
+  api.as('c');
+  await api.saveMyName('う');
+  const g = await api.createGroup('朝練');
+  const code = await api.createGroupInvite(g.id);
+  await api.upsertWorkout(shared('wc'));
+  api.as('b');
+  await api.acceptInvite(code);
+  await pullAll(5000);
+  expect((await listFriends()).map((f) => f.id)).toEqual(['a']);
+  expect(await db.friendWorkouts.where('friendId').equals('c').count()).toBe(0);
+});

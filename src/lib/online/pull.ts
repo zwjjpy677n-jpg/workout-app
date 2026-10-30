@@ -131,7 +131,9 @@ export async function pullAll(now: number): Promise<'done' | 'offline' | 'skippe
     const cur = byKey.get(k);
     if (!cur || r.updatedAt >= cur.updatedAt) byKey.set(k, r);
   }
-  const rows = [...byKey.values()];
+  // サーバーはグループのメンバーの記録も返す。端末に入れるのは友達の分だけ（グループの記録はグループの画面で見る）
+  const friendIds = new Set([...list.map((f) => f.userId), ...(await db.friends.toArray()).filter((f) => f.online).map((f) => f.id)]);
+  const rows = [...byKey.values()].filter((r) => friendIds.has(r.userId));
   const menus = rawMenus.map(cleanMenu).filter((m): m is MenuMessage => m !== null);
   const names = new Map(list.map((f) => [f.userId, f.name]));
 

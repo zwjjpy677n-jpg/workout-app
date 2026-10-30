@@ -17,7 +17,7 @@ const next = () => {
 
 const builder = () => {
   const b: Record<string, unknown> = {};
-  for (const m of ['select', 'insert', 'upsert', 'update', 'delete', 'eq', 'neq', 'gt', 'in', 'or', 'order', 'maybeSingle', 'single']) {
+  for (const m of ['select', 'insert', 'upsert', 'update', 'delete', 'eq', 'neq', 'gt', 'gte', 'in', 'or', 'order', 'limit', 'maybeSingle', 'single']) {
     b[m] = (...args: unknown[]) => {
       calls.push([m, ...args]);
       return b;
@@ -139,7 +139,9 @@ test('accept_invite の expired は expired', async () => {
 
 test('acceptInvite は招待した人を友達として返す', async () => {
   results = [{ data: { kind: 'friend', user_id: 'u2', name: 'たろう' } }];
-  expect(await api().acceptInvite('abc')).toEqual({ userId: 'u2', name: 'たろう' });
+  expect(await api().acceptInvite('abc')).toEqual({ userId: 'u2', name: 'たろう', kind: 'friend' });
+  results = [{ data: { kind: 'group', user_id: 'u3', name: 'はなこ' } }];
+  expect(await api().acceptInvite('def')).toEqual({ userId: 'u3', name: 'はなこ', kind: 'group' });
   expect(calls).toContainEqual(['rpc', 'accept_invite', { code: 'abc' }]);
 });
 
@@ -273,4 +275,90 @@ test('友達がいなければ profiles は読まない', async () => {
 test('signOut は端末のログインを外す', async () => {
   await api().signOut();
   expect(auth.signOut).toHaveBeenCalled();
+});
+
+test('createGroup はグループを作り、自分をメンバーに入れる', async () => {
+  results = [{ data: { id: 'g1', name: '朝練', owner: 'me' } }, {}];
+  expect(await api().createGroup('朝練')).toEqual({ id: 'g1', name: '朝練', owner: 'me' });
+  expect(calls).toContainEqual(['insert', { name: '朝練', owner: 'me' }]);
+  expect(calls).toContainEqual(['insert', { group_id: 'g1', user_id: 'me' }]);
+});
+
+test('listGroups は自分が入っているグループだけ。入っていなければ groups を読まない', async () => {
+  results = [{ data: [] }];
+  expect(await api().listGroups()).toEqual([]);
+  expect(calls.filter((c) => c[0] === 'from')).toEqual([['from', 'group_members']]);
+  calls = [];
+  results = [{ data: [{ group_id: 'g1' }] }, { data: [{ id: 'g1', name: '朝練', owner: 'u2' }] }];
+  expect(await api().listGroups()).toEqual([{ id: 'g1', name: '朝練', owner: 'u2' }]);
+  expect(calls).toContainEqual(['eq', 'user_id', 'me']);
+  expect(calls).toContainEqual(['in', 'id', ['g1']]);
+});
+
+test('leaveGroup：ほかにメンバーがいれば自分だけ抜け、作った人が最後の1人ならグループを消す', async () => {
+  results = [{ data: { owner: 'me' } }, { data: [{ user_id: 'u2' }] }, {}];
+  await api().leaveGroup('g1');
+  expect(calls).toContainEqual(['from', 'group_members']);
+  expect(calls).toContainEqual(['eq', 'user_id', 'me']);
+  expect(calls.filter((c) => c[0] === 'from').map((c) => c[1])).toEqual(['groups', 'group_members', 'group_members']);
+  calls = [];
+  results = [{ data: { owner: 'me' } }, { data: [] }, {}];
+  await api().leaveGroup('g1');
+  expect(calls.filter((c) => c[0] === 'from').map((c) => c[1])).toEqual(['groups', 'group_members', 'groups']);
+  expect(calls.filter((c) => c[0] === 'delete')).toHaveLength(1);
+});
+
+test('createGroupInvite はグループの招待コードを作る', async () => {
+  results = [{ data: 'GCODE' }];
+  expect(await api().createGroupInvite('g1')).toBe('GCODE');
+  expect(calls).toContainEqual(['rpc', 'create_invite', { kind: 'group', group_id: 'g1' }]);
+});
+
+test('groupMembers は入った順に、読める人だけ名前つきで返す', async () => {
+  results = [{ data: [{ user_id: 'me' }, { user_id: 'u2' }, { user_id: 'u9' }] }, { data: [{ id: 'u2', name: 'に' }, { id: 'me', name: 'わたし' }] }];
+  expect(await api().groupMembers('g1')).toEqual([{ userId: 'me', name: 'わたし' }, { userId: 'u2', name: 'に' }]);
+  expect(calls).toContainEqual(['order', 'joined_at', { ascending: true }]);
+});
+
+test('recentWorkouts は削除されていない最近の記録を新しい順に。だれもいなければ問い合わせない', async () => {
+  expect(await api().recentWorkouts([], 0)).toEqual([]);
+  expect(calls).toEqual([]);
+  results = [{ data: [{ user_id: 'u2', id: 'w1', name: '脚', started_at: '2026-10-01T00:00:00Z', ended_at: '2026-10-01T01:00:00Z', body: { e: [] }, updated_at: 'x', deleted: false }] }];
+  const rows = await api().recentWorkouts(['me', 'u2'], Date.parse('2026-09-01T00:00:00Z'));
+  expect(rows[0]).toMatchObject({ userId: 'u2', id: 'w1', endedAt: Date.parse('2026-10-01T01:00:00Z') });
+  expect(calls).toContainEqual(['in', 'user_id', ['me', 'u2']]);
+  expect(calls).toContainEqual(['eq', 'deleted', false]);
+  expect(calls).toContainEqual(['gte', 'ended_at', '2026-09-01T00:00:00.000Z']);
+  expect(calls).toContainEqual(['order', 'ended_at', { ascending: false }]);
+});
+
+test('リアクション：読むときは頼んだ記録の分だけ、付ける・外すは自分の分', async () => {
+  results = [{ data: [
+    { workout_owner: 'u2', workout_id: 'w1', user_id: 'u3', emoji: '💪' },
+    { workout_owner: 'u2', workout_id: 'w9', user_id: 'u3', emoji: '🔥' },
+    { workout_owner: 'u2', workout_id: 'w1', user_id: 'u3', emoji: '😀' },
+  ] }];
+  expect(await api().listReactions([{ owner: 'u2', id: 'w1' }, { owner: 'me', id: 'w9' }])).toEqual([{ owner: 'u2', id: 'w1', userId: 'u3', emoji: '💪' }]);
+  calls = [];
+  await api().setReaction({ owner: 'u2', id: 'w1' }, '🔥', true);
+  expect(calls).toContainEqual(['upsert', { workout_owner: 'u2', workout_id: 'w1', user_id: 'me', emoji: '🔥' }, { onConflict: 'workout_owner,workout_id,user_id,emoji', ignoreDuplicates: true }]);
+  calls = [];
+  await api().setReaction({ owner: 'u2', id: 'w1' }, '🔥', false);
+  expect(calls).toContainEqual(['delete']);
+  expect(calls).toContainEqual(['eq', 'user_id', 'me']);
+  expect(calls).toContainEqual(['eq', 'emoji', '🔥']);
+});
+
+test('コメント：消していない分を古い順に。書く・消す（deleted にする）は自分の分', async () => {
+  results = [{ data: [{ id: 'c1', workout_owner: 'u2', workout_id: 'w1', user_id: 'u3', body: 'ナイス', created_at: 't1' }] }];
+  expect(await api().listComments([{ owner: 'u2', id: 'w1' }])).toEqual([{ owner: 'u2', id: 'w1', commentId: 'c1', userId: 'u3', body: 'ナイス', createdAt: 't1' }]);
+  expect(calls).toContainEqual(['eq', 'deleted', false]);
+  calls = [];
+  await api().addComment({ owner: 'u2', id: 'w1' }, 'いいね');
+  expect(calls).toContainEqual(['insert', { workout_owner: 'u2', workout_id: 'w1', user_id: 'me', body: 'いいね' }]);
+  calls = [];
+  await api().deleteComment('c1');
+  expect(calls).toContainEqual(['update', { deleted: true }]);
+  expect(calls).toContainEqual(['eq', 'id', 'c1']);
+  expect(calls).toContainEqual(['eq', 'user_id', 'me']);
 });

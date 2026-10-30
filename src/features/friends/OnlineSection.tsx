@@ -8,6 +8,7 @@ import { markFriendsSeen } from '../../lib/online/pull';
 import { OnlineError, type OnlineUser } from '../../lib/online/types';
 import { PUBLIC_URL } from '../../lib/platform';
 import { sendText, type ShareNote } from './useShareMine';
+import { GroupsSection } from '../groups/GroupsSection';
 import s from './friends.module.css';
 
 const OFFLINE_TEXT = '今はつながりません。あとで自動で送ります';
@@ -282,6 +283,7 @@ export function OnlineSection() {
           </Button>
           {offline && <p role="status" className={s.hint}>{OFFLINE_TEXT}</p>}
           {note && <p role={note.kind} className={note.kind === 'alert' ? s.error : s.ok}>{note.text}</p>}
+          <GroupsSection />
         </div>
       )}
     </section>
