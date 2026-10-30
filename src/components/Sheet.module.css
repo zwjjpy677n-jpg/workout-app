@@ -1,5 +1,5 @@
 .backdrop { position: fixed; inset: 0; bottom: calc(0px - var(--vgap)); z-index: 50; background: rgba(0, 0, 0, .6); display: flex; align-items: flex-end; justify-content: center; animation: fade .15s; }
-.sheet { width: 100%; max-width: 560px; max-height: 88vh; display: flex; flex-direction: column; background: var(--surface); border-radius: 20px 20px 0 0; border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); animation: up .2s ease-out; }
+.sheet { width: 100%; max-width: 560px; max-height: 88%; display: flex; flex-direction: column; background: var(--surface); border-radius: 20px 20px 0 0; border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); animation: up .2s ease-out; }
 .head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 8px; }
 .head h2 { font-size: 16px; }
 .close { width: 44px; height: 44px; font-size: 24px; color: var(--muted); margin-right: -10px; }

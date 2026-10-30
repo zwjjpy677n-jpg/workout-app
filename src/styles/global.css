@@ -1,8 +1,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body, #root { height: 100%; }
-/* ホーム画面アプリでは iPhone が上の時計の分を引いた高さを渡してくるので、その差を足し戻す */
+/* ホーム画面アプリでは iPhone が上の時計の分を引いた高さを渡してくるので、その差を足し戻す（値は lib/standalone.ts が開いたときに入れる） */
 :root { --vgap: 0px; }
-html.standalone { --vgap: calc(100lvh - 100dvh); }
 body {
   background: var(--bg);
   color: var(--text);

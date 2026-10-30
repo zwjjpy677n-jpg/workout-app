@@ -1,21 +1,37 @@
 import { markStandalone } from './standalone';
 
-afterEach(() => document.documentElement.classList.remove('standalone'));
+const root = document.documentElement;
+afterEach(() => {
+  root.classList.remove('standalone');
+  root.style.removeProperty('--vgap');
+});
 
-const win = (standalone: boolean | undefined, media: boolean) =>
-  ({ navigator: { standalone }, matchMedia: () => ({ matches: media }) }) as unknown as Window;
+const win = (standalone: boolean | undefined, media: boolean, screenH = 852, innerH = 793) =>
+  ({ navigator: { standalone }, matchMedia: () => ({ matches: media }), screen: { height: screenH }, innerHeight: innerH }) as unknown as Window;
 
-test('ホーム画面に追加したアプリとして開いたら html に standalone を付ける', () => {
+test('ホーム画面アプリでは、開いたときの画面と使える高さの差を --vgap に固定する（キーボードで変わらない）', () => {
   markStandalone(win(true, false));
-  expect(document.documentElement.classList.contains('standalone')).toBe(true);
+  expect(root.classList.contains('standalone')).toBe(true);
+  expect(root.style.getPropertyValue('--vgap')).toBe('59px');
 });
 
-test('display-mode: standalone でも付ける', () => {
+test('display-mode: standalone でも同じ', () => {
   markStandalone(win(undefined, true));
-  expect(document.documentElement.classList.contains('standalone')).toBe(true);
+  expect(root.style.getPropertyValue('--vgap')).toBe('59px');
 });
 
-test('Safari のタブで開いたときは付けない', () => {
+test('差が無い端末では 0px', () => {
+  markStandalone(win(true, false, 852, 852));
+  expect(root.style.getPropertyValue('--vgap')).toBe('0px');
+});
+
+test('差がおかしく大きいとき（キーボードが出ているなど）は足さない', () => {
+  markStandalone(win(true, false, 852, 500));
+  expect(root.style.getPropertyValue('--vgap')).toBe('0px');
+});
+
+test('Safari のタブで開いたときは何もしない', () => {
   markStandalone(win(false, false));
-  expect(document.documentElement.classList.contains('standalone')).toBe(false);
+  expect(root.classList.contains('standalone')).toBe(false);
+  expect(root.style.getPropertyValue('--vgap')).toBe('');
 });
