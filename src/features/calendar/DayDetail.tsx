@@ -4,15 +4,10 @@ import { deleteWorkout } from '../../db/repository';
 import { useFeedbackForWorkouts } from '../../hooks/useData';
 import { formatKg } from '../../lib/calc';
 import { formatMDW, fromDateKey, toDateKey } from '../../lib/dates';
-import type { BodyweightLog, Condition, Exercise, Workout } from '../../lib/types';
+import { conditionText } from '../../lib/condition';
+import type { BodyweightLog, Exercise, Workout } from '../../lib/types';
 import { summarizeSets } from './summarizeSets';
 import s from './calendar.module.css';
-
-const COND: [keyof Condition, string][] = [['sleep', '睡眠'], ['fatigue', '疲労感'], ['motivation', 'やる気']];
-
-function conditionText(c: Condition): string {
-  return COND.filter(([k]) => c[k] != null).map(([k, l]) => `${l} ${c[k]}`).join(' ・ ');
-}
 
 type Props = { dateKey: string; workouts: Workout[]; bodyweights: BodyweightLog[]; exercises: Map<string, Exercise> };
 

@@ -2,7 +2,9 @@ import type { MenuPayload } from '../share/menuPayload';
 import type { SetTuple } from '../share/sharePayload';
 
 export type SharedEntry = [x8: string, name: string, part: number, type: number, sets: SetTuple[]];
-export type SharedBody = { e: SharedEntry[] };
+/** c: コンディション [睡眠, 疲労感, やる気]（1〜5、入れていなければ null）。前の版の記録には無い */
+export type SharedCondition = [sleep: number | null, fatigue: number | null, motivation: number | null];
+export type SharedBody = { e: SharedEntry[]; c?: SharedCondition };
 export type SharedWorkout = { id: string; name: string; startedAt: number; endedAt: number; body: SharedBody };
 export type SharedWorkoutRow = SharedWorkout & { userId: string; updatedAt: string; deleted: boolean };
 export type MenuMessage = { id: string; sender: string; recipient: string; kind: 'built' | 'mine'; body: MenuPayload; createdAt: string };

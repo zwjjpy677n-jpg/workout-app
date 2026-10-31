@@ -98,3 +98,14 @@ test('オンラインの友達の記録に「62分」が出る、リンクの友
   expect(screen.getByText('10/27 TUE LEG')).toBeInTheDocument();
   expect(screen.queryByText(/LEG ・/)).toBeNull();
 });
+
+test('友達の記録にコンディション（睡眠・疲労感・やる気）が出る。入れていない記録には出ない', async () => {
+  const start = new Date(2026, 9, 27, 18).getTime();
+  await db.friendWorkouts.put({
+    id: 'friend000001:online01', friendId: 'friend000001', name: 'ONLINE', startedAt: start + 3600_000, endedAt: start + 3600_000 + 62 * 60_000,
+    note: '', condition: { sleep: 5, fatigue: 5, motivation: 4 }, routineId: null, entries: [entry(sq.id, [set({ weight: 100, reps: 5 })])],
+  });
+  open();
+  expect(await screen.findByText('睡眠 5 ・ 疲労感 5 ・ やる気 4')).toBeInTheDocument();
+  expect(screen.getAllByText(/睡眠/)).toHaveLength(1);
+});

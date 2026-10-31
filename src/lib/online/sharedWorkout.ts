@@ -2,12 +2,12 @@ import { isWorking, topSet } from '../calc';
 import { LIMIT, TYPES, type SetTuple } from '../share/sharePayload';
 import type { Friend, FriendWorkout } from '../share/importShare';
 import { BODY_PARTS, emptyCondition, type Exercise, type Workout, type WorkoutSet } from '../types';
-import type { SharedEntry, SharedWorkout, SharedWorkoutRow } from './types';
+import type { SharedBody, SharedCondition, SharedEntry, SharedWorkout, SharedWorkoutRow } from './types';
 
 const tuple = (s: WorkoutSet): SetTuple => [s.weight, s.reps, s.durationSec, s.rpe];
 const toSet = ([weight, reps, durationSec, rpe]: SetTuple): WorkoutSet => ({ weight, reps, durationSec, rpe, warmup: false, note: '', done: true });
 
-/** 終わった記録を共有用に変える。本番セットだけ送り、メモ・コンディションは入れない。終わっていない・完了セットが無いときは null */
+/** 終わった記録を共有用に変える。本番セットとコンディションを送り、メモは入れない。終わっていない・完了セットが無いときは null */
 export function toSharedWorkout(w: Workout, exercises: Map<string, Exercise>): SharedWorkout | null {
   if (w.endedAt == null) return null;
   const e: SharedEntry[] = [];
@@ -19,7 +19,10 @@ export function toSharedWorkout(w: Workout, exercises: Map<string, Exercise>): S
     e.push([en.exerciseId.slice(0, 8), ex.name.slice(0, LIMIT.name), BODY_PARTS.indexOf(ex.bodyPart), TYPES.indexOf(ex.type), sets]);
   }
   if (!e.length) return null;
-  return { id: w.id, name: w.name.slice(0, LIMIT.name), startedAt: w.startedAt, endedAt: w.endedAt, body: { e: e.slice(0, LIMIT.entries) } };
+  const { sleep, fatigue, motivation } = w.condition ?? emptyCondition();
+  const c: SharedCondition = [sleep, fatigue, motivation];
+  const body: SharedBody = { e: e.slice(0, LIMIT.entries), ...(c.some((v) => v != null) && { c }) };
+  return { id: w.id, name: w.name.slice(0, LIMIT.name), startedAt: w.startedAt, endedAt: w.endedAt, body };
 }
 
 /** サーバーの行を友達の記録に戻す。削除済みの行は無視し、開始が古い順に返す */
@@ -35,7 +38,7 @@ export function fromSharedRows(friendId: string, rows: SharedWorkoutRow[]): { wo
     });
     return {
       id: `${friendId}:${r.id}`, friendId, name: r.name, startedAt: r.startedAt, endedAt: r.endedAt,
-      note: '', condition: emptyCondition(), routineId: null, entries,
+      note: '', condition: r.body.c ? { sleep: r.body.c[0], fatigue: r.body.c[1], motivation: r.body.c[2] } : emptyCondition(), routineId: null, entries,
     };
   });
   return { workouts, exercises: [...exById.values()] };

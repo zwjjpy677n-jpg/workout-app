@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Sheet } from '../../components/Sheet';
+import { conditionText } from '../../lib/condition';
 import { formatMD } from '../../lib/dates';
 import { getApi } from '../../lib/online/api';
 import { getSession } from '../../lib/online/prefs';
@@ -208,6 +209,7 @@ function WorkoutSheet({ item, data, me, error, act, onClose }: SheetProps) {
 
   return (
     <Sheet open title={feedTitle(item)} onClose={onClose}>
+      {conditionText(item.workout.condition) && <div className={f.cond}>{conditionText(item.workout.condition)}</div>}
       {item.workout.entries.map((e, i) => {
         const ex = data.exercises.get(e.exerciseId);
         if (!ex) return null;

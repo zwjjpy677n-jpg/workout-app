@@ -103,3 +103,18 @@ describe('friendPrs', () => {
     expect(prs[0].set.weight).toBe(80);
   });
 });
+
+describe('コンディション', () => {
+  it('入れていれば c で送り、何も入れていなければ付けない。メモは送らない', () => {
+    const m = exMap(ex('abcdefgh-1234'));
+    const s = toSharedWorkout(wo({ condition: { sleep: 5, fatigue: null, motivation: 4 } }), m)!;
+    expect(s.body.c).toEqual([5, null, 4]);
+    expect(JSON.stringify(s)).not.toContain('ひみつ');
+    expect(toSharedWorkout(wo(), m)!.body).not.toHaveProperty('c');
+  });
+  it('受け取ると記録のコンディションになり、無ければ空', () => {
+    const [a] = fromSharedRows('F', [row({ body: { ...row().body, c: [5, 3, null] } })]).workouts;
+    expect(a.condition).toEqual({ sleep: 5, fatigue: 3, motivation: null });
+    expect(fromSharedRows('F', [row()]).workouts[0].condition).toEqual(emptyCondition());
+  });
+});

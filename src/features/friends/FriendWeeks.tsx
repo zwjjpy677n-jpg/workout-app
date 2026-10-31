@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card } from '../../components/Card';
 import { useFeedbackOut } from '../../hooks/useData';
 import { volumeParts } from '../../lib/calc';
+import { conditionText } from '../../lib/condition';
 import { formatMD, formatMDW, toDateKey } from '../../lib/dates';
 import type { FeedbackOut } from '../../lib/share/feedbackPayload';
 import { friendWeeks } from '../../lib/share/friendWeeks';
@@ -49,6 +50,7 @@ export function FriendWeeks({ friendId, workouts, exercises }: Props) {
                     <div className={s.day}>{`${formatMDW(w.startedAt)} ${w.name}${minutes(w) === null ? '' : ` ・ ${minutes(w)}分`}`}</div>
                     {bubble('この日にコメント', dayAt)}
                   </div>
+                  {conditionText(w.condition) && <div className={s.cond}>{conditionText(w.condition)}</div>}
                   {w.entries.map((e, i) => {
                     const ex = exercises.get(e.exerciseId);
                     if (!ex) return null;

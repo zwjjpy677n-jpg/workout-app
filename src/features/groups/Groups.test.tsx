@@ -17,7 +17,7 @@ let api: FakeApi;
 const T = new Date(2026, 9, 29, 18, 30).getTime();
 const workout = (id: string, name = '脚の日'): SharedWorkout => ({
   id, name, startedAt: T, endedAt: T + 62 * 60000,
-  body: { e: [['sq000000', 'スクワット', 2, 0, [[100, 5, null, null], [100, 5, null, null]]]] },
+  body: { e: [['sq000000', 'スクワット', 2, 0, [[100, 5, null, null], [100, 5, null, null]]]], c: [5, 5, 4] },
 });
 
 /** a（たろう）が作った「朝練」に b（はなこ）が入っている。端末は b */
@@ -94,6 +94,7 @@ test('記録を開くと中身が見え、リアクションとコメントを�
   await userEvent.click(await screen.findByText('たろう ・ 脚の日 ・ 62分 ・ 10/29 18:30'));
   const dlg = screen.getByRole('dialog', { name: 'たろう ・ 脚の日 ・ 62分 ・ 10/29 18:30' });
   expect(within(dlg).getByText('スクワット')).toBeInTheDocument();
+  expect(within(dlg).getByText('睡眠 5 ・ 疲労感 5 ・ やる気 4')).toBeInTheDocument();
   await userEvent.click(within(dlg).getByRole('button', { name: '💪 0' }));
   await waitFor(() => expect(within(dlg).getByRole('button', { name: '💪 1' })).toHaveAttribute('aria-pressed', 'true'));
   await userEvent.type(within(dlg).getByRole('textbox', { name: 'コメントを書く' }), 'ナイス！');

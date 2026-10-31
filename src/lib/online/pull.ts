@@ -10,7 +10,7 @@ import { getApi } from './api';
 import { claimOutbox } from './outbox';
 import { getSession } from './prefs';
 import { friendPrs, fromSharedRows } from './sharedWorkout';
-import { OnlineError, type MenuMessage, type SharedWorkoutRow } from './types';
+import { OnlineError, type MenuMessage, type SharedCondition, type SharedWorkoutRow } from './types';
 
 /** 友達から届いた「組んだメニュー」。取り込むかは本人が決める */
 export interface MenuInboxItem {
@@ -41,10 +41,17 @@ function cleanRow(r: unknown): SharedWorkoutRow | null {
         arr(sets, LIMIT.sets).map((s): SetTuple => setTuple(s)),
       ];
     });
-    return { ...base, name: str(o.name, 0, LIMIT.name), startedAt: o.startedAt, endedAt: o.endedAt, body: { e } };
+    return { ...base, name: str(o.name, 0, LIMIT.name), startedAt: o.startedAt, endedAt: o.endedAt, body: { e, ...cleanCondition((body as { c?: unknown }).c) } };
   } catch {
     return null;
   }
+}
+
+/** コンディションは 1〜5 か null の 3 つ。形が違えば付けない（記録そのものは受け取る） */
+function cleanCondition(c: unknown): { c?: SharedCondition } {
+  if (!Array.isArray(c) || c.length !== 3) return {};
+  if (!c.every((v) => v === null || (Number.isInteger(v) && v >= 1 && v <= 5))) return {};
+  return { c: c as SharedCondition };
 }
 
 function cleanMenu(m: MenuMessage): MenuMessage | null {

@@ -258,3 +258,12 @@ test('グループだけでつながっている人の記録は、友達とし�
   expect((await listFriends()).map((f) => f.id)).toEqual(['a']);
   expect(await db.friendWorkouts.where('friendId').equals('c').count()).toBe(0);
 });
+
+test('コンディションは形が正しいときだけ受け取る（違っても記録は受け取る）', async () => {
+  await asA(() => api.upsertWorkout({ ...shared('w1'), body: { ...shared('w1').body, c: [5, null, 4] } }));
+  await asA(() => api.upsertWorkout({ ...shared('w2'), body: { ...shared('w2').body, c: [9, 1, 1] } as never }));
+  await pullAll(5000);
+  const ws = await listFriendWorkouts('a');
+  expect(ws.find((w) => w.id === 'a:w1')?.condition).toEqual({ sleep: 5, fatigue: null, motivation: 4 });
+  expect(ws.find((w) => w.id === 'a:w2')?.condition).toEqual({ sleep: null, fatigue: null, motivation: null });
+});
