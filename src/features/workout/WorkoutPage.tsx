@@ -174,7 +174,6 @@ export function WorkoutPage() {
             onToggle={() => setOpenIdx(open === i ? null : i)}
             pr={isPR(w, ex, all)}
             deload={deload}
-            plates={settings.plates}
             onChange={(entry) => setEntry(i, entry)}
             onRemove={() => {
               update({ ...w, entries: w.entries.filter((_, j) => j !== i) });

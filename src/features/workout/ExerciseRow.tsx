@@ -22,7 +22,6 @@ type Props = {
   onToggle(): void;
   pr: boolean;
   deload: boolean;
-  plates: number[];
   onChange(entry: WorkoutEntry): void;
   onRemove(): void;
   onSetDone?(): void;
@@ -30,7 +29,7 @@ type Props = {
   extraActions?(close: () => void): ReactNode;
 };
 
-export function ExerciseRow({ index, entry, exercise, prev, open, onToggle, pr, deload, plates, onChange, onRemove, onSetDone, onCompleteAndNext, extraActions }: Props) {
+export function ExerciseRow({ index, entry, exercise, prev, open, onToggle, pr, deload, onChange, onRemove, onSetDone, onCompleteAndNext, extraActions }: Props) {
   const [menu, setMenu] = useState(false);
   const [noteIdx, setNoteIdx] = useState<number | null>(null);
   const sets = entry.sets;
@@ -74,7 +73,7 @@ export function ExerciseRow({ index, entry, exercise, prev, open, onToggle, pr, 
           <div className={s.panelTop}>
             <button type="button" className={s.menu} aria-label="メニュー" onClick={() => setMenu(true)}>⋯</button>
           </div>
-          {entry.target && <SuggestionBlock exercise={exercise} target={entry.target} prev={prev} deload={deload} plates={plates} />}
+          {entry.target && <SuggestionBlock exercise={exercise} target={entry.target} prev={prev} deload={deload} />}
           <div className={s.sets}>
             {sets.map((set, i) => {
               const n = workingNumber(sets, i);

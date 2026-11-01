@@ -251,15 +251,15 @@ describe('ルーティンから始めた記録画面', () => {
     expect(screen.getByRole('button', { name: /ベンチプレス/, expanded: false })).toBeInTheDocument();
   });
 
-  test('ヘッダーにメインと目標、開いた種目におすすめとプレート図', async () => {
+  test('ヘッダーにメインと目標、開いた種目には前回の重さを薄く出し、おすすめの重さは出さない', async () => {
     renderRoute('/workout', '/workout', <WorkoutPage />);
     const card = await screen.findByRole('region', { name: 'ベンチプレス' });
     expect(within(card).getByText('メイン')).toBeInTheDocument();
     expect(within(card).getByText('3セット×5 ・ レスト 3:00')).toBeInTheDocument();
-    expect(within(card).getByText('今回のおすすめ')).toBeInTheDocument();
-    expect(within(card).getByText('82.5')).toBeInTheDocument();
-    expect(within(card).getByText('前回はスピードを保てたので+2.5kg')).toBeInTheDocument();
-    expect(within(card).getByText('片側 25 + 5 + 1.25 ・ バー20kg')).toBeInTheDocument();
+    expect(within(card).getByText(/^前回（\d+\/\d+） 80kg/)).toBeInTheDocument();
+    expect(within(card).queryByText('今回のおすすめ')).toBeNull();
+    expect(within(card).queryByText('82.5')).toBeNull();
+    expect(within(card).queryByText(/\+2\.5kg/)).toBeNull();
   });
 
   test('ステッパーで重量を上げると保存される', async () => {
@@ -333,13 +333,13 @@ describe('ルーティンから始めた記録画面', () => {
     expect(await within(card).findByText('2セット×5 ・ レスト 3:00')).toBeInTheDocument();
   });
 
-  test('前回なしの重量種目は「今回の目標」と回数表記', async () => {
+  test('前回なしの種目は「前回の記録なし」と目標', async () => {
     renderRoute('/workout', '/workout', <WorkoutPage />);
     await rows();
     await userEvent.click(header('スクワット'));
     const card = screen.getByRole('region', { name: 'スクワット' });
-    expect(within(card).getByText('今回の目標')).toBeInTheDocument();
-    expect(within(card).getByText('初回：フォームが崩れず、目標回数をきれいにこなせる重さで')).toBeInTheDocument();
+    expect(within(card).getAllByText('前回の記録なし').length).toBeGreaterThan(0);
+    expect(within(card).queryByText('今回の目標')).toBeNull();
   });
 });
 
