@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '../../components/Button';
-import { NumberInput } from '../../components/NumberInput';
 import { Sheet } from '../../components/Sheet';
 import { Stepper } from '../../components/Stepper';
 import { db } from '../../db/db';
@@ -18,7 +17,8 @@ import { usePreparedLink } from './usePreparedLink';
 import { sendText, type ShareNote } from './useShareMine';
 import s from './friends.module.css';
 
-type Item = Omit<MenuDraftItem, 'inc'> & { inc: number | null };
+/** 上げ幅は画面に出さない（新しい種目は 2.5kg、送り直しは前の値のまま） */
+type Item = MenuDraftItem;
 const WEEK = [1, 2, 3, 4, 5, 6, 0];
 const REST_STEP = 15;
 
@@ -63,8 +63,8 @@ export function MenuEditorPage() {
     };
   }, [editId]);
 
-  const valid = name.trim().length >= 1 && name.trim().length <= MENU.name && items.length > 0 && items.every((it) => it.inc != null && it.reps.trim() !== '');
-  const draft = { name: name.trim(), weekday, items: items.map((it) => ({ ...it, reps: it.reps.trim(), note: it.note.trim(), inc: it.inc ?? 0 })) };
+  const valid = name.trim().length >= 1 && name.trim().length <= MENU.name && items.length > 0 && items.every((it) => it.reps.trim() !== '');
+  const draft = { name: name.trim(), weekday, items: items.map((it) => ({ ...it, reps: it.reps.trim(), note: it.note.trim() })) };
   const link = usePreparedLink(profile && valid ? () => buildMenuLink(profile, id, draft, Date.now()) : null, [profile, valid, JSON.stringify(draft)]);
 
   if (friend === null) return <Navigate to="/friends" replace />;
@@ -172,7 +172,6 @@ export function MenuEditorPage() {
               </div>
             </div>
             <label className={s.small}><span>目標</span><input className={s.text} aria-label="目標" value={it.reps} maxLength={MENU.reps} onChange={(e) => patch(i, { reps: e.target.value })} /></label>
-            <label className={s.small}><span>上げ幅kg</span><NumberInput aria-label="上げ幅" value={it.inc} onChange={(v) => patch(i, { inc: v })} min={MENU.incMin} max={MENU.incMax} inputMode="decimal" keepInvalid /></label>
           </div>
           <div className={s.menuGrid}>
             <label className={s.checkRow}><input type="checkbox" aria-label="メイン" checked={it.main} onChange={(e) => patch(i, { main: e.target.checked })} />メイン</label>

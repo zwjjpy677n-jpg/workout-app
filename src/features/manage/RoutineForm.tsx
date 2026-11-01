@@ -48,8 +48,8 @@ export function RoutineForm({ routine, onClose }: { routine: Routine | null; onC
     if (items.some((i) => !i.reps.trim())) return setError('回数を入力してください');
     const badRest = items.find((i) => bad.has(`${i.exerciseId}:rest`));
     if (badRest) return setError(`${map?.get(badRest.exerciseId)?.name ?? ''}のレストは10〜600秒で入力してください`);
-    const badItem = items.find((i) => bad.has(`${i.exerciseId}:sets`) || bad.has(`${i.exerciseId}:inc`));
-    if (badItem) return setError(`${map?.get(badItem.exerciseId)?.name ?? ''}のセット数は1〜20、上げ幅は0.5〜20kgで入力してください`);
+    const badItem = items.find((i) => bad.has(`${i.exerciseId}:sets`));
+    if (badItem) return setError(`${map?.get(badItem.exerciseId)?.name ?? ''}のセット数は1〜20で入力してください`);
     await saveRoutine({ ...routine, name: name.trim(), weekday, items });
     onClose();
   }
@@ -89,7 +89,6 @@ export function RoutineForm({ routine, onClose }: { routine: Routine | null; onC
                 <div className={s.itemGrid}>
                   <label><span>セット（1〜20）</span><NumberInput aria-label={`${n} セット数`} value={it.sets} onChange={(v) => { mark(`${it.exerciseId}:sets`, v != null); if (v != null) patch(i, { sets: v }); }} min={1} max={20} inputMode="numeric" keepInvalid /></label>
                   <label><span>回数</span><input className={s.text} aria-label={`${n} 回数`} value={it.reps} onChange={(e) => patch(i, { reps: e.target.value })} /></label>
-                  <label><span>上げ幅kg（0.5〜20）</span><NumberInput aria-label={`${n} 上げ幅`} value={it.inc} onChange={(v) => { mark(`${it.exerciseId}:inc`, v != null); if (v != null) patch(i, { inc: v }); }} min={0.5} max={20} inputMode="decimal" keepInvalid /></label>
                   <label><span>レスト秒（空欄=種目の設定）</span><NumberInput aria-label={`${n} レスト秒`} value={it.restSec ?? null} onChange={(v) => patch(i, { restSec: v })} onInvalidChange={(bad) => mark(`${it.exerciseId}:rest`, !bad)} min={10} max={600} inputMode="numeric" placeholder={String(map?.get(it.exerciseId)?.restSec ?? '')} keepInvalid allowEmpty /></label>
                   <label className={s.checkInline}><input type="checkbox" aria-label={`${n} メイン`} checked={it.main} onChange={(e) => patch(i, { main: e.target.checked })} />メイン</label>
                 </div>

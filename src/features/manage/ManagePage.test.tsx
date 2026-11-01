@@ -158,13 +158,12 @@ test('ルーティンの曜日と目標を編集できる', async () => {
   await userEvent.clear(reps);
   await userEvent.type(reps, '3〜5');
   await userEvent.click(within(dlg).getByLabelText('ベンチプレス メイン'));
-  const inc = within(dlg).getByLabelText('ベンチプレス 上げ幅');
-  await userEvent.clear(inc);
-  await userEvent.type(inc, '1.25');
+  // 上げ幅は出さない（今の値のまま）
+  expect(within(dlg).queryByLabelText('ベンチプレス 上げ幅')).toBeNull();
   await userEvent.type(within(dlg).getByLabelText('ベンチプレス メモ'), '止めて押す');
   await userEvent.click(within(dlg).getByRole('button', { name: '保存' }));
   expect(await screen.findByText('火曜 ・ 1種目')).toBeInTheDocument();
-  expect((await listRoutines())[0]).toMatchObject({ weekday: 2, items: [{ exerciseId: bench.id, sets: 5, reps: '3〜5', main: true, inc: 1.25, note: '止めて押す' }] });
+  expect((await listRoutines())[0]).toMatchObject({ weekday: 2, items: [{ exerciseId: bench.id, sets: 5, reps: '3〜5', main: true, inc: 2.5, note: '止めて押す' }] });
 });
 
 test('参考メニューを読み込む', async () => {
@@ -224,7 +223,7 @@ test('ルーティンの範囲外のセット数は保存せずに知らせる',
   await userEvent.clear(sets);
   await userEvent.type(sets, '25');
   await userEvent.click(within(dlg).getByRole('button', { name: '保存' }));
-  expect(within(dlg).getByText('ベンチプレスのセット数は1〜20、上げ幅は0.5〜20kgで入力してください')).toBeInTheDocument();
+  expect(within(dlg).getByText('ベンチプレスのセット数は1〜20で入力してください')).toBeInTheDocument();
   expect((await listRoutines())[0].items[0].sets).toBe(3);
 });
 
@@ -249,14 +248,12 @@ describe('ルーティン編集の範囲チェック', () => {
     return screen.getByRole('dialog', { name: 'ルーティンを編集' });
   }
 
-  test('セット数が範囲外のまま上げ幅を直しても保存しない', async () => {
+  test('セット数が範囲外のままほかの欄を直しても保存しない', async () => {
     const dlg = await openPush();
     const sets = within(dlg).getByLabelText('ベンチプレス セット数');
     await userEvent.clear(sets);
     await userEvent.type(sets, '25');
-    const inc = within(dlg).getByLabelText('ベンチプレス 上げ幅');
-    await userEvent.clear(inc);
-    await userEvent.type(inc, '5');
+    await userEvent.type(within(dlg).getByLabelText('ベンチプレス メモ'), 'ゆっくり');
     await userEvent.click(within(dlg).getByRole('button', { name: '保存' }));
     expect(within(dlg).getByText(/セット数は1〜20/)).toBeInTheDocument();
     expect((await listRoutines())[0].items[0]).toMatchObject({ sets: 3, inc: 2.5 });
