@@ -51,7 +51,7 @@ test('ルーティンを作成できる', async () => {
   await userEvent.click(await within(dlg).findByRole('checkbox', { name: 'ベンチプレス' }));
   await userEvent.click(within(dlg).getByRole('checkbox', { name: 'ディップス' }));
   await userEvent.click(within(dlg).getByRole('button', { name: '保存' }));
-  expect(await screen.findByText('2種目')).toBeInTheDocument();
+  expect(await screen.findByText(/^2種目 ・ 約\d+分$/)).toBeInTheDocument();
   const [r] = await listRoutines();
   expect(r.name).toBe('PUSH');
   expect(r.items).toHaveLength(2);
@@ -147,7 +147,7 @@ test('ルーティンの曜日と目標を編集できる', async () => {
   await saveRoutine({ name: 'PUSH', weekday: null, items: [defaultItem(bench.id)] });
   render(<ManagePage />);
   await tab('ルーティン');
-  expect(await screen.findByText('1種目')).toBeInTheDocument();
+  expect(await screen.findByText(/^1種目 ・ 約\d+分$/)).toBeInTheDocument();
   await userEvent.click(screen.getByText('PUSH'));
   const dlg = screen.getByRole('dialog', { name: 'ルーティンを編集' });
   await userEvent.selectOptions(within(dlg).getByLabelText('曜日'), '2');
@@ -162,7 +162,7 @@ test('ルーティンの曜日と目標を編集できる', async () => {
   expect(within(dlg).queryByLabelText('ベンチプレス 上げ幅')).toBeNull();
   await userEvent.type(within(dlg).getByLabelText('ベンチプレス メモ'), '止めて押す');
   await userEvent.click(within(dlg).getByRole('button', { name: '保存' }));
-  expect(await screen.findByText('火曜 ・ 1種目')).toBeInTheDocument();
+  expect(await screen.findByText(/^火曜 ・ 1種目 ・ 約\d+分$/)).toBeInTheDocument();
   expect((await listRoutines())[0]).toMatchObject({ weekday: 2, items: [{ exerciseId: bench.id, sets: 5, reps: '3〜5', main: true, inc: 2.5, note: '止めて押す' }] });
 });
 
@@ -172,7 +172,7 @@ test('参考メニューを読み込む', async () => {
   await tab('ルーティン');
   await userEvent.click(await screen.findByRole('button', { name: '参考メニューを読み込む' }));
   await waitFor(async () => expect(await listRoutines()).toHaveLength(4));
-  expect(await screen.findByText('月曜 ・ 8種目')).toBeInTheDocument();
+  expect(await screen.findByText(/^月曜 ・ 8種目 ・ 約\d+分$/)).toBeInTheDocument();
 });
 
 describe('プログラム', () => {

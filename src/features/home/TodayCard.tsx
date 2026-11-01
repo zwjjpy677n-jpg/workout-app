@@ -1,7 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/Button';
 import { startRoutineWorkout } from '../../db/repository';
+import { useExerciseMap } from '../../hooks/useData';
 import { toDateKey } from '../../lib/dates';
+import { estimateMinutes, estimateText } from '../../lib/estimate';
 import { deloadSets, type programStatus } from '../../lib/program';
 import { entryComplete } from '../../lib/routineEntries';
 import { WEEKDAY_LABEL, type Routine, type Workout } from '../../lib/types';
@@ -17,6 +19,7 @@ type Props = {
 
 export function TodayCard({ routines, workouts, active, status, now }: Props) {
   const navigate = useNavigate();
+  const exMap = useExerciseMap();
   const dow = new Date(now).getDay();
   const today = routines.find((r) => r.weekday === dow);
   const todayKey = toDateKey(now);
@@ -45,6 +48,7 @@ export function TodayCard({ routines, workouts, active, status, now }: Props) {
   const total = ref ? ref.entries.length : today.items.length;
   const sets = today.items.reduce((a, i) => a + deloadSets(i.sets, status.deload), 0);
   const otherActive = !!active && !mine;
+  const minutes = exMap ? estimateMinutes(today.items, exMap, (n) => deloadSets(n, status.deload)) : 0;
 
   return (
     <section aria-label="今日のトレーニング" className={s.today}>
@@ -53,7 +57,7 @@ export function TodayCard({ routines, workouts, active, status, now }: Props) {
         <span className={s.todaySub}>進捗 {doneCount} / {total}</span>
       </div>
       <div className={s.todayName}>{today.name}</div>
-      <div className={s.todaySub}>{today.items.length}種目 ・ {sets}セット</div>
+      <div className={s.todaySub}>{`${today.items.length}種目 ・ ${sets}セット${minutes > 0 ? ` ・ 予測 ${estimateText(minutes)}` : ''}`}</div>
       <div className={s.pbar}><i style={{ width: `${(100 * doneCount) / Math.max(1, total)}%` }} /></div>
       {!otherActive &&
         (mine ? (

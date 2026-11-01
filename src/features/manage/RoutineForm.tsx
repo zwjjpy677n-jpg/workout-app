@@ -5,6 +5,7 @@ import { Sheet } from '../../components/Sheet';
 import { deleteRoutine, saveRoutine } from '../../db/repository';
 import { useExerciseMap, useExercises } from '../../hooks/useData';
 import { BODY_PART_LABEL, BODY_PARTS, defaultItem, WEEKDAY_LABEL, type Routine, type RoutineItem } from '../../lib/types';
+import { estimateMinutes, estimateText, SET_SEC } from '../../lib/estimate';
 import s from './manage.module.css';
 
 export function RoutineForm({ routine, onClose }: { routine: Routine | null; onClose(): void }) {
@@ -113,6 +114,7 @@ export function RoutineForm({ routine, onClose }: { routine: Routine | null; onC
           </div>
         );
       })}
+      {map && estimateMinutes(items, map) > 0 && <p className={s.sub}>{`予測時間 ${estimateText(estimateMinutes(items, map))}（1セット${SET_SEC}秒＋レストで計算）`}</p>}
       {error && <p className={s.error}>{error}</p>}
       <div className={s.actions}>
         {routine && <Button variant="danger" onClick={remove}>削除</Button>}

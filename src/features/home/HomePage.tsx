@@ -9,6 +9,7 @@ import { useToday } from '../../hooks/useToday';
 import { ProgramHeader } from './ProgramHeader';
 import { TodayCard } from './TodayCard';
 import { volumeParts } from '../../lib/calc';
+import { estimateMinutes, estimateText } from '../../lib/estimate';
 import { formatMDW, toDateKey } from '../../lib/dates';
 import { completed, weekSummary, weeklySetsByBodyPart, workoutVolume } from '../../lib/summary';
 import { Brand } from '../../components/Brand';
@@ -83,7 +84,7 @@ export function HomePage() {
             {routines.map((r) => (
               <button key={r.id} type="button" className={s.routine} onClick={() => startRoutine(r.id)}>
                 <b>{r.name}</b>
-                <span>{r.items.length}種目</span>
+                <span>{r.items.length}種目{exMap && estimateMinutes(r.items, exMap) > 0 ? ` ・ ${estimateText(estimateMinutes(r.items, exMap))}` : ''}</span>
               </button>
             ))}
           </div>

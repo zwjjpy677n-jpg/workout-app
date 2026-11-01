@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '../../components/Button';
-import { useRoutines } from '../../hooks/useData';
+import { useExerciseMap, useRoutines } from '../../hooks/useData';
+import { estimateMinutes, estimateText } from '../../lib/estimate';
 import { loadReferenceMenu } from '../../db/menuSeed';
 import { WEEKDAY_LABEL, type Routine } from '../../lib/types';
 import { ReceivedMenus } from './ReceivedMenus';
@@ -9,6 +10,7 @@ import s from './manage.module.css';
 
 export function RoutineList() {
   const routines = useRoutines();
+  const exMap = useExerciseMap();
   const [editing, setEditing] = useState<Routine | 'new' | null>(null);
   return (
     <>
@@ -19,7 +21,7 @@ export function RoutineList() {
           <button key={r.id} type="button" className={s.item} onClick={() => setEditing(r)}>
             <div>
               <div>{r.name}</div>
-              <div className={s.sub}>{r.weekday != null ? `${WEEKDAY_LABEL[r.weekday]}曜 ・ ` : ''}{r.items.length}種目</div>
+              <div className={s.sub}>{r.weekday != null ? `${WEEKDAY_LABEL[r.weekday]}曜 ・ ` : ''}{r.items.length}種目{exMap && estimateMinutes(r.items, exMap) > 0 ? ` ・ ${estimateText(estimateMinutes(r.items, exMap))}` : ''}</div>
             </div>
             <span className={s.chev}>›</span>
           </button>

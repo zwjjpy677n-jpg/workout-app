@@ -83,7 +83,7 @@ describe('今日のトレーニング', () => {
     home();
     const card = await today();
     expect(within(card).getByText('脚・瞬発')).toBeInTheDocument();
-    expect(within(card).getByText('8種目 ・ 24セット')).toBeInTheDocument();
+    expect(await within(card).findByText(/^8種目 ・ 24セット ・ 予測 約\d+分$/)).toBeInTheDocument();
     expect(within(card).getByText('進捗 0 / 8')).toBeInTheDocument();
     await userEvent.click(within(card).getByRole('button', { name: 'トレーニングを始める' }));
     expect(await screen.findByTestId('location')).toHaveTextContent('/workout');
@@ -117,7 +117,7 @@ describe('今日のトレーニング', () => {
   test('回復週はセット数を半分で表示', async () => {
     await saveProgram({ startDate: '2026-10-07', tests: { start: null, end: null } });
     home();
-    expect(await within(await today()).findByText('8種目 ・ 16セット')).toBeInTheDocument();
+    expect(await within(await today()).findByText(/^8種目 ・ 16セット ・ 予測 約\d+分$/)).toBeInTheDocument();
   });
 
   test('今日完了済みなら「記録を見直す」でカレンダーへ', async () => {
