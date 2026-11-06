@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import { HashRouter, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { TabBar } from './components/TabBar';
+import { AutoFinish } from './features/workout/AutoFinish';
 import { GroupPage } from './features/groups/GroupPage';
 import { HomePage } from './features/home/HomePage';
 import { CalendarPage } from './features/calendar/CalendarPage';
@@ -58,6 +59,7 @@ export function AppRoutes() {
 export function App() {
   return (
     <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <AutoFinish />
       <AppRoutes />
     </HashRouter>
   );

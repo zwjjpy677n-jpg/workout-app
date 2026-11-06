@@ -147,6 +147,22 @@ export async function finishWorkout(id: string, now: number = Date.now()): Promi
   return 'saved';
 }
 
+/** 記録中のまま、この長さを超えたら自動で終了する */
+export const AUTO_FINISH_MS = 2 * 60 * 60 * 1000;
+
+/**
+ * 記録中のワークアウトが始めてから2時間を超えていたら、終了時刻を2時間ちょうどにして保存する。
+ * 完了したセットが1つも無ければ、保存するものが無いので消す。何もしなければ null
+ */
+export async function autoFinishLongWorkout(now: number = Date.now()): Promise<{ result: 'saved' | 'discarded'; workout: Workout } | null> {
+  const w = await getActiveWorkout();
+  if (!w || now - w.startedAt < AUTO_FINISH_MS) return null;
+  const r = await finishWorkout(w.id, w.startedAt + AUTO_FINISH_MS);
+  if (r === 'saved') return { result: 'saved', workout: w };
+  await deleteWorkout(w.id);
+  return { result: 'discarded', workout: w };
+}
+
 /** 過去ワークアウトの編集を確定: 完了セットのない種目を除く（endedAt は維持）。完了セットが0なら変更せず 'empty' */
 export async function saveEditedWorkout(id: string): Promise<'saved' | 'empty'> {
   const w = await db.workouts.get(id);
