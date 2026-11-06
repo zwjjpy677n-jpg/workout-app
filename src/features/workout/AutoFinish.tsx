@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { autoFinishLongWorkout } from '../../db/repository';
+import { autoFinishLongWorkout, resumeWorkout } from '../../db/repository';
 import { toDateKey } from '../../lib/dates';
 
 const CHECK_MS = 60_000;
@@ -20,13 +20,17 @@ export function AutoFinish() {
       try {
         const r = await autoFinishLongWorkout();
         if (!r) return;
+        if (r.result === 'discarded') {
+          if (where.current === '/workout') navigate('/', { replace: true });
+          window.alert(`「${r.workout.name}」が2時間を超えましたが、完了したセットが無かったので記録を消しました`);
+          return;
+        }
+        // まだ続けるなら、その場で続きから再開できる
+        if (window.confirm(`「${r.workout.name}」が2時間を超えたので、自動で終了して保存しました。\nまだ続けるなら「OK」で続きから再開します`)) {
+          if ((await resumeWorkout(r.workout.id)) === 'resumed') return navigate('/workout', { replace: where.current === '/workout' });
+        }
         // 記録の画面を開いていたら、終わったワークアウトの画面から離れる
-        if (where.current === '/workout') navigate(r.result === 'saved' ? `/calendar?date=${toDateKey(r.workout.startedAt)}` : '/', { replace: true });
-        window.alert(
-          r.result === 'saved'
-            ? `「${r.workout.name}」が2時間を超えたので、自動で終了して保存しました`
-            : `「${r.workout.name}」が2時間を超えましたが、完了したセットが無かったので記録を消しました`,
-        );
+        if (where.current === '/workout') navigate(`/calendar?date=${toDateKey(r.workout.startedAt)}`, { replace: true });
       } catch {
         /* 次の確認でやり直す */
       } finally {

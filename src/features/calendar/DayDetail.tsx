@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../../components/Card';
-import { deleteWorkout } from '../../db/repository';
-import { useFeedbackForWorkouts } from '../../hooks/useData';
+import { deleteWorkout, resumeWorkout } from '../../db/repository';
+import { useActiveWorkout, useFeedbackForWorkouts } from '../../hooks/useData';
 import { formatKg } from '../../lib/calc';
 import { formatMDW, fromDateKey, toDateKey } from '../../lib/dates';
 import { conditionText } from '../../lib/condition';
@@ -16,6 +16,14 @@ export function DayDetail({ dateKey, workouts, bodyweights, exercises }: Props) 
   const title = formatMDW(fromDateKey(dateKey).getTime());
   const list = workouts.filter((w) => w.endedAt !== null && toDateKey(w.startedAt) === dateKey);
   const bw = bodyweights.find((b) => b.date === dateKey);
+  const active = useActiveWorkout();
+  // 今日のワークアウトだけ、ほかに記録中が無ければ続きから再開できる（2時間で自動終了したあとなど）
+  const canResume = (w: Workout) => active === null && toDateKey(w.startedAt) === toDateKey(Date.now());
+  const resume = async (w: Workout) => {
+    const r = await resumeWorkout(w.id);
+    if (r === 'resumed') navigate('/workout');
+    else if (r === 'busy') window.alert('記録中のワークアウトがあります。先にそちらを終了してください');
+  };
   const feedback = useFeedbackForWorkouts(list.map((w) => w.id)) ?? [];
   const said = (workoutId: string, exerciseId: string | null) =>
     feedback.filter((f) => f.workoutId === workoutId && f.exerciseId === exerciseId).map((f) => (
@@ -34,6 +42,7 @@ export function DayDetail({ dateKey, workouts, bodyweights, exercises }: Props) 
           <div className={s.wHead}>
             <span className={s.wName}>{w.name}</span>
             <div className={s.btns}>
+              {canResume(w) && <button type="button" onClick={() => void resume(w)}>続きから</button>}
               <button type="button" onClick={() => navigate(`/workout/${w.id}`)}>編集</button>
               <button
                 type="button"

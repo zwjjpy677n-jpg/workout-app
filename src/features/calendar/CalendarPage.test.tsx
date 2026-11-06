@@ -85,6 +85,23 @@ test('削除と編集', async () => {
   expect(await screen.findByTestId('location')).toHaveTextContent(/^\/workout\/w\d+$/);
 });
 
+test('今日のワークアウトだけ「続きから」で記録中に戻せる（過去の日には出ない）', async () => {
+  const today = wk(new Date(2026, 9, 28, 7), [entry(ids['ベンチプレス'], [set({ weight: 60, reps: 10 })])], { name: '朝', endedAt: new Date(2026, 9, 28, 9).getTime() });
+  await saveWorkout(today);
+  renderRoute('/calendar?date=2026-10-28', '/calendar', <CalendarPage />);
+  const d = await screen.findByRole('region', { name: '10/28 WED' });
+  await userEvent.click(await within(d).findByRole('button', { name: '続きから' }));
+  expect(await screen.findByTestId('location')).toHaveTextContent('/workout');
+  expect((await listWorkouts()).find((w) => w.id === today.id)).toMatchObject({ endedAt: null, resumedAt: new Date(2026, 9, 28, 10).getTime() });
+});
+
+test('過去の日のワークアウトには「続きから」が出ない', async () => {
+  renderRoute('/calendar?date=2026-10-22', '/calendar', <CalendarPage />);
+  const d = await screen.findByRole('region', { name: '10/22 THU' });
+  await within(d).findByRole('button', { name: '編集' });
+  expect(within(d).queryByRole('button', { name: '続きから' })).toBeNull();
+});
+
 test('届いたフィードバックが記録の下と種目の下に出る', async () => {
   await db.feedbackIn.bulkPut([
     { id: 'fb1', friendId: 'f1', friendName: 'じろう', workoutId: w22, week: null, exerciseId: null, text: 'いい日だね', at: 1, read: false },

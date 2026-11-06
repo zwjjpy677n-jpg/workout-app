@@ -68,6 +68,8 @@ export interface Workout {
   startedAt: number;
   /** null = 進行中 */
   endedAt: number | null;
+  /** 終了したあと、続きから再開した時刻（2時間の自動終了はここから数える） */
+  resumedAt?: number;
   note: string;
   condition: Condition;
   entries: WorkoutEntry[];
